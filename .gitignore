@@ -1,0 +1,16 @@
+# Pliki środowiska wirtualnego
+.venv/
+venv/
+
+# Pliki Pythona
+__pycache__/
+*.pyc
+
+# Plik z danymi wrażliwymi
+.env
+
+# Plik lokalnej bazy danych
+db.sqlite3
+
+# Pliki generowane przez VS Code
+.vscode/
