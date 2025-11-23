@@ -24,3 +24,11 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_formatted_date(self, obj):
         return obj.created_at.strftime("%d-%m-%Y %H:%M")
+    
+class AttendanceSerializer(serializers.ModelSerializer):
+    # Opcjonalnie: wyświetlamy imię dziecka, żeby było czytelniej w JSON
+    child_name = serializers.CharField(source='child.first_name', read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = ['id', 'child', 'child_name', 'date', 'status']

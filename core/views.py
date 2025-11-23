@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from django.db.models import Q
-from .models import Child, Payment, Post
-from .serializers import ChildSerializer, PaymentSerializer, PostSerializer
+from .models import Child, Payment, Post, Attendance
+from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer
 
 class ChildViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChildSerializer
@@ -59,3 +59,17 @@ class PostViewSet(viewsets.ReadOnlyModelViewSet):
         except Child.DoesNotExist:
             # Jeśli rodzic nie ma przypisanego dziecka, widzi tylko ogólne
             return Post.objects.filter(target_group__isnull=True)
+        
+class AttendanceViewSet(viewsets.ModelViewSet):
+    serializer_class = AttendanceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Dyrektor widzi listę dla całego przedszkola
+        if user.is_director:
+            return Attendance.objects.all()
+            
+        # Rodzic widzi tylko wpisy swojego dziecka
+        return Attendance.objects.filter(child__parent_account=user)
