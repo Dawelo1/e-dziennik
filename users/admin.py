@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group
 from .models import User
 
 # Rejestrujemy nasz customowy model użytkownika
@@ -12,3 +13,8 @@ class CustomUserAdmin(UserAdmin):
     )
 
 admin.site.register(User, CustomUserAdmin)
+
+try:
+    admin.site.unregister(Group)
+except admin.sites.NotRegistered:
+    pass

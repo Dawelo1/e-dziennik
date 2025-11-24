@@ -7,6 +7,10 @@ class Group(models.Model):
     name = models.CharField(max_length=100)
     teachers_info = models.TextField(help_text="Imiona i nazwiska nauczycieli")
 
+    class Meta:
+        verbose_name = "Grupa"
+        verbose_name_plural = "Grupy"
+
     def __str__(self):
         return self.name
 
@@ -20,6 +24,10 @@ class Child(models.Model):
     # Dane wrażliwe (RODO) - szyfrowane w bazie
     medical_info = encrypt(models.TextField(blank=True, help_text="Alergie, uwagi zdrowotne"))
     
+    class Meta:
+        verbose_name = "Dziecko"
+        verbose_name_plural = "Dzieci"
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
     
@@ -39,6 +47,8 @@ class Attendance(models.Model):
     class Meta:
         unique_together = ('child', 'date')
         ordering = ['-date']
+        verbose_name = "Obecność"
+        verbose_name_plural = "Obecności"
 
     def __str__(self):
         return f"{self.child} - {self.date} ({self.status})"
@@ -72,6 +82,10 @@ class Payment(models.Model):
 
         return f"{first}{last}/{date_str}/{unique_code}"
     
+    class Meta:
+        verbose_name = "Płatność"
+        verbose_name_plural = "Płatności"
+
     def __str__(self):
         return f"{self.child} - {self.description} ({self.amount} zł)"
 

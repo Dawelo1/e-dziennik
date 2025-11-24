@@ -15,6 +15,8 @@ class Message(models.Model):
 
     class Meta:
         ordering = ['-created_at'] # Najnowsze na górze
+        verbose_name = "Wiadomość"
+        verbose_name_plural = "Wiadomości"
 
     def __str__(self):
         return f"Od: {self.sender} | Do: {self.receiver} | {self.subject}"
