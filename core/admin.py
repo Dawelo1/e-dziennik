@@ -20,7 +20,6 @@ class PaymentAdmin(admin.ModelAdmin):
     # 5. Sortowanie (nieopłacone i najnowsze na górze)
     ordering = ('is_paid', '-created_at')
 
-
 admin.site.register(Payment, PaymentAdmin)
 
 admin.site.register(Post)
