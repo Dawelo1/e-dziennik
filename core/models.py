@@ -55,13 +55,13 @@ class Payment(models.Model):
         first = self.child.first_name[0].upper()
         last = self.child.last_name[0].upper()
         today = datetime.date.today()
-        date_str = today.strftime("%d/%m/%Y")
+        date_str = today.strftime("%d%m%y")
         
         # Licznik dla dzisiejszych płatności
         count = Payment.objects.filter(created_at__date=today).count() + 1
         unique_code = f"{count:03d}" # np. 001, 002
 
-        return f"{first}/{last}/{date_str}/{unique_code}"
+        return f"{first}{last}/{date_str}/{unique_code}"
 
 class Post(models.Model):
     # Tytuł wpisu, np. "Wizyta Świętego Mikołaja"
