@@ -62,6 +62,9 @@ class Payment(models.Model):
         unique_code = f"{count:03d}" # np. 001, 002
 
         return f"{first}{last}/{date_str}/{unique_code}"
+    
+    def __str__(self):
+        return f"{self.child} - {self.description} ({self.amount} zł)"
 
 class Post(models.Model):
     # Tytuł wpisu, np. "Wizyta Świętego Mikołaja"

@@ -3,7 +3,26 @@ from .models import Group, Child, Payment, Post, Attendance
 
 # Prosta rejestracja - pozwoli dodawać/edytować elementy
 admin.site.register(Group)
-admin.site.register(Payment)
+
+class PaymentAdmin(admin.ModelAdmin):
+    # 1. Co ma się wyświetlać w kolumnach?
+    list_display = ('child', 'amount', 'description', 'payment_title', 'is_paid', 'created_at')
+    
+    # 2. To jest MAGIA: Pozwala edytować pole 'is_paid' bezpośrednio na liście!
+    list_editable = ('is_paid',)
+    
+    # 3. Filtry po prawej stronie (żebyś mógł kliknąć "Pokaż tylko nieopłacone")
+    list_filter = ('is_paid', 'created_at')
+    
+    # 4. Wyszukiwarka (szukaj po nazwisku dziecka lub tytule przelewu)
+    search_fields = ('child__last_name', 'child__first_name', 'payment_title', 'description')
+    
+    # 5. Sortowanie (nieopłacone i najnowsze na górze)
+    ordering = ('is_paid', '-created_at')
+
+
+admin.site.register(Payment, PaymentAdmin)
+
 admin.site.register(Post)
 
 # Konfiguracja wyświetlania Dzieci
