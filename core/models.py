@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import User
 from django_cryptography.fields import encrypt # Szyfrowanie RODO
+from django.utils import timezone
 
 class Group(models.Model):
     name = models.CharField(max_length=100)
@@ -24,15 +25,23 @@ class Child(models.Model):
     
 class Attendance(models.Model):
     STATUS_CHOICES = [
-        ('present', 'Obecny (Płatne)'),
-        ('absent', 'Nieobecny (Odwołane)'),
+        # Zmieniamy logikę: rekord w bazie = zgłoszona nieobecność
+        ('absent', 'Nieobecny (Zgłoszone)'),
+        # Opcjonalnie 'present' jeśli dyrektor chce ręcznie potwierdzić, ale domyślnie brak wpisu = obecny
     ]
     child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='attendance')
-    date = models.DateField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='present')
+    date = models.DateField(verbose_name="Data nieobecności")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='absent')
+    
+    # To pole spełnia Twoje wymaganie: "data kiedy to zostało wpisane do bazy"
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data zgłoszenia")
 
     class Meta:
-        unique_together = ('child', 'date') # Jedno dziecko, jeden wpis na dzień
+        unique_together = ('child', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.child} - {self.date} ({self.status})"
 
 import datetime
 
@@ -50,7 +59,7 @@ class Payment(models.Model):
         super().save(*args, **kwargs)
 
     def generate_unique_title(self):
-        # Format: Imię(1)/Nazwisko(1)/DD/MM/YYYY/XXX
+        # Format: Imię(1)Nazwisko(1)/DDMMYYYY/XXX
         # XXX to unikalny kod dnia
         first = self.child.first_name[0].upper()
         last = self.child.last_name[0].upper()

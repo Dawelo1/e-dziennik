@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from django.utils import timezone
+import datetime
 from .models import Child, Payment, Attendance, Post
 
 class ChildSerializer(serializers.ModelSerializer):
@@ -26,9 +28,38 @@ class PostSerializer(serializers.ModelSerializer):
         return obj.created_at.strftime("%d-%m-%Y %H:%M")
     
 class AttendanceSerializer(serializers.ModelSerializer):
-    # Opcjonalnie: wyświetlamy imię dziecka, żeby było czytelniej w JSON
     child_name = serializers.CharField(source='child.first_name', read_only=True)
 
     class Meta:
         model = Attendance
-        fields = ['id', 'child', 'child_name', 'date', 'status']
+        fields = ['id', 'child', 'child_name', 'date', 'status', 'created_at']
+        read_only_fields = ['created_at', 'status'] 
+        # Status ustawiamy automatycznie na 'absent', rodzic nie wybiera "obecny"
+
+    def validate(self, data):
+        """
+        Tutaj sprawdzamy reguły:
+        1. Nie można zgłaszać wstecz.
+        2. Nie można zgłaszać na dzisiaj po godzinie 8:00.
+        """
+        target_date = data['date'] # Data, którą zaznaczył rodzic (nieobecność)
+        now = timezone.now()       # Aktualny czas serwera
+        today = now.date()
+
+        # Sprawdzenie 1: Czy data nie jest z przeszłości?
+        if target_date < today:
+            raise serializers.ValidationError("Nie można zgłaszać nieobecności wstecz.")
+
+        # Sprawdzenie 2: Jeśli to dzisiaj, czy jest przed 8:00?
+        if target_date == today:
+            current_hour = now.hour
+            # Uwaga: upewnij się w settings.py że masz TIME_ZONE = 'Europe/Warsaw'
+            if current_hour >= 8:
+                raise serializers.ValidationError("Na dzisiaj można zgłaszać nieobecność tylko do godziny 8:00.")
+
+        return data
+    
+    def create(self, validated_data):
+        # Wymuszamy status 'absent' przy tworzeniu przez API
+        validated_data['status'] = 'absent'
+        return super().create(validated_data)
