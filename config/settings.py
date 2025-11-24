@@ -142,3 +142,7 @@ AUTH_USER_MODEL = 'users.User' #dodane
 # Ustawienia mediów
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# USTAWIENIA EMAIL (Testowe - wyświetla w konsoli)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'przedszkole@example.com'
