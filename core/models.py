@@ -4,8 +4,8 @@ from django_cryptography.fields import encrypt # Szyfrowanie RODO
 from django.utils import timezone
 
 class Group(models.Model):
-    name = models.CharField(max_length=100)
-    teachers_info = models.TextField(help_text="Imiona i nazwiska nauczycieli")
+    name = models.CharField(max_length=100, verbose_name="Nazwa Grupy")
+    teachers_info = models.TextField(help_text="Imiona i nazwiska nauczycieli", verbose_name="Informacje o nauczycielach")
 
     class Meta:
         verbose_name = "Grupa"
@@ -15,14 +15,14 @@ class Group(models.Model):
         return self.name
 
 class Child(models.Model):
-    parent_account = models.OneToOneField(User, on_delete=models.CASCADE, related_name='child')
-    group = models.ForeignKey(Group, on_delete=models.PROTECT, related_name='children')
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
-    date_of_birth = models.DateField()
+    parent_account = models.OneToOneField(User, on_delete=models.CASCADE, related_name='child',verbose_name="Konto Rodzica")
+    group = models.ForeignKey(Group, on_delete=models.PROTECT, related_name='children', verbose_name="Grupa" )
+    first_name = models.CharField(max_length=50, verbose_name="Imię" )
+    last_name = models.CharField(max_length=50, verbose_name="Nazwisko" )
+    date_of_birth = models.DateField(verbose_name="Data urodzenia" )
     
     # Dane wrażliwe (RODO) - szyfrowane w bazie
-    medical_info = encrypt(models.TextField(blank=True, help_text="Alergie, uwagi zdrowotne"))
+    medical_info = encrypt(models.TextField(blank=True, help_text="Alergie, uwagi zdrowotne", verbose_name="Informacje medyczne"))
     
     class Meta:
         verbose_name = "Dziecko"
@@ -34,12 +34,12 @@ class Child(models.Model):
 class Attendance(models.Model):
     STATUS_CHOICES = [
         # Zmieniamy logikę: rekord w bazie = zgłoszona nieobecność
-        ('absent', 'Nieobecny (Zgłoszone)'),
+        ('nieobecny', 'Nieobecny (Zgłoszone)'),
         # Opcjonalnie 'present' jeśli dyrektor chce ręcznie potwierdzić, ale domyślnie brak wpisu = obecny
     ]
-    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='attendance')
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='attendance', verbose_name="Dziecko")
     date = models.DateField(verbose_name="Data nieobecności")
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='absent')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='nieobecny')
     
     # To pole spełnia Twoje wymaganie: "data kiedy to zostało wpisane do bazy"
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data zgłoszenia")
@@ -56,12 +56,12 @@ class Attendance(models.Model):
 import datetime
 
 class Payment(models.Model):
-    child = models.ForeignKey(Child, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.CharField(max_length=200) # np. "Czesne Styczeń"
-    is_paid = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    payment_title = models.CharField(max_length=100, unique=True, blank=True)
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, verbose_name="Dziecko")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Kwota")
+    description = models.CharField(max_length=200, verbose_name="Opis") # np. "Czesne Styczeń"
+    is_paid = models.BooleanField(default=False, verbose_name="Opłacone")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data utworzenia")
+    payment_title = models.CharField(max_length=100, unique=True, blank=True, verbose_name="Tytuł płatności (generowany automatycznie/ zostawić pusty)")
 
     def save(self, *args, **kwargs):
         if not self.payment_title:
