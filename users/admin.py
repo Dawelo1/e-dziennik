@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from .models import User
 from django.contrib import messages
-from .forms import CustomUserCreationForm
+from .forms import CustomUserCreationForm, CustomUserChangeForm 
 
 # Rejestrujemy nasz customowy model użytkownika
 # Używamy UserAdmin, żeby zachować ładny wygląd zarządzania hasłami itp.
@@ -11,6 +11,7 @@ from .forms import CustomUserCreationForm
 class CustomUserAdmin(UserAdmin):
     # Podmieniamy formularz dodawania na nasz własny
     add_form = CustomUserCreationForm
+    form = CustomUserChangeForm
     
     # Definiujemy, jakie pola mają się wyświetlać w formularzu dodawania (kolejność)
     add_fieldsets = (
@@ -24,6 +25,22 @@ class CustomUserAdmin(UserAdmin):
                 'password_1', 'password_2'
             ),
         }),
+    )
+
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Informacje osobiste', {
+            'fields': (
+                'first_name', 'last_name', 
+                'email', 'phone_number', 
+                'role' # <--- Dodajemy nasze pole wyboru roli
+            )
+        }),
+        ('Uprawnienia (Techniczne)', {
+            'classes': ('collapse',), # Zwijamy to, bo rola 'Dyrektor' ustawia to automatycznie
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+        }),
+        ('Ważne daty', {'fields': ('last_login', 'date_joined')}),
     )
 
     # Lista kolumn w widoku wszystkich użytkowników (też warto dodać telefon i imiona)

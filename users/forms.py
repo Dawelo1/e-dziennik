@@ -1,6 +1,7 @@
 # users/forms.py
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserChangeForm
 from .utils import generate_unique_username, generate_secure_password
 
 User = get_user_model()
@@ -107,6 +108,55 @@ class CustomUserCreationForm(forms.ModelForm):
             user.is_staff = False
             user.is_superuser = False
 
+        if commit:
+            user.save()
+        return user
+    
+class CustomUserChangeForm(UserChangeForm): # <--- 2. ZMIEŃ DZIEDZICZENIE (było forms.ModelForm)
+    """
+    Formularz do EDYCJI istniejącego użytkownika.
+    Dziedziczymy po UserChangeForm, żeby przywrócić link do zmiany hasła.
+    """
+    ROLE_CHOICES = [
+        ('parent', 'Rodzic'),
+        ('director', 'Dyrektor / Administrator'),
+    ]
+    role = forms.ChoiceField(
+        choices=ROLE_CHOICES,
+        widget=forms.RadioSelect,
+        label="Rola użytkownika",
+        required=False
+    )
+
+    class Meta:
+        model = User
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Logika zaznaczania odpowiedniej kropki przy roli
+        if self.instance.pk:
+            if self.instance.is_director:
+                self.fields['role'].initial = 'director'
+            else:
+                self.fields['role'].initial = 'parent'
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        
+        # Logika zapisywania roli
+        role = self.cleaned_data.get('role')
+        if role == 'director':
+            user.is_director = True
+            user.is_parent = False
+            user.is_staff = True
+            user.is_superuser = True
+        elif role == 'parent':
+            user.is_director = False
+            user.is_parent = True
+            user.is_staff = False
+            user.is_superuser = False
+            
         if commit:
             user.save()
         return user
