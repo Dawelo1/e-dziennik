@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django import forms
-from .models import Group, Child, Payment, Post, Attendance
+from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu
+
 
 # Prosta rejestracja - pozwoli dodawać/edytować elementy
 admin.site.register(Group)
@@ -93,3 +94,63 @@ class AttendanceAdmin(admin.ModelAdmin):
     group_name.short_description = 'Grupa'
 
 admin.site.register(Attendance, AttendanceAdmin)
+
+class SpecialActivityAdmin(admin.ModelAdmin):
+    list_display = ('title', 'date', 'start_time', 'get_groups')
+    list_filter = ('date', 'groups')
+    filter_horizontal = ('groups',) # Wygodne okienko do wybierania grup
+    
+    def get_groups(self, obj):
+        return ", ".join([g.name for g in obj.groups.all()])
+    get_groups.short_description = "Dla grup"
+
+admin.site.register(FacilityClosure)
+admin.site.register(SpecialActivity, SpecialActivityAdmin)
+
+class DailyMenuAdmin(admin.ModelAdmin):
+    # Aktualizujemy listę kolumn (breakfast_short musi być poprawione)
+    list_display = ('date', 'day_name', 'breakfast_main_short', 'lunch_main_short')
+    list_filter = ('date',)
+    date_hierarchy = 'date'
+    
+    # Układ pól w formularzu edycji
+    fieldsets = (
+        ('Data', {'fields': ('date',)}),
+        
+        # Sekcja Śniadanie - identyczny układ jak Obiad
+        ('Śniadanie', {
+            'fields': (
+                ('breakfast_soup', 'breakfast_beverage'), # W jednym wierszu
+                'breakfast_main_course',
+                'breakfast_fruit'
+            )
+        }),
+        
+        # Sekcja Obiad
+        ('Obiad', {
+            'fields': (
+                ('lunch_soup', 'lunch_beverage'), # W jednym wierszu
+                'lunch_main_course',
+                'lunch_fruit'
+            )
+        }),
+        
+        ('Przerwa na owoce', {'fields': ('fruit_break',)}),
+        ('Inne', {'fields': ('allergens',)}),
+    )
+
+    def day_name(self, obj):
+        days = {1: 'Poniedziałek', 2: 'Wtorek', 3: 'Środa', 4: 'Czwartek', 5: 'Piątek', 6: 'Sobota', 7: 'Niedziela'}
+        return days[obj.date.isoweekday()]
+    day_name.short_description = "Dzień"
+
+    # Poprawiona metoda wyświetlania skrótu śniadania na liście
+    def breakfast_main_short(self, obj):
+        return obj.breakfast_main_course[:50] + "..." if obj.breakfast_main_course else "-"
+    breakfast_main_short.short_description = "Śniadanie (Danie)"
+
+    def lunch_main_short(self, obj):
+        return obj.lunch_main_course[:50] + "..." if obj.lunch_main_course else "-"
+    lunch_main_short.short_description = "Obiad (Danie)"
+
+admin.site.register(DailyMenu, DailyMenuAdmin)

@@ -126,3 +126,75 @@ class Post(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.created_at.date()})"
+    
+class FacilityClosure(models.Model):
+    """
+    Dni, w które przedszkole jest zamknięte (np. Święta, Wigilia, Remont).
+    Dyrektor dodaje te dni na początku roku.
+    """
+    date = models.DateField(unique=True, verbose_name="Data zamknięcia")
+    reason = models.CharField(max_length=200, verbose_name="Powód", blank=True, help_text="np. Przerwa świąteczna")
+
+    class Meta:
+        verbose_name = "Dzień wolny"
+        verbose_name_plural = "Dni wolne od zajęć"
+        ordering = ['date']
+
+    def __str__(self):
+        return f"{self.date} - {self.reason}"
+
+class SpecialActivity(models.Model):
+    """
+    Zajęcia niestandardowe (Wycieczka, Kino, Teatrzyk).
+    Domyślnie zajęcia są stałe, tu wpisujemy tylko wyjątki/atrakcje.
+    """
+    title = models.CharField(max_length=200, verbose_name="Nazwa zajęć")
+    description = models.TextField(blank=True, verbose_name="Opis/Szczegóły")
+    date = models.DateField(verbose_name="Data")
+    start_time = models.TimeField(verbose_name="Godzina rozpoczęcia")
+    end_time = models.TimeField(verbose_name="Godzina zakończenia", blank=True, null=True)
+    
+    # Przypisujemy zajęcia do grup (Wycieczka może być dla jednej grupy lub dla wszystkich)
+    groups = models.ManyToManyField(
+        Group, 
+        related_name='special_activities', 
+        verbose_name="Dla grup"
+    )
+
+    class Meta:
+        verbose_name = "Zajęcia dodatkowe/Wycieczka"
+        verbose_name_plural = "Plan zajęć (Niestandardowe)"
+        ordering = ['-date', 'start_time']
+
+    def __str__(self):
+        return f"{self.title} ({self.date})"
+    
+# core/models.py
+
+class DailyMenu(models.Model):
+    date = models.DateField(unique=True, verbose_name="Data")
+    
+    # 1. ŚNIADANIE (Podział analogiczny do obiadu)
+    breakfast_soup = models.CharField(max_length=200, verbose_name="Zupa / Zupa mleczna", blank=True, null=True)
+    breakfast_main_course = models.TextField(verbose_name="Drugie danie / Kanapki", blank=True, null=True)
+    breakfast_beverage = models.CharField(max_length=100, verbose_name="Napój", blank=True, null=True)
+    breakfast_fruit = models.CharField(max_length=100, verbose_name="Owoc / Dodatek", blank=True, null=True)
+    
+    # 2. OBIAD (Zmienione nazwy - bez prefiksu "Obiad:")
+    lunch_soup = models.CharField(max_length=200, verbose_name="Zupa", blank=True, null=True)
+    lunch_main_course = models.TextField(verbose_name="Drugie danie", blank=True, null=True)
+    lunch_beverage = models.CharField(max_length=100, verbose_name="Napój", blank=True, null=True)
+    lunch_fruit = models.CharField(max_length=100, verbose_name="Owoc / Deser", blank=True, null=True)
+    
+    # 3. PODWIECZOREK
+    fruit_break = models.TextField(verbose_name="Podwieczorek / Owoce", blank=True)
+    
+    allergens = models.CharField(max_length=200, verbose_name="Alergeny (numery)", blank=True, help_text="np. 1, 3, 7")
+
+    class Meta:
+        verbose_name = "Jadłospis dzienny"
+        verbose_name_plural = "Jadłospis"
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"Jadłospis: {self.date}"

@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from django.db.models import Q
-from .models import Child, Payment, Post, Attendance
-from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer
+from .models import Child, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity
+from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer
 
 class ChildViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChildSerializer
@@ -76,3 +76,57 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             return Attendance.objects.all()
             
         return Attendance.objects.filter(child__parents=user)
+    
+class FacilityClosureViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Zwraca listę dni, kiedy przedszkole jest zamknięte.
+    """
+    queryset = FacilityClosure.objects.all()
+    serializer_class = FacilityClosureSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class SpecialActivityViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Zwraca zajęcia dodatkowe.
+    Rodzic widzi zajęcia przypisane do grup jego dzieci.
+    Dyrektor widzi wszystko.
+    """
+    serializer_class = SpecialActivitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # Dyrektor widzi cały kalendarz
+        if user.is_director:
+            return SpecialActivity.objects.all()
+        
+        # Rodzic: pobieramy grupy jego dzieci
+        children = user.children.all()
+        if not children.exists():
+            return SpecialActivity.objects.none()
+            
+        parent_groups = [child.group for child in children]
+        
+        # Filtrujemy zajęcia, które są przypisane do którejkolwiek z tych grup
+        # distinct() jest ważne przy ManyToMany, żeby nie dublować wyników
+        return SpecialActivity.objects.filter(groups__in=parent_groups).distinct()
+    
+class DailyMenuViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Zwraca jadłospis.
+    Można filtrować po dacie, np. ?date__gte=2025-11-01&date__lte=2025-11-07
+    """
+    queryset = DailyMenu.objects.all()
+    serializer_class = DailyMenuSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    # Dodajemy proste filtrowanie, żeby React mógł pobrać np. tylko ten tydzień
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        
+        if start_date and end_date:
+            return queryset.filter(date__range=[start_date, end_date])
+        return queryset

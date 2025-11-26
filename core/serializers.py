@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 import datetime
-from .models import Child, Payment, Attendance, Post
+from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity
 
 class ChildSerializer(serializers.ModelSerializer):
     # Automatyczne rozszyfrowanie medical_info przy odczycie
@@ -63,3 +63,29 @@ class AttendanceSerializer(serializers.ModelSerializer):
         # Wymuszamy status 'absent' przy tworzeniu przez API
         validated_data['status'] = 'absent'
         return super().create(validated_data)
+    
+class FacilityClosureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FacilityClosure
+        fields = '__all__'
+
+class SpecialActivitySerializer(serializers.ModelSerializer):
+    # Wyświetlamy nazwy grup, żeby na froncie było wiadomo dla kogo to jest
+    group_names = serializers.StringRelatedField(many=True, source='groups', read_only=True)
+
+    class Meta:
+        model = SpecialActivity
+        fields = ['id', 'title', 'description', 'date', 'start_time', 'end_time', 'groups', 'group_names']
+
+class DailyMenuSerializer(serializers.ModelSerializer):
+    # Dodajemy dzień tygodnia, żeby frontendowi było łatwiej (np. "Poniedziałek")
+    day_of_week = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DailyMenu
+        fields = '__all__'
+
+    def get_day_of_week(self, obj):
+        # Zwraca numer dnia (1=Poniedziałek, 7=Niedziela)
+        # Frontend sobie to zamieni na nazwę
+        return obj.date.isoweekday()
