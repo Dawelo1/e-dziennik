@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings             
 from django.conf.urls.static import static 
+from rest_framework.authtoken.views import obtain_auth_token
 
 # --- KONFIGURACJA PANELU ADMINA ---
 admin.site.site_header = "Administracja Przedszkole Pszczółka Maja"  # To tekst na niebieskim pasku
@@ -29,6 +30,7 @@ urlpatterns = [
     path('api/', include('core.urls')),
     path('api/communication/', include('communication.urls')),
     path('api/users/', include('users.urls')), 
+    path('api-token-auth/', obtain_auth_token, name='api_token_auth')
 ]
 
 if settings.DEBUG:

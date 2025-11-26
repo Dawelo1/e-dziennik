@@ -41,3 +41,9 @@ class CustomPasswordResetSerializer(serializers.Serializer):
         # 5. Zwracamy EMAIL użytkownika (nawet jeśli wpisał login).
         # Dzięki temu biblioteka 'myśli', że użytkownik wpisał email i wysyła wiadomość.
         return user.email
+    
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        # Zwracamy to, co potrzebne frontendowi do działania
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent']

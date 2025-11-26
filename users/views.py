@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import update_session_auth_hash
 from .serializers import ChangePasswordSerializer
+from rest_framework.views import APIView
+from .serializers import UserSerializer
 
 class ChangePasswordView(generics.UpdateAPIView):
     """
@@ -37,3 +39,11 @@ class ChangePasswordView(generics.UpdateAPIView):
             return Response({"detail": "Hasło zostało zmienione pomyślnie."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+        

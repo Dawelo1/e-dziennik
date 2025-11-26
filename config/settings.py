@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # biblioteki zewnetrzne
     'corsheaders', #dodane
     'rest_framework', #dodane
+    'rest_framework.authtoken', #dodane
     'django_cryptography', #dodane
     # moje aplikacje
     'users', #dodane
