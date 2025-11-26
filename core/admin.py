@@ -29,6 +29,7 @@ class ChildAdmin(admin.ModelAdmin):
     list_display = ('first_name', 'last_name', 'group') # Co widać w kolumnach
     list_filter = ('group',) # Filtr grup po prawej stronie
     search_fields = ('last_name', 'first_name') # Pasek wyszukiwania
+    filter_horizontal = ('parents',) # Ładny widget do wyboru wielu rodziców
 
 admin.site.register(Child, ChildAdmin)
 

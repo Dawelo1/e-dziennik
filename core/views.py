@@ -11,8 +11,7 @@ class ChildViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if user.is_director:
             return Child.objects.all()
-        # Rodzic widzi tylko przypisane do niego dziecko
-        return Child.objects.filter(parent_account=user)
+        return user.children.all()
 
 class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
@@ -22,7 +21,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_director:
             return Payment.objects.all()
-        return Payment.objects.filter(child__parent_account=user)
+        return Payment.objects.filter(child__parents=user)
         
     def perform_update(self, serializer):
         # Zabezpieczenie: tylko dyrektor może zmienić status płatności
@@ -34,7 +33,7 @@ class PostViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Zwraca listę postów (tablicę).
     Dyrektor widzi wszystko.
-    Rodzic widzi posty ogólne ORAZ posty przypisane do grupy jego dziecka.
+    Rodzic widzi posty ogólne ORAZ posty przypisane do grup jego DZIECI (wszystkich).
     """
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -46,19 +45,24 @@ class PostViewSet(viewsets.ReadOnlyModelViewSet):
         if user.is_director:
             return Post.objects.all()
         
-        # 2. Jeśli to Rodzic -> musimy znaleźć grupę jego dziecka
-        try:
-            child = Child.objects.get(parent_account=user)
-            child_group = child.group
-            
-            # Zwróć posty, które:
-            # (Nie mają przypisanej grupy) LUB (Są przypisane do grupy dziecka)
-            return Post.objects.filter(
-                Q(target_group__isnull=True) | Q(target_group=child_group)
-            )
-        except Child.DoesNotExist:
-            # Jeśli rodzic nie ma przypisanego dziecka, widzi tylko ogólne
+        # 2. Jeśli to Rodzic -> pobieramy wszystkie jego dzieci
+        # (dzięki related_name='children' w modelu Child)
+        children = user.children.all()
+        
+        # Jeśli rodzic nie ma przypisanych dzieci, widzi tylko posty ogólne
+        if not children.exists():
             return Post.objects.filter(target_group__isnull=True)
+
+        # 3. Zbieramy grupy wszystkich dzieci rodzica do jednej listy
+        # Np. [Grupa Pszczółki, Grupa Motylki]
+        parent_groups = [child.group for child in children]
+        
+        # 4. Filtrujemy posty:
+        # Pokaż te, które nie mają grupy (ogólne) 
+        # LUB te, które należą do którejś z grup dzieci (target_group__in)
+        return Post.objects.filter(
+            Q(target_group__isnull=True) | Q(target_group__in=parent_groups)
+        )
         
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
@@ -71,5 +75,4 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if user.is_director:
             return Attendance.objects.all()
             
-        # Rodzic widzi tylko wpisy swojego dziecka
-        return Attendance.objects.filter(child__parent_account=user)
+        return Attendance.objects.filter(child__parents=user)

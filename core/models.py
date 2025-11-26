@@ -15,7 +15,7 @@ class Group(models.Model):
         return self.name
 
 class Child(models.Model):
-    parent_account = models.OneToOneField(User, on_delete=models.CASCADE, related_name='child',verbose_name="Konto Rodzica")
+    parents = models.ManyToManyField(User, related_name='child',verbose_name="Konto Rodzica")
     group = models.ForeignKey(Group, on_delete=models.PROTECT, related_name='children', verbose_name="Grupa" )
     first_name = models.CharField(max_length=50, verbose_name="Imię" )
     last_name = models.CharField(max_length=50, verbose_name="Nazwisko" )
