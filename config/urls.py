@@ -19,6 +19,11 @@ from django.urls import path, include
 from django.conf import settings             
 from django.conf.urls.static import static 
 
+# --- KONFIGURACJA PANELU ADMINA ---
+admin.site.site_header = "Administracja Przedszkole Pszczółka Maja"  # To tekst na niebieskim pasku
+admin.site.site_title = "Pszczółka Maja Admin"                      # To tekst na karcie przeglądarki
+admin.site.index_title = "Panel Zarządzania"                        # To tekst pod spodem, na stronie głównej panelu
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
