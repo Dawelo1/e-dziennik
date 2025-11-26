@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'users', #dodane
     'core', #dodane
     'communication', #dodane
+     'django_rest_passwordreset', #reset hasła
 ]
 
 MIDDLEWARE = [
@@ -142,6 +143,8 @@ AUTH_USER_MODEL = 'users.User' #dodane
 # Ustawienia mediów
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+DJANGO_REST_PASSWORDRESET_SERIALIZER_CLASS = 'users.serializers.CustomPasswordResetSerializer'
 
 # USTAWIENIA EMAIL (Testowe - wyświetla w konsoli)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
