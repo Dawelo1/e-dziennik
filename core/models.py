@@ -163,7 +163,7 @@ class SpecialActivity(models.Model):
 
     class Meta:
         verbose_name = "Zajęcia dodatkowe/Wycieczka"
-        verbose_name_plural = "Plan zajęć (Niestandardowe)"
+        verbose_name_plural = "Plan zajęć"
         ordering = ['-date', 'start_time']
 
     def __str__(self):

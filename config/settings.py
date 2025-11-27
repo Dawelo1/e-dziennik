@@ -32,7 +32,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    #'django.contrib.admin',
+    'core.admin_site.CoreAdminConfig', #dodane - uzywamy naszej klasy admina
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
