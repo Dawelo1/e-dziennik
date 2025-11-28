@@ -65,7 +65,9 @@ MIDDLEWARE = [
 
 # Pozwól Reactowi (zazwyczaj port 3000) łączyć się z API
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    "http://localhost:3000",      # Stary React
+    "http://localhost:5173",      # Vite (Twój obecny React)
+    "http://127.0.0.1:5173",      # Dla pewności wersja z IP
 ]
 
 ROOT_URLCONF = 'config.urls'

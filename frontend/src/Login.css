@@ -1,0 +1,163 @@
+/* Kontener na cały ekran */
+.login-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Biała karta logowania */
+.login-card {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  position: relative;
+}
+
+/* Logo i nagłówek */
+.logo-section {
+  margin-bottom: 30px;
+}
+
+.bee-logo {
+  width: 80px;
+  height: auto;
+  margin-bottom: 10px;
+  /* Jeśli pszczółka ma białe tło w jpg, to mix-blend-mode może pomóc je ukryć, 
+     ale najlepiej mieć png. Tutaj zostawiamy standardowo. */
+}
+
+.school-name {
+  color: #4a4a4a;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+.school-name span {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  color: #5d4037; /* Brązowy kolor tekstu */
+}
+
+/* Pola formularza */
+.input-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 15px 45px 15px 15px; /* Miejsce na ikonę po prawej */
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  box-sizing: border-box; /* Ważne, żeby padding nie psuł szerokości */
+  transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+  border-color: #f2c94c;
+}
+
+.input-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0a0a0;
+  font-size: 18px;
+}
+
+/* Opcje pod polami (Zapamiętaj / Reset) */
+.options-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 25px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.forgot-link {
+  color: #666;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.forgot-link:hover {
+  color: #333;
+}
+
+/* Przycisk logowania */
+.login-btn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(to right, #f2c94c, #f2994a); /* Gradient miodowy */
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-transform: uppercase;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(242, 201, 76, 0.4);
+}
+
+.login-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Stopka */
+.footer-links {
+  margin-top: 30px;
+  font-size: 11px;
+  color: #999;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.footer-links span {
+  cursor: pointer;
+}
+
+/* Obsługa błędów */
+.error-msg {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  text-align: center;
+}
