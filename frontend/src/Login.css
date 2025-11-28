@@ -1,4 +1,6 @@
-/* Kontener na cały ekran */
+/* frontend/src/Login.css */
+
+/* TŁO */
 .login-container {
   width: 100vw;
   height: 100vh;
@@ -11,67 +13,94 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Biała karta logowania */
+/* KARTA LOGOWANIA */
 .login-card {
   background-color: #ffffff;
-  padding: 40px;
-  border-radius: 20px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 60px 50px; /* Większy padding (pkt 6) */
+  border-radius: 25px; /* Bardziej zaokrąglone rogi */
+  
+  /* Cień (pkt 5) - mocniejszy i ciemniejszy, żeby nie zlewał się z tłem */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); 
+  
   width: 100%;
-  max-width: 400px;
+  max-width: 500px; /* Szersza karta (pkt 6) */
   text-align: center;
   position: relative;
+  box-sizing: border-box;
 }
 
-/* Logo i nagłówek */
+/* LOGO I NAGŁÓWEK (pkt 2) */
 .logo-section {
-  margin-bottom: 30px;
+  display: flex;           /* Układ obok siebie */
+  align-items: center;     /* Wyrównanie w pionie */
+  justify-content: center; /* Wyśrodkowanie całości */
+  gap: 15px;               /* Odstęp między pszczołą a napisem */
+  margin-bottom: 40px;
 }
 
 .bee-logo {
-  width: 80px;
+  width: 150px; /* Dużo większa pszczoła (pkt 1) */
   height: auto;
-  margin-bottom: 10px;
-  /* Jeśli pszczółka ma białe tło w jpg, to mix-blend-mode może pomóc je ukryć, 
-     ale najlepiej mieć png. Tutaj zostawiamy standardowo. */
+  margin-bottom: 0; /* Resetujemy margines */
 }
 
 .school-name {
+  text-align: left; /* Napis wyrównany do lewej (względem pszczoły) */
   color: #4a4a4a;
-  font-size: 14px;
-  font-weight: bold;
+  line-height: 1.1; /* Zmniejszamy odstęp między liniami */
+}
+
+.school-name-prefix {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
-  margin-top: 5px;
+  color: #555;
+  margin-bottom: 2px;
 }
 
-.school-name span {
+.school-name-main {
   display: block;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 800;
-  color: #5d4037; /* Brązowy kolor tekstu */
+  color: #5d4037; /* Ciemny brąz */
+  white-space: nowrap; /* Żeby nie łamało linii */
 }
 
-/* Pola formularza */
+/* POLA FORMULARZA (pkt 3 i 4) */
 .input-group {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .input-group input {
   width: 100%;
-  padding: 15px 45px 15px 15px; /* Miejsce na ikonę po prawej */
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
+  padding: 18px 45px 18px 20px; /* Większe pola */
+  
+  background-color: #ffffff; /* Białe tło (pkt 3) */
+  border: 1px solid #c4c4c4; /* Szara ramka */
+  border-radius: 10px;
+  
+  font-size: 15px;
+  color: #000000; /* Czarny tekst (pkt 4) */
+  font-weight: 500;
+  
   outline: none;
-  box-sizing: border-box; /* Ważne, żeby padding nie psuł szerokości */
-  transition: border-color 0.3s;
+  box-sizing: border-box;
+  transition: all 0.3s;
+}
+
+.input-group input::placeholder {
+  color: #888; /* Szary placeholder */
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.5px;
 }
 
 .input-group input:focus {
   border-color: #f2c94c;
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.2);
 }
 
 .input-icon {
@@ -79,24 +108,25 @@
   right: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: #a0a0a0;
-  font-size: 18px;
+  color: #999; /* Ikony szare, a nie białe */
+  font-size: 20px;
 }
 
-/* Opcje pod polami (Zapamiętaj / Reset) */
+/* OPCJE (Zapamiętaj / Reset) */
 .options-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 25px;
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 35px;
+  padding: 0 5px;
 }
 
 .remember-me {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   cursor: pointer;
 }
 
@@ -106,58 +136,35 @@
   cursor: pointer;
 }
 
-.forgot-link:hover {
-  color: #333;
-}
-
-/* Przycisk logowania */
+/* PRZYCISK LOGOWANIA */
 .login-btn {
   width: 100%;
-  padding: 15px;
-  background: linear-gradient(to right, #f2c94c, #f2994a); /* Gradient miodowy */
+  padding: 18px;
+  background: linear-gradient(to right, #f5d365, #fda085); /* Jaśniejszy gradient */
+  background-color: #f2c94c; /* Fallback */
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   color: white;
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   text-transform: uppercase;
+  box-shadow: 0 5px 15px rgba(242, 166, 76, 0.3);
 }
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(242, 201, 76, 0.4);
+  box-shadow: 0 8px 20px rgba(242, 166, 76, 0.4);
 }
 
-.login-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Stopka */
+/* STOPKA */
 .footer-links {
-  margin-top: 30px;
-  font-size: 11px;
-  color: #999;
+  margin-top: 40px;
+  font-size: 12px;
+  color: #888;
   display: flex;
   justify-content: center;
-  gap: 20px;
-}
-
-.footer-links span {
-  cursor: pointer;
-}
-
-/* Obsługa błędów */
-.error-msg {
-  color: #d32f2f;
-  background-color: #ffebee;
-  padding: 10px;
-  border-radius: 5px;
-  font-size: 13px;
-  margin-bottom: 20px;
-  text-align: center;
+  gap: 30px;
 }

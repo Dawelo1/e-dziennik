@@ -56,8 +56,8 @@ const Login = () => {
         <div className="logo-section">
           <img src={beeLogo} alt="Pszczółka Maja" className="bee-logo" />
           <div className="school-name">
-            Przedszkole
-            <span>PSZCZÓŁKA MAJA</span>
+            <span className="school-name-prefix">PRZEDSZKOLE</span>
+            <span className="school-name-main">PSZCZÓŁKA MAJA</span>
           </div>
         </div>
 
