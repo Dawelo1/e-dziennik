@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-// Import stylów i obrazków
+// Import stylów
 import './Login.css';
-import bgImage from './assets/bg.jpeg';
-import beeLogo from './assets/bee.jpeg';
 
-// Import ikonek (jeśli zainstalowałeś react-icons)
-import { FaUser, FaLock } from 'react-icons/fa';
-import { GiBee } from 'react-icons/gi'; // <--- Import pszczoły z innego zestawu
+// Import obrazków (Upewnij się, że nazwy plików i rozszerzenia .png/.jpeg są poprawne!)
+import bgImage from './assets/bg.png';        // Tło
+import beeLogo from './assets/bee.png';       // Duże logo nad napisem
+import BeeIcon from './assets/bee-icon.png'; // Mała ikona do pola input
+import padlockIcon from './assets/padlock-icon.png'; // Ikona kłódki do pola hasła
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -25,23 +25,19 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // 1. Strzał do Django po token
-      // Login i hasło wysyłamy jako FormData lub JSON.
-      // Django obtain_auth_token domyślnie oczekuje 'username' i 'password'
+      // 1. Logowanie do Django
       const response = await axios.post('http://127.0.0.1:8000/api-token-auth/', {
         username: username,
         password: password
       });
 
-      // 2. Jeśli sukces -> Zapisz token
+      // 2. Zapisz token
       const token = response.data.token;
       localStorage.setItem('token', token);
 
-      // 3. Sprawdź kim jestem (Dyrektor czy Rodzic) - Opcjonalne na tym etapie
-      // ale przyda się do przekierowania. Na razie po prostu idziemy do panelu.
       console.log("Zalogowano! Token:", token);
       
-      // Przekieruj na stronę główną (którą zaraz stworzymy)
+      // 3. Przekierowanie
       navigate('/dashboard');
 
     } catch (err) {
@@ -80,8 +76,15 @@ const Login = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
             />
-            {/* Ikona (opcjonalna) */}
-            <span className="input-icon"><GiBee /></span> 
+            
+            {/* --- TUTAJ JEST ZMIANA: Własna ikona PNG --- */}
+            <span className="input-icon">
+              <img 
+                src={BeeIcon} 
+                alt="user icon" 
+                style={{ width: '20px', height: '20px', objectFit: 'contain' }} 
+              />
+            </span> 
           </div>
 
           {/* Pole Hasło */}
@@ -93,8 +96,14 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-             {/* Ikona (opcjonalna) */}
-            <span className="input-icon"><FaLock /></span>
+             {/* Ikona kłódki z biblioteki */}
+            <span className="input-icon">
+              <img 
+                src={padlockIcon} 
+                alt="user icon" 
+                style={{ width: '20px', height: '20px', objectFit: 'contain' }} 
+              />
+            </span> 
           </div>
 
           {/* Opcje pod polami */}
