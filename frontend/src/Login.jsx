@@ -8,8 +8,8 @@ import bgImage from './assets/bg.jpeg';
 import beeLogo from './assets/bee.jpeg';
 
 // Import ikonek (jeśli zainstalowałeś react-icons)
-import { FaUser, FaLock} from 'react-icons/fa'; 
-// Jeśli nie masz react-icons, usuń import i usuń komponenty <Fa...> z kodu poniżej
+import { FaUser, FaLock } from 'react-icons/fa';
+import { GiBee } from 'react-icons/gi'; // <--- Import pszczoły z innego zestawu
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -81,7 +81,7 @@ const Login = () => {
               required
             />
             {/* Ikona (opcjonalna) */}
-            <span className="input-icon"><FaUser /></span> 
+            <span className="input-icon"><GiBee /></span> 
           </div>
 
           {/* Pole Hasło */}
