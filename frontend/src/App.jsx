@@ -21,6 +21,21 @@ const Menu = () => <h2 style={{color:'white'}}>🍲 Jadłospis</h2>;
 const Payments = () => <h2 style={{color:'white'}}>💰 Płatności</h2>;
 const Settings = () => <h2 style={{color:'white'}}>⚙️ Ustawienia</h2>;
 
+const GeneralInfo = () => (
+  <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '20px', height: '100%' }}>
+    <h2 style={{color: '#5d4037'}}>ℹ️ Informacje o Przedszkolu</h2>
+    <p style={{marginTop: '20px', lineHeight: '1.6', color: '#555'}}>
+      Witamy w systemie Przedszkola "Pszczółka Maja".<br/>
+      Tutaj znajdziesz ogólne informacje o placówce, godziny otwarcia i dane kontaktowe.
+    </p>
+    <div style={{marginTop: '20px', padding: '20px', background: '#fff8e1', borderRadius: '10px'}}>
+        <strong>Godziny otwarcia:</strong> 06:30 - 17:00<br/>
+        <strong>Telefon:</strong> 123 456 789<br/>
+        <strong>Adres:</strong> ul. Kwiatowa 1, 00-001 Warszawa
+    </div>
+  </div>
+);
+
 function App() {
   return (
     <Router>
@@ -43,6 +58,7 @@ function App() {
           <Route path="/menu" element={<Menu />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/info" element={<GeneralInfo />} />
         </Route>
       </Routes>
     </Router>

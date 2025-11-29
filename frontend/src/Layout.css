@@ -1,15 +1,17 @@
-/* GŁÓWNY KONTENER - TŁO */
+/* frontend/src/Layout.css */
+
+/* GŁÓWNY KONTENER */
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background-image: url('./assets/bg.png'); /* Twoje tło */
+  background-image: url('./assets/bg.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  overflow: hidden; /* Ukrywamy paski przewijania całego okna */
+  overflow: hidden;
 }
 
 /* --- HEADER (GÓRNY PASEK) --- */
@@ -19,9 +21,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 40px;
-  background-color: white; /* Biały pasek na górze jak na screenie */
+  background-color: white;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   z-index: 100;
+  flex-shrink: 0; /* Header nie może się kurczyć */
 }
 
 .header-logo-section {
@@ -30,9 +33,15 @@
   gap: 15px;
 }
 
+/* ZWIĘKSZONA PSZCZÓŁKA */
 .header-logo {
-  height: 50px;
+  height: 70px; /* Było 50px */
   width: auto;
+  transition: transform 0.3s;
+}
+
+.header-logo:hover {
+  transform: scale(1.1) rotate(-5deg);
 }
 
 .header-title {
@@ -41,7 +50,7 @@
 }
 
 .header-title span:first-child {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
   color: #666;
@@ -49,7 +58,7 @@
 }
 
 .header-title span:last-child {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: #5d4037;
 }
@@ -57,53 +66,96 @@
 .header-user-section {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 25px;
 }
 
-.search-bar {
-  display: flex;
-  align-items: center;
-  background: #f5f5f5;
-  padding: 8px 15px;
-  border-radius: 20px;
-  color: #999;
+/* Sekcja Informacje (zamiast szukaj) */
+.info-section {
+  color: #555;
   font-size: 14px;
-  width: 200px;
-}
-
-.user-profile {
+  font-weight: 600;
+  background: #f4f4f4;
+  padding: 10px 25px;
+  border-radius: 30px;
+  cursor: pointer; /* Kursor rączki */
+  transition: all 0.2s;
+  border: 1px solid transparent;
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
+}
+
+.info-section:hover {
+  background-color: #fff8e1; /* Jasny żółty po najechaniu */
+  border-color: #f2c94c;
+  color: #5d4037;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.user-profile-static {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Usunięto cursor: pointer */
 }
 
 .user-avatar {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   background-color: #f2c94c;
   border-radius: 50%;
   display: flex;
-  justify_content: center;
+  justify-content: center;
   align-items: center;
   color: white;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 20px;
+  box-shadow: 0 4px 10px rgba(242, 201, 76, 0.4);
+}
+
+.user-name-box {
+  display: flex;
+  flex-direction: column;
 }
 
 .user-name {
-  font-weight: 600;
+  font-weight: 700;
   color: #333;
-  font-size: 14px;
+  font-size: 15px;
 }
 
-/* --- GŁÓWNA TREŚĆ (PONIŻEJ HEADERA) --- */
+.user-role {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+/* IKONA WYLOGOWANIA - ZWIĘKSZONA */
+.logout-icon-btn {
+  font-size: 28px; /* Zwiększona o ok. 50% */
+  color: #d32f2f;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 50%;
+}
+
+.logout-icon-btn:hover {
+  background-color: #ffebee;
+  transform: scale(1.1);
+}
+
+/* --- GŁÓWNA CZĘŚĆ (SIDEBAR + CONTENT) --- */
 .content-wrapper {
   display: flex;
   flex: 1;
-  padding: 30px 40px; /* Odstęp od krawędzi ekranu */
-  gap: 30px; /* Odstęp między menu a treścią */
-  overflow: hidden;
+  padding: 30px 40px; 
+  gap: 30px;
+  overflow: hidden; /* Ważne, żeby scroll był tylko w kontencie */
+  height: calc(100vh - 80px); /* Całość minus header */
+  box-sizing: border-box;
 }
 
 /* --- SIDEBAR (KARTA PO LEWEJ) --- */
@@ -115,8 +167,12 @@
   box-shadow: 0 10px 30px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 140px); /* Dopasowanie wysokości */
-  overflow-y: auto;
+  
+  /* NAPRAWA: Obliczamy wysokość tak, żeby został margines na dole */
+  /* 100vh (cały ekran) - 80px (header) - 60px (padding góra+dół wrappera) */
+  height: calc(100vh - 140px); 
+  
+  overflow-y: auto; /* Przewijanie wewnątrz karty, jeśli menu będzie długie */
 }
 
 .sidebar-menu {
@@ -128,13 +184,13 @@
 .menu-link {
   display: flex;
   align-items: center;
-  padding: 15px 30px;
+  padding: 16px 30px;
   text-decoration: none;
   color: #555;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 14px;
   transition: all 0.2s;
-  border-left: 4px solid transparent;
+  border-left: 5px solid transparent;
 }
 
 .menu-link:hover {
@@ -143,34 +199,25 @@
 }
 
 .menu-link.active {
-  background-color: #fff8e1; /* Jasny miodowy tło */
+  background-color: #fff8e1;
   color: #5d4037;
   font-weight: 700;
-  border-left: 4px solid #f2c94c;
+  border-left: 5px solid #f2c94c;
 }
 
 .menu-icon {
   margin-right: 15px;
-  font-size: 18px;
-  width: 20px;
+  font-size: 20px;
+  width: 24px;
   text-align: center;
 }
 
-/* --- PRAWY OBSZAR (DYNAMICZNA TREŚĆ) --- */
+/* --- PRAWY OBSZAR --- */
 .main-content-area {
   flex: 1;
-  overflow-y: auto; /* To tutaj przewija się treść dashboardu */
-  padding-right: 10px; /* Miejsce na scrollbar */
-}
-
-/* Pasek przewijania */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #ddd;
-  border-radius: 4px;
+  overflow-y: auto;
+  padding-right: 5px;
+  /* Żeby karty w środku też miały ładny odstęp */
+  display: flex;
+  flex-direction: column;
 }

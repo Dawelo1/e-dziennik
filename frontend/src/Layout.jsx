@@ -1,24 +1,23 @@
+// frontend/src/Layout.jsx
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// Import stylów i obrazków
 import './Layout.css';
 import beeLogo from './assets/bee.png';
 
-// Import ikon (FontAwesome)
+// Ikony
 import { 
   FaHome, 
-  FaNewspaper, 
   FaEnvelope, 
   FaUserSlash, 
   FaCalendarAlt, 
-  FaCalendarWeek,
+  FaCalendarDay, // Zmieniona ikona dla Planu Zajęć
   FaUtensils, 
   FaMoneyBillWave, 
   FaCog,
-  FaSearch,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaInfoCircle
 } from 'react-icons/fa';
 
 const Layout = () => {
@@ -47,12 +46,12 @@ const Layout = () => {
     navigate('/');
   };
 
-  if (!user) return null; // lub spinner ładowania
+  if (!user) return null;
 
   return (
     <div className="app-container">
       
-      {/* --- GÓRNY PASEK (HEADER) --- */}
+      {/* HEADER */}
       <header className="top-header">
         <div className="header-logo-section">
           <img src={beeLogo} alt="Logo" className="header-logo" />
@@ -63,26 +62,37 @@ const Layout = () => {
         </div>
 
         <div className="header-user-section">
-          <div className="search-bar">
-            <FaSearch style={{ marginRight: 10 }} /> Szukaj...
+          {/* Zastąpione pole wyszukiwania */}
+          <div className="info-section" onClick={() => navigate('/info')}>
+            <FaInfoCircle style={{ marginRight: 8, fontSize: '16px', color: '#f2c94c' }} />
+            Informacje
           </div>
           
-          <div className="user-profile" onClick={handleLogout} title="Kliknij, aby się wylogować">
+          {/* Statyczny profil (tylko wygląd) */}
+          <div className="user-profile-static">
             <div className="user-avatar">
               {user.first_name ? user.first_name[0] : user.username[0].toUpperCase()}
             </div>
-            <div className="user-name">
-              {user.first_name} {user.last_name}
+            <div className="user-name-box">
+              <span className="user-name">{user.first_name} {user.last_name}</span>
+              <span className="user-role">{user.is_director ? 'Administrator' : 'Rodzic'}</span>
             </div>
-            <FaSignOutAlt style={{ marginLeft: 10, color: '#d32f2f' }} />
+          </div>
+
+          {/* Przycisk wylogowania (tylko ikona działa) */}
+          <div 
+            className="logout-icon-btn" 
+            onClick={handleLogout} 
+            title="Wyloguj się"
+          >
+            <FaSignOutAlt />
           </div>
         </div>
       </header>
 
-      {/* --- GŁÓWNA CZĘŚĆ (SIDEBAR + CONTENT) --- */}
+      {/* CONTENT + SIDEBAR */}
       <div className="content-wrapper">
         
-        {/* LEWY SIDEBAR (BIAŁA KARTA) */}
         <aside className="sidebar-card">
           <ul className="sidebar-menu">
             <li>
@@ -91,11 +101,7 @@ const Layout = () => {
               </NavLink>
             </li>
             
-            <li>
-              <NavLink to="/newsfeed" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaNewspaper /></span> Tablica Postów
-              </NavLink>
-            </li>
+            {/* USUNIĘTO: Tablica Postów (będzie na dashboardzie) */}
 
             <li>
               <NavLink to="/messages" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
@@ -103,7 +109,6 @@ const Layout = () => {
               </NavLink>
             </li>
 
-            {/* Tylko dla rodzica */}
             {user.is_parent && (
               <li>
                 <NavLink to="/attendance" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
@@ -118,9 +123,10 @@ const Layout = () => {
               </NavLink>
             </li>
 
+            {/* ZMIANA NAZWY: Plan Zajęć */}
             <li>
               <NavLink to="/schedule" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaCalendarWeek /></span> Harmonogram Tyg.
+                <span className="menu-icon"><FaCalendarDay /></span> Plan Zajęć
               </NavLink>
             </li>
 
@@ -138,7 +144,7 @@ const Layout = () => {
               </li>
             )}
 
-            <li style={{ marginTop: 'auto' }}> {/* Settings na dole */}
+            <li style={{ marginTop: 'auto' }}>
               <NavLink to="/settings" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                 <span className="menu-icon"><FaCog /></span> Ustawienia Konta
               </NavLink>
@@ -146,9 +152,8 @@ const Layout = () => {
           </ul>
         </aside>
 
-        {/* PRAWY OBSZAR TREŚCI */}
         <main className="main-content-area">
-          <Outlet /> {/* Tutaj wpadnie Dashboard, Jadłospis itd. */}
+          <Outlet />
         </main>
 
       </div>
