@@ -51,28 +51,30 @@ const ResetPassword = () => {
       setStatus('success');
 
     } catch (err) {
-      console.error("Błąd resetowania:", err);
-      setStatus('error');
-      
-      // 3. ULEPSZONA OBSŁUGA BŁĘDÓW
-      if (err.response && err.response.data) {
-         const data = err.response.data;
-         
-         // Sprawdzamy różne rodzaje błędów, które Django może zwrócić
-         if (data.password) {
-             // Np. "Hasło jest zbyt podobne do loginu"
-             setErrorMsg(data.password[0]); 
-         } else if (data.token) {
-             setErrorMsg("Link jest nieprawidłowy lub wygasł.");
-         } else if (data.detail) {
-             setErrorMsg(data.detail);
-         } else {
-             // Jeśli błąd jest inny, wyświetlamy go w całości (dla debugowania)
-             setErrorMsg(JSON.stringify(data));
-         }
-      } else {
-         setErrorMsg("Wystąpił błąd połączenia z serwerem. Sprawdź czy backend działa.");
-      }
+        console.error("Błąd resetowania:", err);
+        setStatus('error');
+  
+        if (err.response && err.response.data) {
+            const data = err.response.data;
+     
+        if (data.password) {
+            setErrorMsg(data.password[0]); 
+        } else if (data.token) {
+            // Biblioteka zwraca błąd w polu 'token', gdy jest nieprawidłowy lub wygasł
+            setErrorMsg("Ten link jest nieprawidłowy lub już wygasł. Wygeneruj nowy.");
+        } else if (data.detail) {
+            // Czasami błąd wygaśnięcia wpada w 'detail' z treścią "The token has expired"
+            if (data.detail.includes("expired")) {
+                setErrorMsg("Ten link wygasł (jest ważny tylko 24h). Spróbuj ponownie.");
+            } else {
+                setErrorMsg(data.detail);
+            }
+        } else {
+         setErrorMsg("Wystąpił błąd. Spróbuj ponownie.");
+     }
+  } else {
+     setErrorMsg("Błąd połączenia z serwerem.");
+  }
     }
   };
 

@@ -28,6 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+DJANGO_REST_PASSWORDRESET_TOKEN_EXPIRY_TIME = 24 # Token ważny przez 24 godziny
 
 # Application definition
 
