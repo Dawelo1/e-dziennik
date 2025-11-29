@@ -52,6 +52,16 @@ INSTALLED_APPS = [
      'django_rest_passwordreset', #reset hasła
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # <--- To jest kluczowe dla Reacta
+        'rest_framework.authentication.SessionAuthentication', # To przydaje się dla panelu Admina
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', # Domyślnie wszystko jest chronione
+    ],
+}
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', #dodane
     'django.middleware.common.CommonMiddleware', #dodane
