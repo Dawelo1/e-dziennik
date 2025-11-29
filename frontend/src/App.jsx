@@ -9,9 +9,9 @@ import ResetPassword from './ResetPassword';
 import Terms from './Terms';
 import PrivacyPolicy from './PrivacyPolicy';
 import Layout from './Layout';
+import Dashboard from './Dashboard';
 
 // Placeholdery (Wkrótce zastąpimy je prawdziwymi plikami)
-const Dashboard = () => <h2 style={{color:'white'}}>🏠 Dashboard (Pulpit)</h2>;
 const Newsfeed = () => <h2 style={{color:'white'}}>📰 Tablica Postów</h2>;
 const Messages = () => <h2 style={{color:'white'}}>📩 Wiadomości</h2>;
 const Attendance = () => <h2 style={{color:'white'}}>🤒 Zgłaszanie Nieobecności</h2>;
