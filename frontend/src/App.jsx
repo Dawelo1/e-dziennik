@@ -1,8 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './Login';
+import ForgotPassword from './ForgotPassword';
 
-// Tymczasowy komponent Dashboard, żeby mieć gdzie przekierować po zalogowaniu
+// Tymczasowy komponent Dashboard
 const Dashboard = () => {
   return (
     <div style={{ padding: 20 }}>
@@ -20,10 +21,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Domyślna ścieżka to Login */}
         <Route path="/" element={<Login />} />
-        
-        {/* Ścieżka panelu (zabezpieczymy ją później) */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 // Import stylów
 import './Login.css';
@@ -112,7 +112,9 @@ const Login = () => {
               <input type="checkbox" />
               Zapamiętaj mnie
             </label>
-            <span className="forgot-link">Nie pamiętasz hasła?</span>
+            <Link to="/forgot-password" className="forgot-link">
+              Nie pamiętasz hasła?
+            </Link>
           </div>
 
           {/* Przycisk */}

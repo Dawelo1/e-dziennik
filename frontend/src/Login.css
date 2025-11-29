@@ -168,3 +168,25 @@
   justify-content: center;
   gap: 30px;
 }
+
+.error-msg {
+  background-color: #ffebee; /* Jasnoczerwone tło */
+  color: #c62828;            /* Ciemnoczerwony tekst */
+  border: 1px solid #ef9a9a; /* Czerwona ramka */
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+  animation: shake 0.5s; /* Opcjonalnie: animacja potrząśnięcia */
+}
+
+/* Animacja potrząśnięcia przy błędzie */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
