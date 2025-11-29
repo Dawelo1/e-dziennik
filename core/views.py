@@ -11,7 +11,7 @@ class ChildViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.request.user
         if user.is_director:
             return Child.objects.all()
-        return user.children.all()
+        return user.child.all()
 
 class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
@@ -47,7 +47,7 @@ class PostViewSet(viewsets.ReadOnlyModelViewSet):
         
         # 2. Jeśli to Rodzic -> pobieramy wszystkie jego dzieci
         # (dzięki related_name='children' w modelu Child)
-        children = user.children.all()
+        children = user.child.all()
         
         # Jeśli rodzic nie ma przypisanych dzieci, widzi tylko posty ogólne
         if not children.exists():
@@ -102,7 +102,7 @@ class SpecialActivityViewSet(viewsets.ReadOnlyModelViewSet):
             return SpecialActivity.objects.all()
         
         # Rodzic: pobieramy grupy jego dzieci
-        children = user.children.all()
+        children = user.child.all()
         if not children.exists():
             return SpecialActivity.objects.none()
             
