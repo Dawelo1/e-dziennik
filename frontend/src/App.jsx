@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './Login';
 import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
+import Terms from './Terms';
+import PrivacyPolicy from './PrivacyPolicy';
 
 // Tymczasowy komponent Dashboard
 const Dashboard = () => {
@@ -29,6 +31,8 @@ function App() {
         <Route path="/reset-hasla" element={<ResetPassword />} />
         
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/regulamin" element={<Terms />} />
+        <Route path="/polityka-prywatnosci" element={<PrivacyPolicy />} />
       </Routes>
     </Router>
   );

@@ -125,8 +125,13 @@ const Login = () => {
 
         {/* Stopka */}
         <div className="footer-links">
-          <span>Regulamin</span>
-          <span>Polityka Prywatności</span>
+          {/* Zamieniamy <span> na <Link> */}
+          <Link to="/regulamin" style={{ color: '#999', textDecoration: 'none' }}>
+            Regulamin
+          </Link>
+          <Link to="/polityka-prywatnosci" style={{ color: '#999', textDecoration: 'none' }}>
+            Polityka Prywatności
+          </Link>
         </div>
       </div>
     </div>
