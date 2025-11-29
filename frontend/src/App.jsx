@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './Login';
 import ForgotPassword from './ForgotPassword';
+import ResetPassword from './ResetPassword';
 
 // Tymczasowy komponent Dashboard
 const Dashboard = () => {
@@ -23,6 +24,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        
+        {/* 2. Nowa trasa dla linku z e-maila */}
+        <Route path="/reset-hasla" element={<ResetPassword />} />
+        
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
     </Router>

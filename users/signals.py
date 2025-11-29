@@ -12,9 +12,9 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     
     # Tutaj wpisz adres Twojej aplikacji REACT (Frontend)
     # Na razie lokalnie, potem zmienisz na domenę np. przedszkole.pl
-    frontend_url = "http://localhost:3000/reset-hasla"
+    frontend_url = "http://localhost:5173/reset-hasla" 
     
-    # Tworzymy link: http://localhost:3000/reset-hasla?token=12345abcd...
+    # Tworzymy link: http://localhost:5173/reset-hasla?token=12345abcd...
     reset_url = f"{frontend_url}?token={reset_password_token.key}"
 
     # Treść wiadomości
