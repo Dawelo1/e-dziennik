@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-import datetime
+from django.utils import timezone
 from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity
 
 class ChildSerializer(serializers.ModelSerializer):
@@ -89,3 +89,31 @@ class DailyMenuSerializer(serializers.ModelSerializer):
         # Zwraca numer dnia (1=Poniedziałek, 7=Niedziela)
         # Frontend sobie to zamieni na nazwę
         return obj.date.isoweekday()
+    
+class PostSerializer(serializers.ModelSerializer):
+    formatted_date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = ['id', 'title', 'content', 'image', 'created_at', 'formatted_date', 'target_group']
+
+    def get_formatted_date(self, obj):
+        # 2. POPRAWKA:
+        # Najpierw konwertujemy czas z UTC na strefę lokalną (Warszawa)
+        local_date = timezone.localtime(obj.created_at)
+        
+        # Dopiero teraz zamieniamy na napis
+        return local_date.strftime("%d-%m-%Y %H:%M")
+
+# Warto też poprawić to w wiadomościach, jeśli tam jest podobnie:
+class MessageSerializer(serializers.ModelSerializer):
+    # ... pola ...
+    formatted_date = serializers.SerializerMethodField()
+
+    class Meta:
+        # ...
+        fields = [ ... , 'formatted_date'] # Pamiętaj dodać do fields
+
+    def get_formatted_date(self, obj):
+        local_date = timezone.localtime(obj.created_at)
+        return local_date.strftime("%d-%m-%Y %H:%M")
