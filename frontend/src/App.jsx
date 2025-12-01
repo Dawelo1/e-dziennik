@@ -12,6 +12,7 @@ import Layout from './Layout';
 import Dashboard from './Dashboard';
 import Info from './Info';
 import Settings from './Settings';
+import Payments from './Payments';
 
 // Placeholdery (Wkrótce zastąpimy je prawdziwymi plikami)
 const Newsfeed = () => <h2 style={{color:'white'}}>📰 Tablica Postów</h2>;
@@ -20,7 +21,6 @@ const Attendance = () => <h2 style={{color:'white'}}>🤒 Zgłaszanie Nieobecno�
 const Calendar = () => <h2 style={{color:'white'}}>📅 Kalendarz Roczny</h2>;
 const Schedule = () => <h2 style={{color:'white'}}>🕒 Plan Tygodniowy</h2>;
 const Menu = () => <h2 style={{color:'white'}}>🍲 Jadłospis</h2>;
-const Payments = () => <h2 style={{color:'white'}}>💰 Płatności</h2>;
 
 const GeneralInfo = () => (
   <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '20px', height: '100%' }}>
