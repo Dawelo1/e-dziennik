@@ -1,21 +1,20 @@
 /* frontend/src/Payments.css */
 
 .payments-container {
-  /* Taka sama szerokość jak w Ustawieniach */
-  max-width: 1100px;
+  /* ZGODNOŚĆ Z SETTINGS: Kontener na całą szerokość, bez paddingu */
   width: 100%;
-  margin: 0 auto;
-  font-family: 'Segoe UI', sans-serif;
-  /* Usuwamy padding, żeby wyrównać do lewej krawędzi layoutu */
+  margin: 0;
   padding: 0;
+  font-family: 'Segoe UI', sans-serif;
 }
 
-/* --- TYTUŁ STRONY (Spójny z Dashboard i Settings) --- */
+/* --- TYTUŁ STRONY --- */
 .page-title {
   color: #333;
   font-size: 24px;
   font-weight: 700;
   
+  /* ZGODNOŚĆ Z SETTINGS: Marginesy */
   margin-bottom: 20px;
   margin-left: 0;
   padding-left: 15px;
@@ -32,285 +31,240 @@
   font-size: 28px;
 }
 
-/* --- KARTA PODSUMOWANIA --- */
-.summary-card {
+/* --- KARTA PODSUMOWANIA (Górna) --- */
+.combined-info-card {
   background: white;
-  padding: 30px 40px; /* Większy padding jak w Ustawieniach */
-  border-radius: 20px; /* Zaokrąglenie 20px */
-  margin-bottom: 30px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* Miękki cień */
+  border-radius: 20px; /* ZGODNOŚĆ: 20px */
+  padding: 0; /* Padding jest wewnątrz sekcji */
+  
+  /* ZGODNOŚĆ Z SETTINGS: Cień i Max-width */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  max-width: 1100px; /* Ograniczenie szerokości tylko dla karty */
+  
+  margin-bottom: 40px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: transform 0.2s;
+  overflow: hidden;
+  min-height: 180px;
 }
 
-.summary-card.debt {
-  border-left: 8px solid #e0245e; /* Grubszy pasek statusu */
-  background: linear-gradient(to right, #fff5f5, #fff);
+.combined-info-card.has-debt {
+  border-left: 8px solid #e0245e;
 }
 
-.summary-card.clean {
+.combined-info-card.all-clear {
   border-left: 8px solid #4caf50;
-  background: linear-gradient(to right, #f1f8e9, #fff);
 }
 
-.summary-label {
+/* Lewa strona (Suma) */
+.info-section-left {
+  flex: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid #f0f0f0;
+}
+
+.info-label {
   font-size: 14px;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 600;
-  margin-bottom: 5px;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
-.summary-amount {
-  font-size: 36px;
+.total-amount-large {
+  font-size: 48px;
   font-weight: 800;
   color: #333;
+  line-height: 1;
 }
 
-.clean-state-message {
-  color: #2e7d32;
+.success-badge {
+  margin-top: 15px;
+  color: #4caf50;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 18px;
+  gap: 8px;
 }
 
-/* --- LISTA PŁATNOŚCI (Karty) --- */
+/* Prawa strona (Dane bankowe) */
+.info-section-right {
+  flex: 1;
+  padding: 40px;
+  background-color: #fafafa;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.bank-title {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #444;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.bank-name {
+  margin: 0 0 15px 0;
+  font-weight: 600;
+  color: #333;
+}
+
+.iban-box {
+  font-family: 'Courier New', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  background: #fff;
+  padding: 15px 20px;
+  border: 1px dashed #ccc;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.bank-warning {
+  font-size: 12px;
+  color: #e0245e;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* --- LISTA PŁATNOŚCI --- */
 .payments-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* ZGODNOŚĆ: Ograniczenie szerokości listy */
+  max-width: 1100px;
 }
 
 .payment-card {
   background: white;
-  border-radius: 20px; /* Spójne zaokrąglenie */
+  border-radius: 20px; /* ZGODNOŚĆ: 20px */
   padding: 25px 30px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Spójny cień */
+  
+  /* ZGODNOŚĆ: Cień */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  
   display: grid;
   grid-template-columns: 1.5fr 2fr 1fr;
   align-items: center;
   gap: 20px;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid transparent; /* Rezerwa pod hover */
+  border: 1px solid transparent;
+  transition: transform 0.2s;
 }
 
 .payment-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
 }
 
-/* Kolorowe paski statusu po lewej stronie karty */
 .payment-card.unpaid {
   border-left: 5px solid #ff9800; 
 }
 
 .payment-card.paid {
   border-left: 5px solid #e0e0e0;
-  opacity: 0.75; /* Lekko wygaszone opłacone */
-  background-color: #fafafa;
+  background-color: #ffffff;
+  opacity: 0.8;
 }
 
-/* --- Detale wewnątrz karty --- */
-.payment-description {
-  font-weight: 700;
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 8px;
-}
+/* Detale */
+.payment-description { font-weight: 700; font-size: 16px; color: #333; margin-bottom: 5px; }
+.payment-date { font-size: 13px; color: #777; display: flex; align-items: center; gap: 6px; }
+.payment-date.done { color: #2e7d32; font-weight: 600; }
 
-.payment-date, .payment-child {
-  font-size: 13px;
-  color: #777;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
+/* Środkowa kolumna (Kopiowanie) */
+.transfer-data { display: flex; flex-direction: column; }
+.data-label { font-size: 10px; color: #999; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; }
 
-/* --- Sekcja kopiowania (Środek) --- */
-.transfer-data {
-  display: flex;
-  flex-direction: column;
-}
-
-.data-label {
-  font-size: 11px;
-  color: #999;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
+/* STYLIZACJA INPUTA (ZGODNOŚĆ Z SETTINGS) */
 .copy-box {
-  background-color: #f8f9fa; /* Jasne tło jak w inputach ustawień */
+  background-color: #fcfcfc; /* Jasne tło jak w settings */
   border: 1px solid #e0e0e0;
-  padding: 12px 15px;
-  border-radius: 12px; /* Zaokrąglenie */
+  padding: 12px 15px; /* Padding jak w settings input */
+  border-radius: 12px; /* Zaokrąglenie jak w settings */
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.copy-box:hover { 
+  border-color: #f2c94c; 
+  background-color: #fff; 
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.1); /* Cień po najechaniu */
+}
+
+.copy-box code { font-weight: 700; font-size: 15px; color: #333; font-family: 'Segoe UI', sans-serif; }
+.copy-icon { color: #ccc; }
+.copy-box:hover .copy-icon { color: #f2c94c; }
+
+/* Status Box */
+.payment-status-box { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.payment-amount { font-size: 20px; font-weight: 800; color: #333; }
+
+.status-badge { padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; }
+.status-unpaid { background-color: #fff3e0; color: #ef6c00; }
+.status-paid { background-color: #e8f5e9; color: #2e7d32; }
+
+/* --- PRZYCISK HISTORII (Poprawiony) --- */
+.history-section {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 2px dashed #eee;
+  max-width: 1100px; /* Ograniczenie szerokości */
+}
+
+.toggle-history-btn {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  gap: 10px;
+  
+  margin: 0 auto 30px auto; 
+  padding: 12px 30px;
+  
+  /* Styl kafelka */
+  background-color: white; 
+  border: none;
+  border-radius: 30px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Cień spójny */
+  
+  color: #555;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
-}
-
-.copy-box:hover {
-  border-color: #f2c94c;
-  background-color: #fff;
-  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.1);
-}
-
-.copy-box code {
-  font-family: 'Courier New', monospace;
-  font-weight: 700;
-  font-size: 15px;
-  color: #333;
-}
-
-.copy-icon {
-  color: #ccc;
-  font-size: 16px;
-}
-
-.copy-box:hover .copy-icon {
-  color: #f2c94c;
-}
-
-.copied-tooltip {
-  position: absolute;
-  top: -25px;
-  right: 0;
-  background: #333;
-  color: white;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  animation: fadeIn 0.2s;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* --- Sekcja Statusu (Prawa) --- */
-.payment-status-box {
-  text-align: right;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 5px;
-}
-
-.payment-amount {
-  font-size: 20px;
-  font-weight: 800;
-  color: #333;
-}
-
-/* Statusy jako "Pastylki" (Pills) */
-.status-badge {
-  padding: 6px 15px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  text-transform: uppercase;
-}
-
-.status-unpaid {
-  background-color: #fff3e0;
-  color: #ef6c00;
-}
-
-.status-paid {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-/* --- DANE BANKOWE NA DOLE --- */
-.bank-info-card {
-  margin-top: 40px;
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 20px;
-  text-align: center;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-  border: 1px solid #f0f0f0;
-}
-
-.bank-info-card h4 {
-  margin: 0 0 15px 0;
-  color: #444;
-  font-size: 16px;
-  text-transform: uppercase;
-}
-
-.bank-info-card .iban {
-  font-family: 'Courier New', monospace;
-  font-size: 20px;
-  font-weight: 700;
-  color: #333;
-  background: #f8f9fa;
-  display: inline-block;
-  padding: 15px 30px;
-  border-radius: 12px;
-  border: 1px dashed #ccc;
-  margin: 15px 0;
-}
-
-.bank-note {
-  font-size: 13px;
-  color: #e0245e;
-  font-weight: 600;
-}
-
-/* --- Empty / Loading --- */
-.loading-state, .empty-state {
-  text-align: center;
-  padding: 60px;
-  color: #888;
-  font-size: 16px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-}
-
-/* --- RESPONSIVE --- */
-@media (max-width: 768px) {
-  .payment-card {
-    grid-template-columns: 1fr; /* Jedna kolumna na telefonie */
-    gap: 15px;
-    padding: 20px;
-  }
   
-  .payment-status-box {
+  outline: none;
+}
+
+.toggle-history-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  color: #333;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .combined-info-card { flex-direction: column; }
+  .info-section-left, .info-section-right { border-right: none; border-bottom: 1px solid #f0f0f0; text-align: center; padding: 30px; }
+  .info-section-right { border-bottom: none; }
+  
+  .payment-card { 
+    grid-template-columns: 1fr; 
+    padding: 20px; 
+    gap: 15px; 
+  }
+  .payment-status-box { 
+    flex-direction: row; 
+    justify-content: space-between; 
+    width: 100%; 
     align-items: center; 
-    flex-direction: row; /* Cena obok statusu na mobile */
-    justify-content: space-between;
-    width: 100%;
-    border-top: 1px solid #f0f0f0;
-    padding-top: 15px;
-    margin-top: 10px;
-  }
-
-  .summary-card {
-    flex-direction: column;
-    text-align: center;
-    gap: 15px;
-  }
-  
-  .bank-info-card .iban {
-    font-size: 15px;
-    padding: 10px;
-    width: 100%;
-    box-sizing: border-box;
+    border-top: 1px solid #f0f0f0; 
+    padding-top: 15px; 
   }
 }

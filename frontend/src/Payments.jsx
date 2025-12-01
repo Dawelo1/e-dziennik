@@ -7,18 +7,19 @@ import {
   FaCopy, 
   FaCheckCircle, 
   FaExclamationCircle, 
-  FaHistory 
+  FaHistory,
+  FaChevronDown,
+  FaChevronUp,
+  FaCalendarCheck
 } from 'react-icons/fa';
 
 const Payments = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState(null); // Do animacji "Skopiowano!"
-
-  // Obliczamy sumę do zapłaty
-  const totalUnpaid = payments
-    .filter(p => !p.is_paid)
-    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
+  const [copiedId, setCopiedId] = useState(null);
+  
+  // Nowy stan do ukrywania/pokazywania historii
+  const [showHistory, setShowHistory] = useState(false);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -29,16 +30,11 @@ const Payments = () => {
     const fetchData = async () => {
       try {
         const res = await axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders());
-        // Sortujemy: Najpierw nieopłacone, potem wg daty (najnowsze wyżej)
-        const sorted = res.data.sort((a, b) => {
-          if (a.is_paid === b.is_paid) {
-            return new Date(b.created_at) - new Date(a.created_at);
-          }
-          return a.is_paid ? 1 : -1;
-        });
+        // Sortowanie: najnowsze na górze
+        const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setPayments(sorted);
       } catch (err) {
-        console.error("Błąd pobierania płatności:", err);
+        console.error("Błąd pobierania:", err);
       } finally {
         setLoading(false);
       }
@@ -46,106 +42,149 @@ const Payments = () => {
     fetchData();
   }, []);
 
-  // Funkcja kopiowania tytułu przelewu
   const handleCopy = (text, id) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000); // Reset komunikatu po 2s
+    setTimeout(() => setCopiedId(null), 2000);
   };
+
+  // Filtrowanie płatności
+  const unpaidPayments = payments.filter(p => !p.is_paid);
+  const paidPayments = payments.filter(p => p.is_paid);
+
+  // Suma do zapłaty
+  const totalUnpaid = unpaidPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
   if (loading) return <div className="loading-state">Ładowanie płatności... 🐝</div>;
 
   return (
     <div className="payments-container">
       
-      {/* NAGŁÓWEK */}
       <div className="payments-header">
         <h2 className="page-title">
           <FaMoneyBillWave /> Płatności
         </h2>
       </div>
 
-      {/* KARTA PODSUMOWANIA (Tylko jeśli jest coś do zapłaty) */}
-      <div className={`summary-card ${totalUnpaid > 0 ? 'debt' : 'clean'}`}>
-        <div className="summary-content">
-          <span className="summary-label">Łącznie do zapłaty:</span>
-          <span className="summary-amount">{totalUnpaid.toFixed(2)} zł</span>
+      {/* --- NOWA, POŁĄCZONA KARTA GÓRNA --- */}
+      <div className={`combined-info-card ${totalUnpaid > 0 ? 'has-debt' : 'all-clear'}`}>
+        
+        {/* LEWA STRONA: SUMA */}
+        <div className="info-section-left">
+          <span className="info-label">Łącznie do zapłaty:</span>
+          <span className="total-amount-large">{totalUnpaid.toFixed(2)} zł</span>
+          {totalUnpaid === 0 && (
+            <div className="success-badge">
+              <FaCheckCircle /> Wszystko uregulowane
+            </div>
+          )}
         </div>
-        {totalUnpaid === 0 && (
-          <div className="clean-state-message">
-            <FaCheckCircle /> Wszystkie należności uregulowane!
+
+        {/* PRAWA STRONA: DANE DO PRZELEWU */}
+        <div className="info-section-right">
+          <h4 className="bank-title">Dane do przelewu:</h4>
+          <p className="bank-name">Przedszkole "Pszczółka Maja"</p>
+          <div className="iban-box">
+            PL 12 3456 0000 1111 2222 3333 4444
           </div>
-        )}
+          <p className="bank-warning">W tytule podawaj WYŁĄCZNIE wygenerowany kod.</p>
+        </div>
       </div>
 
-      {/* LISTA PŁATNOŚCI */}
+      {/* --- SEKCJA 1: DO ZAPŁATY (Zawsze widoczna) --- */}
       <div className="payments-list">
-        {payments.length === 0 ? (
-          <div className="empty-state">Brak historii płatności.</div>
+        {unpaidPayments.length === 0 ? (
+          // Jeśli nie ma nic do zapłaty, nie wyświetlamy pustej sekcji, 
+          // użytkownik widzi zielony komunikat w karcie głównej.
+          null 
         ) : (
-          payments.map(payment => (
-            <div 
-              key={payment.id} 
-              className={`payment-card ${payment.is_paid ? 'paid' : 'unpaid'}`}
-            >
-              {/* LEWA STRONA: Opis i Data */}
+          unpaidPayments.map(payment => (
+            <div key={payment.id} className="payment-card unpaid">
+              {/* Opis i Data Wystawienia */}
               <div className="payment-info">
                 <div className="payment-description">{payment.description}</div>
                 <div className="payment-date">
                   <FaHistory /> Wystawiono: {new Date(payment.created_at).toLocaleDateString()}
                 </div>
-                {/* Imię dziecka (jeśli rodzic ma więcej dzieci) */}
-                {payment.child_name && ( // Upewnij się, że serializer zwraca child_name lub child string
-                   <div className="payment-child">Dziecko: {payment.child}</div>
-                )}
+                {payment.child_name && <div className="payment-child">Dziecko: {payment.child_name}</div>}
               </div>
 
-              {/* ŚRODEK: Dane do przelewu (tylko dla nieopłaconych) */}
-              {!payment.is_paid && (
-                <div className="transfer-data">
-                  <span className="data-label">Tytuł przelewu (kliknij by skopiować):</span>
-                  <div 
-                    className="copy-box" 
-                    onClick={() => handleCopy(payment.payment_title, payment.id)}
-                    title="Kliknij, aby skopiować"
-                  >
-                    <code>{payment.payment_title}</code>
-                    <span className="copy-icon">
-                      {copiedId === payment.id ? <FaCheckCircle color="green"/> : <FaCopy />}
-                    </span>
-                  </div>
-                  {copiedId === payment.id && <span className="copied-tooltip">Skopiowano!</span>}
+              {/* Kod do kopiowania */}
+              <div className="transfer-data">
+                <span className="data-label">TYTUŁ PRZELEWU (KLIKNIJ BY SKOPIOWAĆ):</span>
+                <div 
+                  className="copy-box" 
+                  onClick={() => handleCopy(payment.payment_title, payment.id)}
+                >
+                  <code>{payment.payment_title}</code>
+                  <span className="copy-icon">
+                    {copiedId === payment.id ? <FaCheckCircle color="green"/> : <FaCopy />}
+                  </span>
                 </div>
-              )}
+              </div>
 
-              {/* PRAWA STRONA: Kwota i Status */}
+              {/* Kwota i Przycisk "Do zapłaty" */}
               <div className="payment-status-box">
                 <div className="payment-amount">{parseFloat(payment.amount).toFixed(2)} zł</div>
-                <div className={`status-badge ${payment.is_paid ? 'status-paid' : 'status-unpaid'}`}>
-                  {payment.is_paid ? (
-                    <>
-                      <FaCheckCircle /> Opłacone
-                    </>
-                  ) : (
-                    <>
-                      <FaExclamationCircle /> Do zapłaty
-                    </>
-                  )}
+                <div className="status-badge status-unpaid">
+                  <FaExclamationCircle /> Do zapłaty
                 </div>
               </div>
-
             </div>
           ))
         )}
       </div>
 
-      {/* INFORMACJA O NUMERZE KONTA */}
-      <div className="bank-info-card">
-        <h4>Dane do przelewu:</h4>
-        <p>Przedszkole "Pszczółka Maja"</p>
-        <p className="iban">PL 12 3456 0000 1111 2222 3333 4444</p>
-        <p className="bank-note">W tytule prosimy podawać WYŁĄCZNIE wygenerowany kod.</p>
-      </div>
+      {/* --- SEKCJA 2: HISTORIA (Rozwijana) --- */}
+      {paidPayments.length > 0 && (
+        <div className="history-section">
+          
+          <button 
+            className="toggle-history-btn" 
+            onClick={() => setShowHistory(!showHistory)}
+          >
+            {showHistory ? (
+              <> <FaChevronUp /> Zwiń historię płatności </>
+            ) : (
+              <> <FaChevronDown /> Pokaż historię płatności ({paidPayments.length}) </>
+            )}
+          </button>
+
+          {showHistory && (
+            <div className="payments-list history-list">
+              {paidPayments.map(payment => (
+                <div key={payment.id} className="payment-card paid">
+                  
+                  <div className="payment-info">
+                    <div className="payment-description">{payment.description}</div>
+                    {/* TU ZMIANA: Pokazujemy datę wpłaty jeśli jest, lub utworzenia */}
+                    <div className="payment-date done">
+                      <FaCalendarCheck /> 
+                      {payment.payment_date 
+                        ? `Opłacono: ${new Date(payment.payment_date).toLocaleDateString()}`
+                        : `Opłacono (data nieznana)`
+                      }
+                    </div>
+                  </div>
+
+                  {/* W historii kod przelewu jest mniej ważny, pokazujemy go jako zwykły tekst */}
+                  <div className="transfer-data faded">
+                    <span className="data-label">Kod: {payment.payment_title}</span>
+                  </div>
+
+                  <div className="payment-status-box">
+                    <div className="payment-amount">{parseFloat(payment.amount).toFixed(2)} zł</div>
+                    <div className="status-badge status-paid">
+                      <FaCheckCircle /> Opłacone
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );

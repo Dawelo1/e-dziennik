@@ -63,10 +63,18 @@ class Payment(models.Model):
     is_paid = models.BooleanField(default=False, verbose_name="Opłacone")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data utworzenia")
     payment_title = models.CharField(max_length=100, unique=True, blank=True, verbose_name="Tytuł płatności (generowany automatycznie/ zostawić pusty)")
+    payment_date = models.DateTimeField(null=True, blank=True, verbose_name="Data opłacenia")
 
     def save(self, *args, **kwargs):
         if not self.payment_title:
             self.payment_title = self.generate_unique_title()
+        # 2. NOWOŚĆ: Automatyczne ustawienie daty zapłaty
+        # Jeśli zaznaczono is_paid=True, a nie ma daty -> wpisz "teraz"
+        if self.is_paid and not self.payment_date:
+            self.payment_date = timezone.now()
+        # Jeśli odznaczono is_paid (korekta) -> usuń datę
+        elif not self.is_paid:
+            self.payment_date = None
         super().save(*args, **kwargs)
 
     def generate_unique_title(self):
