@@ -2,6 +2,7 @@ from django.db import models
 from users.models import User
 from django_cryptography.fields import encrypt # Szyfrowanie RODO
 from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 
 class Group(models.Model):
     name = models.CharField(max_length=100, verbose_name="Nazwa Grupy")
@@ -213,3 +214,35 @@ class PostComment(models.Model):
 
     def __str__(self):
         return f"{self.author.username}: {self.content[:20]}"
+    
+class RecurringPayment(models.Model):
+    FREQUENCY_CHOICES = [
+        ('weekly', 'Co tydzień'),
+        ('monthly', 'Co miesiąc'),
+        ('yearly', 'Co rok'),
+    ]
+    
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='recurring_payments', verbose_name="Dziecko")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Kwota")
+    description = models.CharField(max_length=200, verbose_name="Opis (np. Czesne)")
+    frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='monthly', verbose_name="Częstotliwość")
+    
+    next_payment_date = models.DateField(verbose_name="Data następnej płatności")
+    is_active = models.BooleanField(default=True, verbose_name="Aktywna")
+
+    class Meta:
+        verbose_name = "Płatność Cykliczna (Szablon)"
+        verbose_name_plural = "Płatności Cykliczne"
+
+    def __str__(self):
+        return f"{self.child} - {self.description} ({self.get_frequency_display()})"
+
+    def update_next_date(self):
+        """Przesuwa datę następnej płatności w zależności od częstotliwości"""
+        if self.frequency == 'weekly':
+            self.next_payment_date += relativedelta(weeks=1)
+        elif self.frequency == 'monthly':
+            self.next_payment_date += relativedelta(months=1)
+        elif self.frequency == 'yearly':
+            self.next_payment_date += relativedelta(years=1)
+        self.save()

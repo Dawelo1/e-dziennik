@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu, PostComment
+from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu, PostComment, RecurringPayment
 
 
 # Prosta rejestracja - pozwoli dodawać/edytować elementy
@@ -155,3 +155,11 @@ class DailyMenuAdmin(admin.ModelAdmin):
     lunch_main_short.short_description = "Obiad (Danie)"
 
 admin.site.register(DailyMenu, DailyMenuAdmin)
+
+class RecurringPaymentAdmin(admin.ModelAdmin):
+    list_display = ('child', 'description', 'amount', 'frequency', 'next_payment_date', 'is_active')
+    list_filter = ('is_active', 'frequency', 'next_payment_date')
+    search_fields = ('child__last_name', 'description')
+    list_editable = ('is_active', 'next_payment_date') # Szybka edycja daty i włączania/wyłączania
+
+admin.site.register(RecurringPayment, RecurringPaymentAdmin)
