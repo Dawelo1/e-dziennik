@@ -143,3 +143,15 @@
 .group-misie { background-color: #fff3e0; color: #e65100; }
 .group-zajaczki { background-color: #f3e5f5; color: #4a148c; }
 .group-liski { background-color: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; }
+
+/* Responsywność dla strony Info */
+@media (max-width: 768px) {
+  .info-columns {
+    flex-direction: column; /* Kolumny jedna pod drugą */
+    gap: 30px;
+  }
+  
+  .info-card-main {
+    padding: 20px; /* Mniejszy padding wewnątrz karty */
+  }
+}

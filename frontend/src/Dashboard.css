@@ -395,3 +395,33 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --- RESPONSYWNOŚĆ (TELEFONY) --- */
+@media (max-width: 768px) {
+  /* 1. Zmieniamy siatkę z 2 kolumn na 1 */
+  .dashboard-grid {
+    grid-template-columns: 1fr; /* Tylko jedna kolumna */
+    gap: 20px;
+  }
+
+  /* 2. Ukrywamy widgety na samym dole lub zmieniamy ich kolejność */
+  .widgets-column {
+    order: -1; /* Jeśli chcesz, żeby "Szybkie działania" były NA GÓRZE, nad postami */
+    /* Usuń linię 'order: -1', jeśli wolisz je pod postami */
+  }
+
+  /* 3. Zmniejszamy paddingi w postach */
+  .post-card {
+    padding: 15px;
+  }
+  
+  /* 4. Dostosowujemy przyciski akcji (żeby się mieściły) */
+  .post-actions-bar {
+    flex-wrap: wrap; /* Pozwól przyciskom spaść niżej jeśli braknie miejsca */
+    gap: 10px;
+  }
+  
+  .action-btn span {
+    font-size: 12px;
+  }
+}
