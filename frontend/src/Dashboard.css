@@ -211,3 +211,40 @@
     grid-template-columns: 1fr;
   }
 }
+
+.comments-section {
+    border-top: 1px solid #eee;
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.comment-item {
+    font-size: 13px;
+    margin-bottom: 5px;
+    background-color: #f9f9f9;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.comment-input-box {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.comment-input-box input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 13px;
+    outline: none;
+}
+
+.comment-input-box button {
+    background: none;
+    border: none;
+    color: #f2c94c;
+    cursor: pointer;
+    font-size: 16px;
+}

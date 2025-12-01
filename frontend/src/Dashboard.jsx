@@ -5,28 +5,44 @@ import { useNavigate } from 'react-router-dom';
 
 // Style i ikony
 import './Dashboard.css';
-import { FaBullhorn, FaUserSlash, FaCalendarCheck } from 'react-icons/fa';
+import { 
+  FaBullhorn, 
+  FaUserSlash, 
+  FaCalendarCheck, 
+  FaEnvelope,
+  FaHeart,      // Pełne serce
+  FaRegHeart,   // Puste serce
+  FaPaperPlane  // Ikona wysyłania
+} from 'react-icons/fa';
 
 const Dashboard = () => {
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Stan do przechowywania treści komentarzy dla poszczególnych postów
+  // Klucz to ID posta, wartość to wpisany tekst: { 1: "Super!", 5: "Dzięki" }
+  const [commentInputs, setCommentInputs] = useState({});
+
   const navigate = useNavigate();
+
+  // Pomocnicza funkcja do nagłówków
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return { headers: { Authorization: `Token ${token}` } };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const config = { headers: { Authorization: `Token ${token}` } };
-
         // Pobieramy Posty (Tablica)
-        const postsRes = await axios.get('http://127.0.0.1:8000/api/newsfeed/', config);
+        const postsRes = await axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders());
         
         // Pobieramy Wydarzenia (Limitujemy do 3 najbliższych)
-        const eventsRes = await axios.get('http://127.0.0.1:8000/api/calendar/activities/', config);
+        const eventsRes = await axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders());
 
         setPosts(postsRes.data);
-        setEvents(eventsRes.data.slice(0, 3)); // Bierzemy tylko 3 pierwsze
+        setEvents(eventsRes.data.slice(0, 3)); 
       } catch (err) {
         console.error("Błąd pobierania danych:", err);
       } finally {
@@ -36,6 +52,69 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
+
+  // --- OBSŁUGA LAJKÓW ---
+  const handleLike = async (postId) => {
+    // 1. Optymistyczna aktualizacja UI (żeby użytkownik nie czekał)
+    setPosts(currentPosts => currentPosts.map(post => {
+      if (post.id === postId) {
+        const isLiked = post.is_liked_by_user;
+        return {
+          ...post,
+          is_liked_by_user: !isLiked,
+          likes_count: isLiked ? post.likes_count - 1 : post.likes_count + 1
+        };
+      }
+      return post;
+    }));
+
+    // 2. Wysłanie żądania do API w tle
+    try {
+      await axios.post(`http://127.0.0.1:8000/api/newsfeed/${postId}/like/`, {}, getAuthHeaders());
+    } catch (err) {
+      console.error("Błąd lajkowania:", err);
+      // Opcjonalnie: Cofnij zmiany w UI w przypadku błędu
+    }
+  };
+
+  // --- OBSŁUGA PISANIA KOMENTARZA ---
+  const handleCommentChange = (postId, text) => {
+    setCommentInputs(prev => ({ ...prev, [postId]: text }));
+  };
+
+  const handleAddComment = async (postId) => {
+    const content = commentInputs[postId];
+    if (!content || content.trim() === '') return;
+
+    try {
+      // Wyślij do API
+      const res = await axios.post(
+        `http://127.0.0.1:8000/api/newsfeed/${postId}/comment/`, 
+        { content: content }, 
+        getAuthHeaders()
+      );
+
+      // Dodaj nowy komentarz do listy w stanie (bez odświeżania strony)
+      const newComment = res.data;
+      
+      setPosts(currentPosts => currentPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [...post.comments, newComment] // Doklejamy nowy na koniec
+          };
+        }
+        return post;
+      }));
+
+      // Wyczyść pole tekstowe
+      setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+
+    } catch (err) {
+      console.error("Błąd dodawania komentarza:", err);
+      alert("Nie udało się dodać komentarza.");
+    }
+  };
 
   if (loading) return <div style={{padding: 20}}>Ładowanie pulpitu... 🐝</div>;
 
@@ -55,8 +134,9 @@ const Dashboard = () => {
         ) : (
           posts.map(post => (
             <div key={post.id} className="post-card">
+              
+              {/* Nagłówek posta */}
               <div className="post-header">
-                {/* Statyczna ikona Dyrektora (lub litera P) */}
                 <div className="post-avatar">P</div>
                 <div className="post-author-info">
                   <h4>Dyrektor Przedszkola</h4>
@@ -64,12 +144,13 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              {/* Treść */}
               <h3 style={{marginTop: 0, marginBottom: 10, color: '#333'}}>{post.title}</h3>
               <div className="post-content">
                 {post.content}
               </div>
 
-              {/* Jeśli post ma zdjęcie, wyświetl je */}
+              {/* Zdjęcie */}
               {post.image && (
                 <img 
                   src={post.image} 
@@ -78,10 +159,48 @@ const Dashboard = () => {
                 />
               )}
 
-              <div className="post-footer">
-                <button className="action-btn">Lubię to</button>
-                <button className="action-btn" style={{background: 'none', color: '#999'}}>Komentarze (0)</button>
+              {/* Pasek akcji (Lajki) */}
+              <div className="post-actions">
+                <button 
+                  className={`action-btn ${post.is_liked_by_user ? 'liked' : ''}`} 
+                  onClick={() => handleLike(post.id)}
+                >
+                  {post.is_liked_by_user ? <FaHeart color="#e0245e" /> : <FaRegHeart />}
+                  <span style={{ marginLeft: 5 }}>
+                    {post.likes_count > 0 ? post.likes_count : 'Lubię to'}
+                  </span>
+                </button>
               </div>
+
+              {/* Sekcja Komentarzy */}
+              <div className="comments-section">
+                {/* Lista istniejących komentarzy */}
+                {post.comments && post.comments.length > 0 && (
+                  <div className="comments-list">
+                    {post.comments.map(comment => (
+                      <div key={comment.id} className="comment-item">
+                        <strong>{comment.author_name}: </strong>
+                        <span>{comment.content}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Formularz dodawania komentarza */}
+                <div className="comment-input-box">
+                  <input 
+                    type="text" 
+                    placeholder="Napisz komentarz..." 
+                    value={commentInputs[post.id] || ''}
+                    onChange={(e) => handleCommentChange(post.id, e.target.value)}
+                    onKeyDown={(e) => { if(e.key === 'Enter') handleAddComment(post.id); }}
+                  />
+                  <button onClick={() => handleAddComment(post.id)}>
+                    <FaPaperPlane />
+                  </button>
+                </div>
+              </div>
+
             </div>
           ))
         )}
@@ -138,8 +257,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
-// Dodatkowy import, który zapomniałem na górze
-import { FaEnvelope } from 'react-icons/fa';
 
 export default Dashboard;
