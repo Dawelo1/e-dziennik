@@ -1,14 +1,14 @@
 /* frontend/src/Dashboard.css */
 
-/* --- UKŁAD SIATKI (Bez zmian) --- */
+/* --- UKŁAD SIATKI --- */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr; /* Lewa: Posty, Prawa: Widgety */
+  grid-template-columns: 2fr 1fr; /* Lewa: Posty (szersza), Prawa: Widgety */
   gap: 30px;
   align-items: start;
 }
 
-/* --- LEWA KOLUMNA: TABLICA POSTÓW --- */
+/* --- LEWA KOLUMNA: POSTY --- */
 .feed-column {
   display: flex;
   flex-direction: column;
@@ -32,7 +32,6 @@
   padding: 25px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
   transition: transform 0.2s;
-  /* Kluczowe: wymuszamy ciemny tekst, żeby nie był biały */
   color: #333; 
 }
 
@@ -64,7 +63,7 @@
 .post-author-info h4 {
   margin: 0;
   font-size: 15px;
-  color: #333; /* Ciemny tekst */
+  color: #333;
 }
 
 .post-date {
@@ -73,7 +72,7 @@
 }
 
 .post-content {
-  color: #444; /* Ciemny tekst treści */
+  color: #444;
   font-size: 15px;
   line-height: 1.6;
   margin-bottom: 15px;
@@ -90,7 +89,7 @@
 /* --- PASEK AKCJI (Lubię to / Komentarze) --- */
 .post-actions-bar {
   display: flex;
-  justify-content: space-between; /* TO ROZRZUCA PRZYCISKI: LEWO - PRAWO */
+  justify-content: space-between; /* Rozrzuca przyciski na lewo i prawo */
   align-items: center;
   border-top: 1px solid #eee;
   padding-top: 15px;
@@ -99,8 +98,8 @@
 
 .action-btn {
   background: none;
-  border: none;          /* Usuwa ramkę (border) */
-  outline: none;         /* Usuwa obrys (outline) */
+  border: none;          
+  outline: none;         
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -111,11 +110,10 @@
   transition: background 0.2s;
   color: #666;
   font-weight: 600;
-  /* Dodajemy to, aby usunąć dziwne szare tło na urządzeniach mobilnych po kliknięciu */
   -webkit-tap-highlight-color: transparent;
 }
 
-/* WAŻNE: To usuwa czarną ramkę po kliknięciu */
+/* USUWA CZARNĄ RAMKĘ PO KLIKNIĘCIU */
 .action-btn:focus, 
 .action-btn:active,
 .action-btn:focus-visible {
@@ -124,16 +122,14 @@
   box-shadow: none;
 }
 
-/* Efekt po najechaniu myszką */
 .action-btn:hover {
   background-color: #f5f5f5;
 }
 
-/* Przycisk Like - stan aktywny */
+/* Stan polubienia */
 .like-btn.liked {
-  color: #e0245e; /* Czerwony kolor */
+  color: #e0245e;
 }
-
 .like-btn.liked svg {
   fill: #e0245e;
 }
@@ -165,20 +161,19 @@
   margin-bottom: 15px;
 }
 
-/* Pojedynczy dymek komentarza */
+/* Dymek komentarza - NAPRAWA CZYTELNOŚCI */
 .comment-item {
-  background-color: #f0f2f5; /* Jasnoszare tło dymka */
+  background-color: #f0f2f5; /* Szare tło */
   padding: 10px 15px;
   border-radius: 15px;
   font-size: 13px;
-  /* Naprawa czytelności: */
-  color: #1c1e21; 
+  color: #1c1e21; /* Ciemny tekst */
 }
 
 .comment-author {
   font-weight: bold;
   font-size: 12px;
-  color: #000; /* Czarny autor */
+  color: #000;
   margin-bottom: 3px;
   display: block;
 }
@@ -195,7 +190,7 @@
   gap: 10px;
   background-color: #fff;
   border: 1px solid #ccc;
-  border-radius: 25px; /* Zaokrąglony kształt */
+  border-radius: 25px;
   padding: 5px 15px;
 }
 
@@ -209,28 +204,24 @@
   background: transparent;
 }
 
-.styled-comment-input::placeholder {
-  color: #aaa;
-}
-
 .send-comment-btn {
   background: none;
   border: none;
-  color: #f2c94c; /* Miodowy kolor ikony */
+  color: #f2c94c;
   cursor: pointer;
   font-size: 18px;
   display: flex;
   align-items: center;
   padding: 5px;
   transition: transform 0.2s;
+  outline: none;
 }
 
 .send-comment-btn:hover {
   transform: scale(1.1);
-  color: #f2994a;
 }
 
-/* --- PRAWA KOLUMNA: WIDGETY (Bez większych zmian) --- */
+/* --- PRAWA KOLUMNA: WIDGETY --- */
 .widgets-column {
   display: flex;
   flex-direction: column;
@@ -301,29 +292,101 @@
   color: #999;
 }
 
-/* Wydarzenia */
+/* --- ELEMENTY WIDGETU "NAJBLIŻSZE" (Wydarzenia i Płatności) --- */
+
 .event-item {
-  background-color: #f4f8fb;
-  padding: 15px;
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: 10px;
   margin-bottom: 10px;
-  border-left: 4px solid #56ccf2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #fff;
+  border-left: 5px solid #ccc; /* Domyślny kolor */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
 }
 
-.event-item h5 {
-  margin: 0 0 5px 0;
-  color: #333;
+.event-item:hover {
+  transform: translateX(3px);
+}
+
+/* Styl dla WYDARZEŃ (Niebieski) */
+.event-item.event-type {
+  border-left-color: #2196f3;
+  background-color: #f0f9ff;
+}
+.event-item.event-type .event-icon-box {
+  color: #2196f3;
+}
+
+/* Styl dla PŁATNOŚCI (Zielony - normalny) */
+.event-item.payment-type {
+  border-left-color: #4caf50;
+  background-color: #f1f8e9;
+}
+.event-item.payment-type .event-icon-box {
+  color: #4caf50;
+}
+
+/* Styl dla PŁATNOŚCI ZALEGŁYCH (Czerwony - Alarm!) */
+.event-item.payment-type.overdue {
+  border-left-color: #e0245e;
+  background-color: #ffebee;
+  animation: pulse 2s infinite;
+}
+.event-item.payment-type.overdue .event-icon-box {
+  color: #e0245e;
+}
+.event-item.payment-type.overdue h5 {
+  color: #c62828;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(224, 36, 94, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(224, 36, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(224, 36, 94, 0); }
+}
+
+/* Detale wewnątrz kafelka */
+.event-icon-box {
+  font-size: 20px;
+  min-width: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.event-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.event-details h5 {
+  margin: 0;
   font-size: 14px;
+  color: #333;
+  font-weight: 700;
+}
+
+.event-subtitle {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
 }
 
 .event-meta {
-  font-size: 12px;
-  color: #777;
-  display: flex;
-  gap: 10px;
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+  font-weight: 600;
 }
 
-/* Responsywność */
+.event-item.overdue .event-meta {
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+/* --- RWD --- */
 @media (max-width: 900px) {
   .dashboard-grid {
     grid-template-columns: 1fr;

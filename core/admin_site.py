@@ -30,11 +30,12 @@ class CustomAdminSite(admin.AdminSite):
             'Attendance': 1,        # Obecności
             'DailyMenu': 2,         # Jadłospis
             'SpecialActivity': 3,   # Plan zajęć
-            'Payment': 4,           # Płatności
-            'Post': 5,              # Tablica Aktualności
-            'FacilityClosure': 6,   # Dni wolne
-            'Child': 7,              # Dzieci
-            'Group': 8,             # Grupy
+            'Payment': 4,          # Płatności
+            'RecurringPayment': 5, # Płatności cykliczne
+            'Post': 6,              # Tablica Aktualności
+            'FacilityClosure': 7,   # Dni wolne
+            'Child': 8,              # Dzieci
+            'Group': 9,             # Grupy
         }
 
         # --- SORTOWANIE ---

@@ -13,17 +13,18 @@ import {
   FaHeart,      
   FaRegHeart,   
   FaPaperPlane,
-  FaRegCommentDots // <--- Nowa ikona do przycisku komentarzy
+  FaRegCommentDots,
+  FaMoneyBillWave, 
+  FaExclamationCircle 
 } from 'react-icons/fa';
 
 const Dashboard = () => {
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
+  const [payments, setPayments] = useState([]); // Stan dla płatności
+  
   const [loading, setLoading] = useState(true);
   const [commentInputs, setCommentInputs] = useState({});
-  
-  // NOWY STAN: Przechowuje informację, czy komentarze dla danego posta są rozwinięte
-  // np. { 1: true, 5: false }
   const [expandedComments, setExpandedComments] = useState({});
 
   const navigate = useNavigate();
@@ -33,37 +34,94 @@ const Dashboard = () => {
     return { headers: { Authorization: `Token ${token}` } };
   };
 
- const fetchData = async () => {
+  // --- 1. POBIERANIE DANYCH ---
+  const fetchData = async () => {
     try {
-      // Nie ustawiamy setLoading(true) tutaj, żeby ekran nie migał co 5 sekund!
-      // Loading jest tylko przy pierwszym wejściu (inicjalnie true w useState)
-      
-      const postsRes = await axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders());
-      const eventsRes = await axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders());
+      // Pobieramy Posty, Wydarzenia ORAZ Płatności
+      const [postsRes, eventsRes, paymentsRes] = await Promise.all([
+        axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders()),
+        axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders()),
+        axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders()) 
+      ]);
 
-      // React jest sprytny: jeśli dane są takie same, nie przerysuje ekranu (nie będzie mrugać)
       setPosts(postsRes.data);
-      setEvents(eventsRes.data.slice(0, 3)); 
+      setEvents(eventsRes.data);
+      setPayments(paymentsRes.data);
     } catch (err) {
       console.error("Błąd pobierania danych:", err);
     } finally {
-      setLoading(false); // Wyłączamy loading po pierwszym pobraniu
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // 1. Pobierz dane natychmiast po wejściu na stronę
     fetchData();
-
-    // 2. Ustaw "budzik", który będzie pobierał dane co 5000 ms (5 sekund)
-    const intervalId = setInterval(() => {
-      fetchData();
-    }, 5000);
-
-    // 3. Sprzątanie: Gdy użytkownik wyjdzie ze strony, wyłącz "budzik"
+    const intervalId = setInterval(fetchData, 5000); // Odświeżanie co 5s
     return () => clearInterval(intervalId);
-  }, []); // Pusta tablica = uruchom tylko przy montowaniu komponentu
+  }, []);
 
+  // --- 2. LOGIKA MIESZANIA DANYCH DO WIDGETU ---
+  const getWidgetItems = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Dzisiaj północ
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+
+    let widgetItems = [];
+
+    // A) Przetwarzanie Wydarzeń
+    events.forEach(ev => {
+      const eventDate = new Date(ev.date);
+      // Warunek: Data wydarzenia musi być >= dzisiaj ORAZ <= za tydzień
+      if (eventDate >= today && eventDate <= nextWeek) {
+        widgetItems.push({
+          id: `ev-${ev.id}`,
+          type: 'event',
+          title: ev.title,
+          subtitle: '',
+          dateObj: eventDate,
+          displayDate: `${ev.date} o ${ev.start_time.slice(0,5)}`,
+          isOverdue: false
+        });
+      }
+    });
+
+    // B) Przetwarzanie Płatności
+    payments.forEach(pay => {
+      if (!pay.is_paid) {
+        const createDate = new Date(pay.created_at);
+        // Termin płatności = data utworzenia + 14 dni (założenie)
+        const dueDate = new Date(createDate);
+        dueDate.setDate(createDate.getDate() + 14);
+
+        const isOverdue = today > dueDate; // Czy już po terminie?
+
+        widgetItems.push({
+          id: `pay-${pay.id}`,
+          type: 'payment',
+          title: `Opłata: ${pay.amount} zł`,
+          subtitle: pay.description,
+          dateObj: createDate, 
+          displayDate: isOverdue ? 'Po terminie' : 'Do zapłaty',
+          isOverdue: isOverdue
+        });
+      }
+    });
+
+    // C) Sortowanie
+    // Priorytet: Zaległe płatności na samą górę, potem reszta chronologicznie
+    widgetItems.sort((a, b) => {
+      if (a.isOverdue && !b.isOverdue) return -1;
+      if (!a.isOverdue && b.isOverdue) return 1;
+      return a.dateObj - b.dateObj;
+    });
+
+    return widgetItems;
+  };
+
+  const widgetData = getWidgetItems();
+
+  // --- POZOSTAŁE FUNKCJE (Lajki, Komentarze) ---
   const handleLike = async (postId) => {
     setPosts(currentPosts => currentPosts.map(post => {
       if (post.id === postId) {
@@ -99,6 +157,7 @@ const Dashboard = () => {
         getAuthHeaders()
       );
 
+      const newComment = res.data;
       setPosts(currentPosts => currentPosts.map(post => {
         if (post.id === postId) {
           return {
@@ -109,20 +168,16 @@ const Dashboard = () => {
         return post;
       }));
 
-      // Wyczyść pole i upewnij się, że sekcja jest otwarta
-      const newComment = res.data;
       setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-
     } catch (err) {
       console.error("Błąd dodawania komentarza:", err);
     }
   };
 
-  // NOWA FUNKCJA: Przełączanie widoczności komentarzy
   const toggleComments = (postId) => {
     setExpandedComments(prev => ({
       ...prev,
-      [postId]: !prev[postId] // Odwracamy wartość (true/false)
+      [postId]: !prev[postId]
     }));
   };
 
@@ -131,6 +186,7 @@ const Dashboard = () => {
   return (
     <div className="dashboard-grid">
       
+      {/* LEWA STRONA (POSTY) */}
       <div className="feed-column">
         <div className="section-header">
           <FaBullhorn /> Tablica Postów
@@ -141,7 +197,6 @@ const Dashboard = () => {
         ) : (
           posts.map(post => (
             <div key={post.id} className="post-card">
-              
               <div className="post-header">
                 <div className="post-avatar">P</div>
                 <div className="post-author-info">
@@ -151,42 +206,23 @@ const Dashboard = () => {
               </div>
 
               <h3 style={{marginTop: 0, marginBottom: 10, color: '#333'}}>{post.title}</h3>
-              <div className="post-content">
-                {post.content}
-              </div>
+              <div className="post-content">{post.content}</div>
 
               {post.image && (
                 <img src={post.image} alt={post.title} className="post-image" />
               )}
 
-              {/* --- PASEK AKCJI (ZMIENIONY UKŁAD) --- */}
               <div className="post-actions-bar">
-                
-                {/* PRZYCISK 1 (LEWO): Pokaż/Ukryj Komentarze */}
-                <button 
-                  className="action-btn comment-btn" 
-                  onClick={() => toggleComments(post.id)}
-                >
-                  <FaRegCommentDots />
-                  <span>Komentarze ({post.comments.length})</span>
+                <button className="action-btn comment-btn" onClick={() => toggleComments(post.id)}>
+                  <FaRegCommentDots /> <span>Komentarze ({post.comments.length})</span>
                 </button>
-
-                {/* PRZYCISK 2 (PRAWO): Lubię to */}
-                <button 
-                  className={`action-btn like-btn ${post.is_liked_by_user ? 'liked' : ''}`} 
-                  onClick={() => handleLike(post.id)}
-                >
-                  {post.is_liked_by_user ? <FaHeart color="#e0245e" /> : <FaRegHeart />}
-                  <span>{post.likes_count > 0 ? post.likes_count : 'Lubię to'}</span>
+                <button className={`action-btn like-btn ${post.is_liked_by_user ? 'liked' : ''}`} onClick={() => handleLike(post.id)}>
+                  {post.is_liked_by_user ? <FaHeart color="#e0245e" /> : <FaRegHeart />} <span>{post.likes_count || 'Lubię to'}</span>
                 </button>
-
               </div>
 
-              {/* --- SEKCJA KOMENTARZY (WARUNKOWA WIDOCZNOŚĆ) --- */}
               {expandedComments[post.id] && (
                 <div className="comments-section-wrapper">
-                  
-                  {/* Lista komentarzy */}
                   {post.comments && post.comments.length > 0 ? (
                     <div className="comments-list">
                       {post.comments.map(comment => (
@@ -200,7 +236,6 @@ const Dashboard = () => {
                     <p className="no-comments-text">Brak komentarzy. Bądź pierwszy!</p>
                   )}
 
-                  {/* Formularz wpisywania (Ładniejszy) */}
                   <div className="comment-input-area">
                     <input 
                       type="text" 
@@ -210,23 +245,20 @@ const Dashboard = () => {
                       onChange={(e) => handleCommentChange(post.id, e.target.value)}
                       onKeyDown={(e) => { if(e.key === 'Enter') handleAddComment(post.id); }}
                     />
-                    <button 
-                      className="send-comment-btn"
-                      onClick={() => handleAddComment(post.id)}
-                    >
+                    <button className="send-comment-btn" onClick={() => handleAddComment(post.id)}>
                       <FaPaperPlane />
                     </button>
                   </div>
                 </div>
               )}
-
             </div>
           ))
         )}
       </div>
 
+      {/* PRAWA STRONA (WIDGETY) */}
       <div className="widgets-column">
-        {/* ... (Widgety bez zmian) ... */}
+        
         <div className="widget-card">
           <div className="widget-title">Szybkie Działania</div>
           <div className="quick-action-item" onClick={() => navigate('/attendance')}>
@@ -239,19 +271,40 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* --- ZMODYFIKOWANY WIDGET: NAJBLIŻSZE (WYDARZENIA + PŁATNOŚCI) --- */}
         <div className="widget-card">
-          <div className="widget-title">Najbliższe Wydarzenia</div>
-          {events.length === 0 ? (
+          <div className="widget-title">Najbliższe i Ważne</div>
+          
+          {widgetData.length === 0 ? (
             <p style={{fontSize: 13, color: '#999'}}>Brak nadchodzących wydarzeń.</p>
           ) : (
-            events.map(ev => (
-              <div key={ev.id} className="event-item">
-                <h5>{ev.title}</h5>
-                <div className="event-meta"><FaCalendarCheck /> {ev.date} o {ev.start_time.slice(0,5)}</div>
+            widgetData.map(item => (
+              <div 
+                key={item.id} 
+                className={`event-item ${item.type === 'payment' ? 'payment-type' : 'event-type'} ${item.isOverdue ? 'overdue' : ''}`}
+                // Opcjonalnie: kliknięcie w płatność przenosi do zakładki płatności
+                onClick={() => item.type === 'payment' && navigate('/payments')}
+                style={{ cursor: item.type === 'payment' ? 'pointer' : 'default' }}
+              >
+                {/* Ikona zależna od typu i statusu */}
+                <div className="event-icon-box">
+                    {item.type === 'event' && <FaCalendarCheck />}
+                    {item.type === 'payment' && !item.isOverdue && <FaMoneyBillWave />}
+                    {item.type === 'payment' && item.isOverdue && <FaExclamationCircle />}
+                </div>
+
+                <div className="event-details">
+                    <h5>{item.title}</h5>
+                    {item.subtitle && <span className="event-subtitle">{item.subtitle}</span>}
+                    <div className="event-meta">
+                      {item.displayDate}
+                    </div>
+                </div>
               </div>
             ))
           )}
         </div>
+
       </div>
     </div>
   );

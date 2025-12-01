@@ -1,0 +1,145 @@
+/* frontend/src/Info.css */
+
+.info-page-container {
+  padding: 20px;
+  display: flex;
+  justify_content: center;
+  /* Jeśli masz tło globalne, to ok, jeśli nie to: background-color: #f4f7f6; */
+}
+
+.info-card-main {
+  background: white;
+  width: 100%;
+  max-width: 900px;
+  border-radius: 15px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Nagłówek */
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f2c94c;
+  padding-bottom: 15px;
+}
+
+.info-header-icon {
+  font-size: 30px;
+  color: #0277bd; /* Niebieski kolor ikony informacji */
+}
+
+.info-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.info-intro {
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+/* --- ŻÓŁTY BOX KONTAKTOWY (Naprawiony) --- */
+.info-highlight-box {
+  background-color: #fff9c4; /* Jasny żółty */
+  border-left: 5px solid #fbc02d; /* Ciemniejszy żółty pasek */
+  border-radius: 8px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 40px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: #333; /* WAŻNE: Ciemny tekst na jasnym tle */
+  font-size: 16px;
+}
+
+.icon-wrapper {
+  background: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify_content: center;
+  color: #fbc02d;
+  font-size: 18px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.info-row strong {
+  margin-right: 8px;
+  font-weight: 700;
+}
+
+/* --- KOLUMNY (Dyrekcja i Grupy) --- */
+.info-columns {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.info-column {
+  flex: 1;
+  min-width: 300px;
+}
+
+.info-column h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #444;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+/* Lista Dyrekcji */
+.staff-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.staff-list li {
+  padding: 10px 0;
+  border-bottom: 1px dashed #eee;
+  color: #555;
+}
+
+.staff-list li:last-child {
+  border-bottom: none;
+}
+
+/* Siatka Grup */
+.groups-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.group-badge {
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-block;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Kolory dla grup */
+.group-myszki { background-color: #e0f7fa; color: #006064; }
+.group-robaczki { background-color: #f1f8e9; color: #33691e; }
+.group-misie { background-color: #fff3e0; color: #e65100; }
+.group-zajaczki { background-color: #f3e5f5; color: #4a148c; }
+.group-liski { background-color: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; }

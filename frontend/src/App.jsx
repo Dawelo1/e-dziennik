@@ -10,6 +10,7 @@ import Terms from './Terms';
 import PrivacyPolicy from './PrivacyPolicy';
 import Layout from './Layout';
 import Dashboard from './Dashboard';
+import Info from './Info';
 
 // Placeholdery (Wkrótce zastąpimy je prawdziwymi plikami)
 const Newsfeed = () => <h2 style={{color:'white'}}>📰 Tablica Postów</h2>;
@@ -58,7 +59,7 @@ function App() {
           <Route path="/menu" element={<Menu />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/info" element={<GeneralInfo />} />
+          <Route path="/info" element={<Info />} />
         </Route>
       </Routes>
     </Router>
