@@ -1,0 +1,193 @@
+/* frontend/src/Settings.css */
+
+.settings-page-wrapper {
+  /* ZMIANA: Usuwamy centrowanie i ograniczenie szerokości kontenera */
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.settings-main-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 700;
+  
+  margin-bottom: 20px;
+  margin-left: 0;
+  padding-left: 15px;
+  
+  border-left: 5px solid #f2c94c;
+  
+  /* Flexbox do wyrównania ikony i tekstu */
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Odstęp między ikoną a napisem */
+}
+
+/* Styl dla ikony w nagłówku */
+.settings-main-title svg {
+  color: #f2c94c; /* Miodowy kolor */
+  font-size: 28px; /* Nieco większa od tekstu */
+}
+
+/* --- Karta (Biały prostokąt) --- */
+.settings-wide-card {
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 30px 40px;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Cień taki sam jak w Dashboard */
+  
+  /* ZMIANA: Ograniczenie szerokości przenosimy na karty */
+  max-width: 1100px; 
+  /* Jeśli chcesz, żeby karty też były na całą szerokość jak dashboard, usuń linię wyżej */
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+/* --- Siatki inputów --- */
+.inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px; /* Zwiększony odstęp dla oddechu */
+  align-items: end;
+}
+
+.inputs-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+/* --- Wygląd Inputa --- */
+.input-box {
+  position: relative;
+  width: 100%;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 15px 15px 15px 45px;
+  border: 1px solid #e0e0e0;
+  background-color: #fcfcfc; /* Delikatnie inny odcień bieli */
+  border-radius: 12px;        /* Zaokrąglenie jak w Dashboard */
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+
+.input-box input:focus {
+  border-color: #f2c94c;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.1);
+  outline: none;
+}
+
+.field-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #bbb;
+  font-size: 16px;
+}
+
+/* Pola tylko do odczytu */
+.read-only input {
+  background-color: #f0f2f5; /* Szary jak tło komentarzy w Dashboard */
+  color: #666;
+  border-color: #eee;
+}
+
+.label-inside {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* --- Przycisk --- */
+.honey-btn {
+  background-color: #f2c94c;
+  color: #fff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 10px rgba(242, 201, 76, 0.3);
+}
+
+.honey-btn:hover {
+  background-color: #e6b83a;
+  transform: translateY(-2px);
+}
+
+.honey-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-left {
+  margin-top: 10px;
+}
+
+.button-container-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* --- Alerty --- */
+.settings-alert {
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.settings-alert.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.settings-alert.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+/* --- Responsywność --- */
+@media (max-width: 768px) {
+  .inputs-grid, .inputs-grid-2col {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .settings-wide-card {
+    padding: 20px;
+  }
+  
+  .honey-btn {
+    width: 100%;
+  }
+}

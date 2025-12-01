@@ -46,4 +46,5 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # Zwracamy to, co potrzebne frontendowi do działania
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number']
+        read_only_fields = ['id', 'username', 'is_director', 'is_parent']

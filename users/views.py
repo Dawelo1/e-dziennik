@@ -51,6 +51,17 @@ class CurrentUserView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+    
+    def patch(self, request):
+        """Pozwala edytować dane profilowe (email, telefon)"""
+        user = request.user
+        # partial=True oznacza, że nie musimy wysyłać wszystkich pól, tylko te zmienione
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 
 # --- TO JEST KLUCZOWY BRAKUJĄCY ELEMENT ---
 class CustomAuthToken(ObtainAuthToken):
