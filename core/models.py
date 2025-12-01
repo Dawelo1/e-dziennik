@@ -106,6 +106,7 @@ class Post(models.Model):
     
     # Data dodania - automatycznie ustawi się "teraz"
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data publikacji")
+    likes = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     
     # Opcjonalnie: Widoczność dla konkretnej grupy.
     # Jeśli puste (null) -> widzą wszyscy (ogłoszenie ogólnoprzedszkolne).
@@ -198,3 +199,17 @@ class DailyMenu(models.Model):
 
     def __str__(self):
         return f"Jadłospis: {self.date}"
+    
+class PostComment(models.Model):
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField(verbose_name="Treść komentarza")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at'] # Najstarsze na górze (jak czat)
+        verbose_name = "Komentarz"
+        verbose_name_plural = "Komentarze"
+
+    def __str__(self):
+        return f"{self.author.username}: {self.content[:20]}"

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from django.utils import timezone
-from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity
+from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment
 
 class ChildSerializer(serializers.ModelSerializer):
     # Automatyczne rozszyfrowanie medical_info przy odczycie
@@ -89,21 +89,6 @@ class DailyMenuSerializer(serializers.ModelSerializer):
         # Zwraca numer dnia (1=Poniedziałek, 7=Niedziela)
         # Frontend sobie to zamieni na nazwę
         return obj.date.isoweekday()
-    
-class PostSerializer(serializers.ModelSerializer):
-    formatted_date = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Post
-        fields = ['id', 'title', 'content', 'image', 'created_at', 'formatted_date', 'target_group']
-
-    def get_formatted_date(self, obj):
-        # 2. POPRAWKA:
-        # Najpierw konwertujemy czas z UTC na strefę lokalną (Warszawa)
-        local_date = timezone.localtime(obj.created_at)
-        
-        # Dopiero teraz zamieniamy na napis
-        return local_date.strftime("%d-%m-%Y %H:%M")
 
 # Warto też poprawić to w wiadomościach, jeśli tam jest podobnie:
 class MessageSerializer(serializers.ModelSerializer):
@@ -117,3 +102,36 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_formatted_date(self, obj):
         local_date = timezone.localtime(obj.created_at)
         return local_date.strftime("%d-%m-%Y %H:%M")
+    
+class PostCommentSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.get_full_name', read_only=True) # Imię Nazwisko autora
+
+    class Meta:
+        model = PostComment
+        fields = ['id', 'author_name', 'content', 'created_at']
+
+class PostSerializer(serializers.ModelSerializer):
+    formatted_date = serializers.SerializerMethodField()
+    likes_count = serializers.IntegerField(source='likes.count', read_only=True)
+    is_liked_by_user = serializers.SerializerMethodField()
+    comments = PostCommentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Post
+        fields = [
+            'id', 'title', 'content', 'image', 'created_at', 'formatted_date', 'target_group',
+            'likes_count', 'is_liked_by_user', 'comments'
+        ]
+
+    def get_formatted_date(self, obj):
+        local_date = timezone.localtime(obj.created_at)
+        
+        # Dopiero teraz zamieniamy na napis
+        return local_date.strftime("%d-%m-%Y %H:%M")
+    
+    def get_is_liked_by_user(self, obj):
+        # Sprawdzamy, czy user wysyłający zapytanie znajduje się na liście lajkujących
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False

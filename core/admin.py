@@ -1,10 +1,11 @@
 from django.contrib import admin
 from django import forms
-from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu
+from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu, PostComment
 
 
 # Prosta rejestracja - pozwoli dodawać/edytować elementy
 admin.site.register(Group)
+admin.site.register(PostComment)
 
 class PaymentAdmin(admin.ModelAdmin):
     # 1. Co ma się wyświetlać w kolumnach?

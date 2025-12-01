@@ -1,7 +1,9 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
 from django.db.models import Q
-from .models import Child, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity
-from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer
+from rest_framework.decorators import action
+from .models import Child, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment
+from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer
 
 class ChildViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChildSerializer
@@ -33,7 +35,8 @@ class PostViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Zwraca listę postów (tablicę).
     Dyrektor widzi wszystko.
-    Rodzic widzi posty ogólne ORAZ posty przypisane do grup jego DZIECI (wszystkich).
+    Rodzic widzi posty ogólne ORAZ posty przypisane do grup jego dzieci.
+    Obsługuje też lajkowanie i komentowanie.
     """
     serializer_class = PostSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -46,7 +49,7 @@ class PostViewSet(viewsets.ReadOnlyModelViewSet):
             return Post.objects.all()
         
         # 2. Jeśli to Rodzic -> pobieramy wszystkie jego dzieci
-        # (dzięki related_name='children' w modelu Child)
+        # (dzięki related_name='child' w modelu Child - tak jak ustaliśmy wcześniej)
         children = user.child.all()
         
         # Jeśli rodzic nie ma przypisanych dzieci, widzi tylko posty ogólne
@@ -62,8 +65,51 @@ class PostViewSet(viewsets.ReadOnlyModelViewSet):
         # LUB te, które należą do którejś z grup dzieci (target_group__in)
         return Post.objects.filter(
             Q(target_group__isnull=True) | Q(target_group__in=parent_groups)
+        ).distinct() # distinct() zapobiega duplikatom jeśli dwoje dzieci jest w tej samej grupie
+
+    # --- NOWE FUNKCJONALNOŚCI ---
+
+    # AKCJA 1: Polub / Odlub
+    # Endpoint: POST /api/newsfeed/{id}/like/
+    @action(detail=True, methods=['post'])
+    def like(self, request, pk=None):
+        post = self.get_object()
+        user = request.user
+
+        # Sprawdzamy czy user już polubił ten post
+        if post.likes.filter(id=user.id).exists():
+            post.likes.remove(user) # Usuwamy lajka
+            liked = False
+        else:
+            post.likes.add(user) # Dodajemy lajka
+            liked = True
+
+        return Response({
+            'liked': liked, 
+            'likes_count': post.likes.count()
+        })
+
+    # AKCJA 2: Dodaj komentarz
+    # Endpoint: POST /api/newsfeed/{id}/comment/
+    @action(detail=True, methods=['post'])
+    def comment(self, request, pk=None):
+        post = self.get_object()
+        content = request.data.get('content')
+
+        if not content:
+            return Response({'error': 'Treść komentarza jest wymagana'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Tworzymy komentarz
+        comment = PostComment.objects.create(
+            post=post,
+            author=request.user,
+            content=content
         )
         
+        # Zwracamy dane nowego komentarza (żeby React mógł go od razu wyświetlić)
+        serializer = PostCommentSerializer(comment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)      
+      
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
     permission_classes = [permissions.IsAuthenticated]
