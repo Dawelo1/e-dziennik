@@ -16,13 +16,16 @@
 }
 
 .section-header {
-  font-size: 22px;
-  font-weight: 800;
-  color: #5d4037;
-  margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 10px;
+  font-size: 24px;       /* Nieco większy */
+  font-weight: 800;
+  margin-bottom: 15px;
+  
+  /* --- STYLIZACJA TEKSTU --- */
+  color: #e4dbdb;        /* Czysta biel */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7); /* Mocny czarny cień dla kontrastu */
 }
 
 /* --- KARTA POSTA --- */

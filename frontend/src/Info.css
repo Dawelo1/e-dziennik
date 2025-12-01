@@ -3,7 +3,7 @@
 .info-page-container {
   padding: 20px;
   display: flex;
-  justify_content: center;
+  justify-content: center;
   /* Jeśli masz tło globalne, to ok, jeśli nie to: background-color: #f4f7f6; */
 }
 
@@ -71,7 +71,7 @@
   border-radius: 50%;
   display: flex;
   align-items: center;
-  justify_content: center;
+  justify-content: center;
   color: #fbc02d;
   font-size: 18px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
