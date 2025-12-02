@@ -245,17 +245,61 @@
 }
 
 @media (max-width: 768px) {
-  /* Przewijanie tabeli na mobile */
-  .schedule-table { overflow-x: auto; }
-  .schedule-header-row, .schedule-row { min-width: 700px; }
   
-  /* Sticky kolumna miesiąca */
-  .month-col-header, .month-name-col {
-    position: sticky; left: 0; z-index: 10;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+  /* 1. ZABEZPIECZENIE KONTENERA GŁÓWNEGO */
+  .yearly-container {
+    width: 100%;
+    max-width: 100vw;   /* Nie szerszy niż ekran */
+    padding: 0 10px;    /* Małe marginesy po bokach */
+    overflow-x: hidden; /* KLUCZOWE: Ucina wszystko, co wystaje poza ekran */
+    box-sizing: border-box;
   }
+
+  /* 2. TABELA JAKO JEDYNY ELEMENT PRZEWIJALNY */
+  .schedule-table {
+    display: block;
+    width: 100%;        /* Dopasuj do kontenera */
+    overflow-x: auto;   /* Włącz przewijanie WENĄTRZ tabeli */
+    -webkit-overflow-scrolling: touch; /* Płynne przewijanie na iPhone */
+    position: relative;
+  }
+
+  /* Wnętrze tabeli jest szerokie, ale schowane w scrollu */
+  .schedule-header-row, 
+  .schedule-row {
+    min-width: 700px; 
+    width: 100%;
+  }
+
+  /* --- STICKY COLUMN (KOLUMNA MIESIĄCA) --- */
+  .month-col-header,
+  .month-name-col {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    border-right: 1px solid #e0e0e0;
+    /* Dodajemy cień, żeby oddzielić przyklejoną kolumnę */
+    box-shadow: 4px 0 5px -2px rgba(0,0,0,0.1); 
+  }
+
+  /* Tła dla sticky, żeby dni nie prześwitywały */
   .month-col-header { background-color: #fcfcfc; }
   .month-name-col { background-color: #fffbf0; }
+
+  /* Dostosowanie nawigacji */
+  .year-navigation-card {
+    padding: 15px;
+    flex-direction: row;
+    justify-content: space-between;
+  }
   
-  .year-controls { justify-content: space-between; width: 100%; }
+  .current-year-label { font-size: 18px; }
+  
+  /* Legenda pod spodem */
+  .schedule-legend {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0 5px;
+  }
 }
