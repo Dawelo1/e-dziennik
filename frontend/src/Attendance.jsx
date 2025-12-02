@@ -4,25 +4,22 @@ import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './Attendance.css';
-import { FaUserSlash, FaChild, FaExclamationTriangle, FaCheckCircle, FaBan, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
+import { FaUserSlash, FaChild, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
 
 const Attendance = () => {
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
   
-  // Mapa nieobecności: { "YYYY-MM-DD": ID_WPISU }
   const [absencesMap, setAbsencesMap] = useState({});
   
-  const [closures, setClosures] = useState([]);
+  // ZMIANA: closures to teraz obiekt { "YYYY-MM-DD": "Powód" }
+  const [closuresMap, setClosuresMap] = useState({});
+  
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // Stan dla Modala Potwierdzenia
   const [modal, setModal] = useState({
-    isOpen: false,
-    type: null, // 'add' lub 'remove'
-    date: null,
-    recordId: null
+    isOpen: false, type: null, date: null, recordId: null
   });
 
   const getAuthHeaders = () => {
@@ -35,13 +32,16 @@ const Attendance = () => {
       try {
         const childrenRes = await axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders());
         setChildren(childrenRes.data);
-        if (childrenRes.data.length > 0) {
-          setSelectedChild(childrenRes.data[0].id);
-        }
+        if (childrenRes.data.length > 0) setSelectedChild(childrenRes.data[0].id);
 
         const closuresRes = await axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders());
-        const closureDates = closuresRes.data.map(item => item.date);
-        setClosures(closureDates);
+        
+        // ZMIANA: Mapujemy listę na obiekt { data: powód }
+        const map = {};
+        closuresRes.data.forEach(item => {
+          map[item.date] = item.reason;
+        });
+        setClosuresMap(map);
 
       } catch (err) {
         console.error("Błąd pobierania danych:", err);
@@ -71,14 +71,13 @@ const Attendance = () => {
       .catch(err => console.error(err));
   };
 
-  // Formatowanie dla API (YYYY-MM-DD)
   const formatDate = (date) => {
     const offset = date.getTimezoneOffset();
     const dateObj = new Date(date.getTime() - (offset * 60 * 1000));
     return dateObj.toISOString().split('T')[0];
   };
 
-  // NOWE: Formatowanie dla Użytkownika (DD.MM.YYYY)
+  // Helper do wyświetlania daty w modalu (DD.MM.YYYY)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
     const [year, month, day] = dateStr.split('-');
@@ -91,6 +90,16 @@ const Attendance = () => {
     const now = new Date();
     const todayStr = formatDate(now);
 
+    // 1. Sprawdzamy czy to dzień wolny (bo teraz są klikalne!)
+    if (closuresMap[dateStr]) {
+      setMessage({ 
+        type: 'info', 
+        text: `To dzień wolny od zajęć: "${closuresMap[dateStr]}". Nie musisz zgłaszać nieobecności.` 
+      });
+      return; // Przerywamy, nie otwieramy modala
+    }
+
+    // Walidacja czasu
     if (dateStr < todayStr) {
       setMessage({ type: 'error', text: 'Nie można modyfikować obecności wstecz.' });
       return;
@@ -103,19 +112,9 @@ const Attendance = () => {
     const existingRecordId = absencesMap[dateStr];
 
     if (existingRecordId) {
-      setModal({
-        isOpen: true,
-        type: 'remove',
-        date: dateStr,
-        recordId: existingRecordId
-      });
+      setModal({ isOpen: true, type: 'remove', date: dateStr, recordId: existingRecordId });
     } else {
-      setModal({
-        isOpen: true,
-        type: 'add',
-        date: dateStr,
-        recordId: null
-      });
+      setModal({ isOpen: true, type: 'add', date: dateStr, recordId: null });
     }
   };
 
@@ -129,38 +128,54 @@ const Attendance = () => {
           child: selectedChild,
           date: date
         }, getAuthHeaders());
-        
         setMessage({ type: 'success', text: `Zgłoszono nieobecność na dzień ${formatDisplayDate(date)}.` });
       } 
       else if (type === 'remove') {
         await axios.delete(`http://127.0.0.1:8000/api/attendance/${recordId}/`, getAuthHeaders());
-        
         setMessage({ type: 'info', text: `Cofnięto zgłoszenie na dzień ${formatDisplayDate(date)}.` });
       }
-
       fetchAttendance();
     } catch (err) {
-      const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Wystąpił błąd.';
-      setMessage({ type: 'error', text: errorMsg });
+      setMessage({ type: 'error', text: 'Wystąpił błąd podczas wysyłania.' });
     }
   };
 
+  // LOGIKA BLOKOWANIA (DISABLED)
   const isTileDisabled = ({ date, view }) => {
     if (view === 'month') {
-      const dateStr = formatDate(date);
+      // Blokujemy TYLKO weekendy.
+      // Dni wolne (closures) zostawiamy odblokowane, żeby działał hover (dymek z powodem)
       if (date.getDay() === 0 || date.getDay() === 6) return true;
-      if (closures.includes(dateStr)) return true;
     }
     return false;
   };
 
+  // LOGIKA WYGLĄDU (KLASY CSS)
   const getTileClassName = ({ date, view }) => {
     if (view === 'month') {
       const dateStr = formatDate(date);
       if (absencesMap.hasOwnProperty(dateStr)) return 'absent-day';
-      if (closures.includes(dateStr)) return 'closure-day';
+      if (closuresMap.hasOwnProperty(dateStr)) return 'closure-day'; // Sprawdzamy klucz w obiekcie
       if (date.getDay() === 0 || date.getDay() === 6) return 'weekend-day';
     }
+  };
+
+  // NOWOŚĆ: ZAWARTOŚĆ KAFELKA (TOOLTIP)
+  const getTileContent = ({ date, view }) => {
+    if (view === 'month') {
+      const dateStr = formatDate(date);
+      // Jeśli to dzień wolny, dodajemy niewidzialną warstwę z tytułem (tooltipem)
+      if (closuresMap[dateStr]) {
+        return (
+          <div 
+            className="closure-tooltip-layer" 
+            title={closuresMap[dateStr]} /* To wyświetli dymek systemowy */
+          >
+          </div>
+        );
+      }
+    }
+    return null;
   };
 
   if (loading) return <div style={{padding: 20}}>Ładowanie... 🐝</div>;
@@ -194,11 +209,11 @@ const Attendance = () => {
             onClickDay={handleDayClick}
             tileClassName={getTileClassName}
             tileDisabled={isTileDisabled}
+            tileContent={getTileContent} // <--- Podpinamy logikę contentu
             locale="pl-PL"
             minDate={new Date(new Date().getFullYear(), new Date().getMonth(), 1)} 
           />
           
-          {/* ZAKTUALIZOWANA LEGENDA */}
           <div className="calendar-legend">
             <span className="legend-item"><span className="dot green"></span> Obecny</span>
             <span className="legend-item"><span className="dot orange"></span> Nieobecny</span>
@@ -211,10 +226,9 @@ const Attendance = () => {
           <div className="info-box">
             <h4><FaExclamationTriangle /> Zasady</h4>
             <ul>
-              <li>Domyślnie system uznaje dziecko za obecne.</li>
               <li>Kliknij w dzień roboczy, aby zgłosić nieobecność.</li>
-              <li><strong>Kliknij ponownie w czerwony dzień, aby cofnąć zgłoszenie.</strong></li>
-              <li>Weekendy i dni wolne są zablokowane.</li>
+              <li>Najedź na czerwony dzień, aby zobaczyć powód wolnego.</li>
+              <li>Weekendy są zablokowane.</li>
               <li>Na bieżący dzień zmiany możliwe do <strong>godz. 08:00</strong>.</li>
             </ul>
           </div>
@@ -228,7 +242,6 @@ const Attendance = () => {
         </div>
       </div>
 
-      {/* --- MODAL POTWIERDZENIA --- */}
       {modal.isOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -239,26 +252,15 @@ const Attendance = () => {
                 : `Czy na pewno chcesz COFNĄĆ zgłoszenie w dniu ${formatDisplayDate(modal.date)}?`
               }
             </p>
-            
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setModal({ ...modal, isOpen: false })}>
-                Anuluj
-              </button>
-              
-              <button 
-                className={`modal-btn confirm ${modal.type === 'remove' ? 'danger' : 'success'}`} 
-                onClick={confirmAction}
-              >
-                {modal.type === 'add' 
-                  ? <><FaCalendarPlus /> Zgłoś</> 
-                  : <><FaTrashAlt /> Cofnij zgłoszenie</>
-                }
+              <button className="modal-btn cancel" onClick={() => setModal({ ...modal, isOpen: false })}>Anuluj</button>
+              <button className={`modal-btn confirm ${modal.type === 'remove' ? 'danger' : 'success'}`} onClick={confirmAction}>
+                {modal.type === 'add' ? <><FaCalendarPlus /> Zgłoś</> : <><FaTrashAlt /> Cofnij zgłoszenie</>}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };
