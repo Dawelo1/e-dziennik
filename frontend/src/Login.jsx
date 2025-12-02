@@ -7,7 +7,6 @@ import './Login.css';
 
 // Import obrazków (Upewnij się, że nazwy plików i rozszerzenia .png/.jpeg są poprawne!)
 import bgImage from './assets/bg.png';        // Tło
-import beeLogo from './assets/bee.png';       // Duże logo nad napisem
 import BeeIcon from './assets/bee-icon.png'; // Mała ikona do pola input
 import padlockIcon from './assets/padlock-icon.png'; // Ikona kłódki do pola hasła
 
@@ -54,7 +53,7 @@ const Login = () => {
         
         {/* Sekcja Logo */}
         <div className="logo-section">
-          <img src={beeLogo} alt="Pszczółka Maja" className="bee-logo" />
+          <div className="bee-logo"></div>
           <div className="school-name">
             <span className="school-name-prefix">PRZEDSZKOLE</span>
             <span className="school-name-main">PSZCZÓŁKA MAJA</span>

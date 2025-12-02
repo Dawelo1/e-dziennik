@@ -45,7 +45,7 @@ const ForgotPassword = () => {
         
         {/* LOGO */}
         <div className="logo-section">
-          <img src={beeLogo} alt="Pszczółka Maja" className="bee-logo" />
+          <div className="bee-logo"></div>
           <div className="school-name">
             <span className="school-name-prefix">PRZEDSZKOLE</span>
             <span className="school-name-main">PSZCZÓŁKA MAJA</span>
