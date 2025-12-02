@@ -63,9 +63,9 @@ const Calendar = () => {
   return (
     <div className="yearly-container">
       
-      <div className="page-title">
+      <h2 className="page-title">
         <FaCalendarAlt /> Harmonogram Roczny
-      </div>
+      </h2>
 
       <div className="year-controls">
         <button className="nav-btn" onClick={() => setCurrentYear(currentYear - 1)}>

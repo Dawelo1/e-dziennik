@@ -1,63 +1,115 @@
 /* frontend/src/YearlyCalendar.css */
 
+/* --- 1. AGRESYWNE UKRYWANIE PASKÓW PRZEWIJANIA --- */
+/* Ukrywamy pasek, ale zachowujemy funkcję przewijania */
+
+.yearly-container,
+.schedule-table {
+  /* Firefox */
+  scrollbar-width: none !important;
+  /* IE 10+ */
+  -ms-overflow-style: none !important;
+}
+
+.yearly-container::-webkit-scrollbar,
+.schedule-table::-webkit-scrollbar {
+  /* Chrome, Safari, Opera */
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* Zabezpieczenie wymiarów */
 .yearly-container * {
   box-sizing: border-box;
 }
 
+/* --- GŁÓWNY KONTENER --- */
 .yearly-container {
-  /* Zwiększamy szerokość, żeby zmieścić legendę obok */
-  max-width: 1200px; 
   width: 100%;
-  margin: 0 auto;
-  font-family: 'Segoe UI', sans-serif;
+  margin: 0;
   padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  /* Blokujemy suwak boczny, ale pozwalamy na scrollowanie treści przez rodzica (Layout) */
+  overflow-x: hidden; 
 }
 
-/* TYTUŁ */
+/* --- TYTUŁ STRONY --- */
 .page-title {
   color: #333;
   font-size: 24px;
   font-weight: 700;
+  
   margin-bottom: 20px;
   margin-left: 0;
   padding-left: 15px;
+  
   border-left: 5px solid #f2c94c;
-  display: flex; align-items: center; gap: 15px;
+  
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
-.page-title svg { color: #f2c94c; font-size: 28px; }
 
-/* NAWIGACJA ROKU */
+.page-title svg {
+  color: #f2c94c;
+  font-size: 28px;
+}
+
+/* --- KARTA NAWIGACJI ROKU --- */
 .year-controls {
-  display: flex; align-items: center; gap: 20px;
-  margin-bottom: 20px;
-  background: white; padding: 10px 20px; border-radius: 12px;
-  width: fit-content;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  background: white;
+  border-radius: 20px;
+  padding: 20px 30px;
+  
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  margin-bottom: 30px;
+  
+  max-width: 1100px;
+  width: 100%;
+  margin-left: 0;
+  
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.current-year-label { font-size: 20px; font-weight: 800; color: #333; }
-.nav-btn { background: #f0f0f0; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; color: #555; transition: background 0.2s; }
-.nav-btn:hover { background: #f2c94c; color: white; }
-.nav-btn:focus { outline: none; }
 
-/* --- GŁÓWNY UKŁAD (GRID) --- */
+.current-year-label { font-size: 20px; font-weight: 800; color: #333; }
+
+.nav-btn {
+  background: #fcfcfc; border: 1px solid #e0e0e0; padding: 10px 20px; border-radius: 30px; cursor: pointer; color: #555; font-weight: 600;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+}
+.nav-btn:hover { background: #f2c94c; border-color: #f2c94c; color: white; transform: translateY(-2px); }
+.nav-btn:focus, .nav-btn:active { outline: none; box-shadow: none; }
+
+/* --- UKŁAD DWUKOLUMNOWY (Grid) --- */
 .calendar-content-wrapper {
   display: grid;
-  /* Dwie kolumny: Tabela zajmuje resztę (1fr), Legenda ma stałe 220px */
-  grid-template-columns: 1fr 220px;
+  grid-template-columns: 1fr 250px; 
   gap: 30px;
-  align-items: start; /* Wyrównaj do góry */
+  align-items: start;
+  
+  max-width: 1100px;
+  width: 100%;
+  margin-left: 0; 
 }
 
 /* --- TABELA HARMONOGRAMU --- */
 .schedule-table {
   background: white;
-  border-radius: 12px;
+  border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
   border: 1px solid #e0e0e0;
+  
+  position: relative;
+  display: block;
+  width: 100%;
 }
 
-/* NAGŁÓWKI */
+/* NAGŁÓWEK TABELI */
 .schedule-header-row { display: flex; background-color: #fcfcfc; border-bottom: 1px solid #e0e0e0; }
 
 .month-col-header {
@@ -108,207 +160,102 @@
 .day-cell.open { background-color: #fff; }
 .day-cell.today { box-shadow: inset 0 0 0 2px #000; font-weight: 800; z-index: 1; }
 
-/* --- NOWA LEGENDA (Prawy Box) --- */
+/* --- TOOLTIP --- */
+.custom-tooltip {
+  visibility: hidden; opacity: 0;
+  position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+  background-color: #333; color: #fff; padding: 6px 12px;
+  border-radius: 6px; font-size: 12px; white-space: nowrap; z-index: 100;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2); pointer-events: none;
+  transition: opacity 0.2s;
+}
+.custom-tooltip::after {
+  content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+  border-width: 5px; border-style: solid; border-color: #333 transparent transparent transparent;
+}
+.day-cell:hover .custom-tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+
+/* --- LEGENDA --- */
 .legend-card {
   background: white;
   border-radius: 20px;
   padding: 25px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
   border: 1px solid #f0f0f0;
-  position: sticky; /* Przyklejony box */
-  top: 20px; /* Odstęp od góry ekranu przy przewijaniu */
+  position: sticky; top: 20px;
 }
 
 .legend-card h4 {
-  margin: 0 0 20px 0;
-  color: #333;
-  font-size: 16px;
-  text-transform: uppercase;
-  border-bottom: 2px solid #f2c94c;
-  padding-bottom: 10px;
-  display: inline-block;
+  margin: 0 0 20px 0; color: #333; font-size: 16px; text-transform: uppercase;
+  border-bottom: 2px solid #f2c94c; padding-bottom: 10px; display: inline-block;
 }
 
-.legend-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.legend-list { display: flex; flex-direction: column; gap: 12px; }
+.legend-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #555; font-weight: 500; }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: #555;
-  font-weight: 500;
-}
-
-.sample {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  flex-shrink: 0;
-}
-
+.sample { width: 18px; height: 18px; border-radius: 4px; border: 1px solid #ddd; flex-shrink: 0; }
 .sample.open { background: #fff; }
-.sample.weekend { 
-  background-color: #f5f5f5;
-  background-image: repeating-linear-gradient(45deg, #f5f5f5, #f5f5f5 3px, #ebebeb 3px, #ebebeb 4px);
-}
+.sample.weekend { background-color: #f5f5f5; background-image: repeating-linear-gradient(45deg, #f5f5f5, #f5f5f5 3px, #ebebeb 3px, #ebebeb 4px); }
 .sample.closed { background: #ffebee; border-color: #ef9a9a; }
 .sample.today { border: 2px solid #000; }
 
 .legend-info {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px dashed #eee;
-  display: flex;
-  gap: 8px;
-  color: #888;
-  font-size: 12px;
-  line-height: 1.4;
+  margin-top: 20px; padding-top: 15px; border-top: 1px dashed #eee;
+  display: flex; gap: 8px; color: #888; font-size: 12px; line-height: 1.4;
 }
 .legend-info svg { color: #f2c94c; font-size: 16px; margin-top: 2px; }
 
-/* RWD (TELEFONY I TABLETY) */
+/* --- RWD (TELEFONY I TABLETY) --- */
 @media (max-width: 900px) {
-  /* Zmiana układu na pionowy */
   .calendar-content-wrapper {
-    grid-template-columns: 1fr; 
+    grid-template-columns: 1fr;
   }
-  
-  /* Legenda ląduje na górze lub na dole, zrobimy ją poziomą */
   .legend-card {
-    position: static; /* Wyłączamy sticky */
-    margin-bottom: 20px;
-    order: -1; /* Legenda nad kalendarzem */
+    position: static; order: -1; margin-bottom: 20px;
   }
-  
-  .legend-list {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 20px;
-  }
-  
-  .yearly-container { padding: 0 15px; } /* Marginesy na mobile */
+  .legend-list { flex-direction: row; flex-wrap: wrap; gap: 20px; }
+  .yearly-container { padding: 0 15px; } 
 }
 
-.day-cell {
-  /* To jest ważne, żeby tooltip pozycjonował się względem dnia */
-  position: relative; 
-}
-
-/* Wygląd dymka */
-.custom-tooltip {
-  visibility: hidden;
-  opacity: 0;
-  
-  position: absolute;
-  bottom: 120%; /* Wyświetl NAD kafelkiem */
-  left: 50%;
-  transform: translateX(-50%); /* Wyśrodkuj idealnie */
-  
-  background-color: #333; /* Ciemne tło */
-  color: #fff;            /* Biały tekst */
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;    /* Tekst w jednej linii */
-  z-index: 100;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  
-  /* Szybka animacja pojawiania się */
-  transition: opacity 0.2s, transform 0.2s;
-  pointer-events: none; /* Żeby myszka nie "haczyła" o tooltip */
-}
-
-/* Mała strzałeczka w dół pod dymkiem */
-.custom-tooltip::after {
-  content: "";
-  position: absolute;
-  top: 100%; /* Na dole dymka */
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #333 transparent transparent transparent;
-}
-
-/* POKAŻ TOOLTIP PO NAJECHANIU */
-.day-cell:hover .custom-tooltip {
-  visibility: visible;
-  opacity: 1;
-  transform: translateX(-50%) translateY(-5px); /* Lekki ruch do góry dla efektu */
-}
-
+/* --- TELEFONY (GŁÓWNA POPRAWKA) --- */
 @media (max-width: 768px) {
   
-  /* 1. ZABEZPIECZENIE KONTENERA GŁÓWNEGO */
   .yearly-container {
-    width: 100%;
-    max-width: 100vw;   /* Nie szerszy niż ekran */
-    padding: 0 10px;    /* Małe marginesy po bokach */
-    overflow-x: hidden; /* KLUCZOWE: Ucina wszystko, co wystaje poza ekran */
-    box-sizing: border-box;
+    width: 100vw;
+    max-width: 100%;
+    padding: 0 10px;
+    overflow-x: hidden; 
+    margin: 0;
   }
 
-  /* 2. TABELA JAKO JEDYNY ELEMENT PRZEWIJALNY */
   .schedule-table {
     display: block;
-    width: 100%;        /* Dopasuj do kontenera */
-    overflow-x: auto;   /* Włącz przewijanie WENĄTRZ tabeli */
-    -webkit-overflow-scrolling: touch; /* Płynne przewijanie na iPhone */
-    position: relative;
+    width: 100%;
+    overflow-x: auto; /* Przewijanie poziome tabeli */
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Wnętrze tabeli jest szerokie, ale schowane w scrollu */
   .schedule-header-row, 
   .schedule-row {
     min-width: 700px; 
-    width: 100%;
   }
 
-  /* --- STICKY COLUMN (KOLUMNA MIESIĄCA) --- */
- .month-col-header,
+  .month-col-header, 
   .month-name-col {
-    /* Zmniejszamy z 140px na 85px */
-    width: 85px !important;
-    min-width: 85px !important;
-    max-width: 85px !important;
-    
-    /* Mniejsza czcionka i padding, żeby tekst się mieścił */
-    font-size: 11px !important; 
-    padding: 0 5px !important; /* Mniejszy margines wewnątrz */
-    
-    /* Zachowujemy przyklejenie (Sticky) */
-    position: sticky;
-    left: 0;
-    z-index: 10;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.05); 
+    position: sticky; left: 0; z-index: 10;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
     border-right: 1px solid #e0e0e0;
+    
+    width: 85px !important; min-width: 85px !important; max-width: 85px !important;
+    font-size: 11px !important; padding: 0 5px !important;
   }
-
-  /* Ustawiamy tła, żeby dni nie prześwitywały pod przyklejoną kolumną */
+  
   .month-col-header { background-color: #fcfcfc; }
   .month-name-col { background-color: #fffbf0; }
-
-  /* Dostosowanie nawigacji */
+  
   .year-navigation-card {
-    padding: 15px;
-    flex-direction: row;
-    justify-content: space-between;
+    padding: 15px; flex-direction: row; justify-content: space-between; width: 100%;
   }
   
   .current-year-label { font-size: 18px; }
-  
-  /* Legenda pod spodem */
-  .schedule-legend {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 0 5px;
-  }
 }
