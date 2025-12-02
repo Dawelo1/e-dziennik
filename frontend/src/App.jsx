@@ -14,13 +14,12 @@ import Info from './Info';
 import Settings from './Settings';
 import Payments from './Payments';
 import Attendance from './Attendance';
+import Meals from './Meals';
 
 // Placeholdery (Wkrótce zastąpimy je prawdziwymi plikami)
-const Newsfeed = () => <h2 style={{color:'white'}}>📰 Tablica Postów</h2>;
 const Messages = () => <h2 style={{color:'white'}}>📩 Wiadomości</h2>;
 const Calendar = () => <h2 style={{color:'white'}}>📅 Kalendarz Roczny</h2>;
 const Schedule = () => <h2 style={{color:'white'}}>🕒 Plan Tygodniowy</h2>;
-const Menu = () => <h2 style={{color:'white'}}>🍲 Jadłospis</h2>;
 
 const GeneralInfo = () => (
   <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '20px', height: '100%' }}>
@@ -51,12 +50,11 @@ function App() {
         {/* Chronione (wewnątrz Layoutu) */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/newsfeed" element={<Newsfeed />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/schedule" element={<Schedule />} />
-          <Route path="/menu" element={<Menu />} />
+          <Route path="/menu" element={<Meals />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/info" element={<Info />} />

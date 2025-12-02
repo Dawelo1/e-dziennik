@@ -1,0 +1,235 @@
+/* frontend/src/Meals.css */
+
+/* --- GŁÓWNY KONTENER (ZGODNY Z SETTINGS) --- */
+.meals-container {
+  width: 100%;
+  margin: 0;
+  padding: 0; /* Kluczowe dla wyrównania do lewej */
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* --- TYTUŁ STRONY (ZGODNY Z SETTINGS) --- */
+.page-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 700;
+  
+  /* Marginesy i Paddingi identyczne jak w Settings */
+  margin-bottom: 20px;
+  margin-left: 0;
+  padding-left: 15px;
+  
+  border-left: 5px solid #f2c94c; /* Miodowy pasek */
+  
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-title svg {
+  color: #f2c94c;
+  font-size: 28px;
+}
+
+/* --- KARTA NAWIGACJI (Styl .settings-wide-card) --- */
+.week-navigation-card {
+  background: white;
+  border-radius: 20px; /* ZGODNOŚĆ: 20px */
+  padding: 20px 40px; /* Padding podobny do kart ustawień */
+  
+  /* ZGODNOŚĆ: Cień i Max-width */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  max-width: 1100px; 
+  
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.current-week-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333; /* Ciemny tekst jak w tytułach kart */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Przyciski nawigacji */
+.nav-btn {
+  background-color: #fcfcfc;
+  border: 1px solid #e0e0e0;
+  padding: 10px 25px;
+  border-radius: 25px; /* Zaokrąglenie przycisków jak honey-btn */
+  cursor: pointer;
+  font-weight: 600;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background-color: #f2c94c;
+  border-color: #f2c94c;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(242, 201, 76, 0.3);
+}
+
+/* --- GRID KART DNI --- */
+.meals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Responsywne kolumny */
+  gap: 30px; /* Odstęp taki jak w inputs-grid */
+  
+  /* Ograniczenie szerokości całej siatki, żeby nie rozjechała się względem nawigacji */
+  max-width: 1100px; 
+}
+
+/* --- KARTA DNIA (Styl .settings-wide-card, ale mniejsza) --- */
+.meal-card {
+  background: white;
+  border-radius: 20px; /* ZGODNOŚĆ: 20px */
+  
+  /* ZGODNOŚĆ: Cień */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  
+  overflow: hidden; 
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+  border: 1px solid transparent;
+}
+
+.meal-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+/* Karta dzisiejsza */
+.meal-card.today-card {
+  border: 2px solid #f2c94c;
+}
+
+/* Nagłówek karty dnia */
+.meal-card-header {
+  background-color: #fcfcfc; /* Jasne tło nagłówka */
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.day-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+  text-transform: capitalize;
+}
+
+.today-badge {
+  background-color: #f2c94c;
+  color: white;
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* Sekcje Posiłków */
+.meal-sections {
+  padding: 25px; /* Padding wewnątrz karty */
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.meal-row {
+  display: flex;
+  gap: 15px;
+}
+
+/* Ikony posiłków (okrągłe) */
+.meal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.breakfast .meal-icon { background-color: #e3f2fd; color: #2196f3; }
+.lunch .meal-icon { background-color: #fff3e0; color: #ff9800; }
+.snack .meal-icon { background-color: #e8f5e9; color: #4caf50; }
+
+.meal-details {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.meal-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #999;
+  font-weight: 700;
+  margin-bottom: 5px;
+  letter-spacing: 0.5px;
+}
+
+.beverage, .fruit {
+  font-size: 13px;
+  color: #777;
+  font-style: italic;
+  margin-top: 3px;
+}
+
+/* Puste menu / Loading */
+.no-menu-info, .loading-meals {
+  padding: 50px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.no-menu-info svg { font-size: 24px; color: #ccc; }
+
+/* Alergeny */
+.allergens-box {
+  margin-top: 10px;
+  padding-top: 15px;
+  border-top: 1px dashed #eee;
+  font-size: 12px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.allergens-box svg { color: #8bc34a; font-size: 14px; }
+
+/* RWD */
+@media (max-width: 768px) {
+  .week-navigation-card {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+    padding: 20px;
+  }
+  .meals-grid {
+    grid-template-columns: 1fr; /* Jedna karta pod drugą na telefonie */
+  }
+  .nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
