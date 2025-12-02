@@ -188,9 +188,9 @@ const Dashboard = () => {
       
       {/* LEWA STRONA (POSTY) */}
       <div className="feed-column">
-        <div className="section-header">
+        <h2 className="section-header">
           <FaBullhorn /> Tablica Postów
-        </div>
+        </h2>
 
         {posts.length === 0 ? (
           <div className="post-card"><p style={{color: '#333'}}>Brak nowych ogłoszeń.</p></div>

@@ -95,9 +95,9 @@ const Meals = () => {
     <div className="meals-container">
       
       {/* TYTUŁ (Styl Settings) */}
-      <div className="page-title">
+      <h2 className="page-title">
         <FaUtensils /> Jadłospis
-      </div>
+      </h2>
 
       {/* NAWIGACJA TYGODNIOWA */}
       <div className="week-navigation-card">

@@ -182,9 +182,9 @@ const Attendance = () => {
 
   return (
     <div className="attendance-container">
-      <div className="page-title">
+      <h2 className="page-title">
         <FaUserSlash /> Zgłoś Nieobecność
-      </div>
+      </h2>
 
       {children.length > 1 && (
         <div className="child-selector">

@@ -15,11 +15,12 @@ import Settings from './Settings';
 import Payments from './Payments';
 import Attendance from './Attendance';
 import Meals from './Meals';
+//import Schedule from './Schedule';
+import Calendar from './Calendar';
 
 // Placeholdery (Wkrótce zastąpimy je prawdziwymi plikami)
 const Messages = () => <h2 style={{color:'white'}}>📩 Wiadomości</h2>;
-const Calendar = () => <h2 style={{color:'white'}}>📅 Kalendarz Roczny</h2>;
-const Schedule = () => <h2 style={{color:'white'}}>🕒 Plan Tygodniowy</h2>;
+const Schedule = () => <h2 style={{color:'white'}}>📅 Kalendarz Roczny</h2>;
 
 const GeneralInfo = () => (
   <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '20px', height: '100%' }}>
