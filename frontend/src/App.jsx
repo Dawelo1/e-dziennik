@@ -13,11 +13,11 @@ import Dashboard from './Dashboard';
 import Info from './Info';
 import Settings from './Settings';
 import Payments from './Payments';
+import Attendance from './Attendance';
 
 // Placeholdery (Wkrótce zastąpimy je prawdziwymi plikami)
 const Newsfeed = () => <h2 style={{color:'white'}}>📰 Tablica Postów</h2>;
 const Messages = () => <h2 style={{color:'white'}}>📩 Wiadomości</h2>;
-const Attendance = () => <h2 style={{color:'white'}}>🤒 Zgłaszanie Nieobecności</h2>;
 const Calendar = () => <h2 style={{color:'white'}}>📅 Kalendarz Roczny</h2>;
 const Schedule = () => <h2 style={{color:'white'}}>🕒 Plan Tygodniowy</h2>;
 const Menu = () => <h2 style={{color:'white'}}>🍲 Jadłospis</h2>;
