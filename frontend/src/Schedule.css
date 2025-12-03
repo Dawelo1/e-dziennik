@@ -1,0 +1,193 @@
+/* frontend/src/Schedule.css */
+
+.schedule-container * { box-sizing: border-box; }
+
+.schedule-container {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* TYTUŁ */
+.page-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  margin-left: 0;
+  padding-left: 15px;
+  border-left: 5px solid #f2c94c;
+  display: flex; align-items: center; gap: 15px;
+}
+.page-title svg { color: #f2c94c; font-size: 28px; }
+
+/* NAWIGACJA */
+.week-navigation-card {
+  background: white;
+  border-radius: 20px;
+  padding: 15px 30px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px;
+}
+.current-week-label { font-size: 16px; font-weight: 700; color: #444; text-transform: uppercase; }
+.nav-btn {
+  background: #fcfcfc; border: 1px solid #e0e0e0; padding: 10px 20px; border-radius: 30px; cursor: pointer; color: #555; font-weight: 600;
+  display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+}
+.nav-btn:hover { background: #f2c94c; border-color: #f2c94c; color: white; transform: translateY(-2px); }
+.nav-btn:focus { outline: none; }
+
+/* --- TABELA (CSS GRID) --- */
+.timetable-wrapper {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  position: relative;
+}
+
+.timetable-grid {
+  display: grid;
+  /* 60px na godziny, reszta to 5 dni */
+  grid-template-columns: 60px repeat(5, 1fr);
+  /* Wiersze: Nagłówek (50px) + 24 sloty po 30min (każdy min 30px wysokości) */
+  grid-template-rows: 50px repeat(24, minmax(30px, auto));
+}
+
+/* NAGŁÓWKI */
+.time-header-corner {
+  background-color: #fcfcfc;
+  border-bottom: 1px solid #e0e0e0;
+  border-right: 1px solid #e0e0e0;
+  display: flex; justify-content: center; align-items: center;
+  color: #ccc;
+  position: sticky; top: 0; z-index: 20;
+}
+
+.day-header {
+  background-color: #fcfcfc;
+  border-bottom: 1px solid #e0e0e0;
+  border-right: 1px solid #f0f0f0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  position: sticky; top: 0; z-index: 10;
+}
+.day-header:last-child { border-right: none; }
+
+.day-header.today {
+  background-color: #fff8e1;
+  border-bottom: 3px solid #f2c94c;
+}
+
+.dh-name { font-weight: 700; color: #333; font-size: 13px; text-transform: capitalize; }
+.dh-date { font-size: 11px; color: #888; }
+
+/* KOLUMNA GODZIN */
+.time-slot-label {
+  background-color: #fafafa;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex; justify-content: center; align-items: flex-start; /* Godzina u góry */
+  padding-top: 5px;
+  font-size: 11px; font-weight: 700; color: #999;
+}
+
+/* TŁO SIATKI */
+.grid-cell-bg {
+  border-right: 1px solid #f9f9f9;
+  border-bottom: 1px solid #f0f0f0;
+}
+/* Linia przerywana co 30 min */
+.grid-cell-bg.half-hour {
+  border-bottom: 1px dashed #f5f5f5; 
+}
+
+/* --- WYDARZENIA (KAFELKI) --- */
+.event-item-grid {
+  margin: 2px;
+  border-radius: 8px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  overflow: hidden;
+  z-index: 1; /* Nad liniami siatki */
+  border-left: 4px solid transparent;
+}
+
+.ev-time { font-size: 10px; opacity: 0.8; margin-bottom: 2px; font-weight: 600; }
+.ev-content { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.ev-icon { font-size: 12px; }
+
+/* Kolory */
+.event-item-grid.meal {
+  background-color: #fff3e0;
+  color: #e65100;
+  border-left-color: #ff9800;
+}
+
+.event-item-grid.activity {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border-left-color: #2196f3;
+}
+
+/* RWD */
+@media (max-width: 768px) {
+  .timetable-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .timetable-grid {
+    min-width: 600px; /* Wymuś szerokość na telefonie */
+  }
+  
+  /* Sticky Column (Godziny) */
+  .time-header-corner,
+  .time-slot-label {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background-color: #fafafa;
+    border-right: 1px solid #ddd;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+  }
+  .time-header-corner { z-index: 30; background-color: #fcfcfc; }
+  
+  .week-navigation-card {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+}
+
+.grid-cell-bg {
+  border-right: 1px solid #f9f9f9;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fff; /* Domyślne białe tło dla otwartych */
+}
+
+/* Linia przerywana co 30 min */
+.grid-cell-bg.half-hour {
+  border-bottom: 1px dashed #f5f5f5; 
+}
+
+/* --- NOWOŚĆ: GODZINY ZAMKNIĘCIA (06:00-06:30 i 17:30-18:00) --- */
+.grid-cell-bg.closed-hours {
+  background-color: #f5f5f5; /* Szare tło */
+  /* Paski przekreślające */
+  background-image: repeating-linear-gradient(
+    45deg,
+    #f5f5f5,
+    #f5f5f5 5px,
+    #ebebeb 5px,
+    #ebebeb 10px
+  );
+  border-bottom: 1px solid #ddd; /* Mocniejsza linia oddzielająca */
+}
