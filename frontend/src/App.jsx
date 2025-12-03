@@ -17,9 +17,7 @@ import Attendance from './Attendance';
 import Meals from './Meals';
 import Schedule from './Schedule';
 import Calendar from './Calendar';
-
-// Placeholdery (Wkrótce zastąpimy je prawdziwymi plikami)
-const Messages = () => <h2 style={{color:'white'}}>📩 Wiadomości</h2>;
+import Messages from './Messages';
 
 const GeneralInfo = () => (
   <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '20px', height: '100%' }}>

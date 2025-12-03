@@ -1,0 +1,198 @@
+/* frontend/src/Messages.css */
+
+/* Kontener główny - wyrównanie do lewej */
+.messages-container {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* TYTUŁ */
+.page-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  margin-left: 0;
+  padding-left: 15px;
+  border-left: 5px solid #f2c94c;
+  display: flex; align-items: center; gap: 15px;
+}
+.page-title svg { color: #f2c94c; font-size: 28px; }
+
+/* KONTROLKI (Taby i Przycisk) */
+.messages-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.tabs-container {
+  display: flex;
+  background: white;
+  padding: 5px;
+  border-radius: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.tab-btn {
+  border: none;
+  background: none;
+  padding: 10px 25px;
+  border-radius: 25px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background-color: #f2c94c;
+  color: white;
+  box-shadow: 0 2px 8px rgba(242, 201, 76, 0.4);
+}
+
+.new-message-btn {
+  background-color: #333;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: transform 0.2s;
+}
+.new-message-btn:hover { transform: translateY(-2px); background-color: #555; }
+
+/* LISTA WIADOMOŚCI */
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.empty-state {
+  text-align: center; padding: 40px; color: #888; background: white; border-radius: 20px;
+}
+
+/* KARTA WIADOMOŚCI */
+.message-card {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 5px solid transparent;
+}
+
+.message-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+/* Nieprzeczytana */
+.message-card.unread {
+  background-color: #fffdf5; /* Lekko żółte tło */
+  border-left-color: #f2c94c; /* Pasek nieprzeczytanej */
+}
+.message-card.unread .msg-subject { font-weight: 800; color: #000; }
+.message-card.unread .msg-counterparty { color: #000; font-weight: 700; }
+
+/* Nagłówek karty */
+.message-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.msg-avatar {
+  width: 40px; height: 40px;
+  background-color: #f0f2f5;
+  border-radius: 50%;
+  display: flex; justify-content: center; align-items: center;
+  color: #555; font-size: 18px;
+  flex-shrink: 0;
+}
+.message-card.unread .msg-avatar { background-color: #fff3e0; color: #f2c94c; }
+
+.msg-info { flex: 1; }
+
+.msg-top-row {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 5px;
+}
+
+.msg-counterparty { font-size: 14px; font-weight: 600; color: #444; }
+.msg-date { font-size: 11px; color: #999; display: flex; align-items: center; gap: 5px; }
+
+.msg-subject { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 5px; }
+.msg-preview { font-size: 13px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.msg-chevron { color: #ccc; }
+
+/* TREŚĆ ROZWINIĘTA */
+.message-body-full {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #f0f0f0;
+  animation: fadeIn 0.3s ease;
+  cursor: default; /* Żeby klikanie w tekst nie zwijało */
+}
+
+.full-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap; /* Zachowuje entery */
+  margin-bottom: 15px;
+}
+
+.message-actions { display: flex; justify-content: flex-end; }
+
+.reply-btn {
+  background: none; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px;
+  font-size: 13px; font-weight: 600; color: #555; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: 0.2s;
+}
+.reply-btn:hover { background: #f2c94c; border-color: #f2c94c; color: white; }
+
+/* MODAL (Style z Attendance.css działają, ale doprecyzujmy textarea) */
+.message-modal { width: 90%; max-width: 500px; text-align: left; }
+.message-modal h3 { text-align: center; margin-bottom: 20px; }
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-size: 12px; font-weight: 700; color: #666; margin-bottom: 5px; }
+.form-group input, .form-group textarea {
+  width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px;
+}
+.form-group textarea { resize: vertical; }
+
+.tab-btn:focus,
+.tab-btn:active,
+.new-message-btn:focus,
+.new-message-btn:active,
+.reply-btn:focus,
+.reply-btn:active,
+.modal-btn:focus,
+.modal-btn:active {
+  outline: none;
+  box-shadow: none; /* Usuwa też ewentualne cienie systemowe */
+}
+
+/* Przywrócenie cienia tylko dla aktywnego taba (opcjonalnie, żeby wyglądał ładnie) */
+.tab-btn.active {
+  box-shadow: 0 2px 8px rgba(242, 201, 76, 0.4);
+}
+
+/* RWD */
+@media (max-width: 768px) {
+  .msg-date { display: none; } /* Na telefonie ukryj datę w liście, żeby było czytelniej, lub pokaż ją pod spodem */
+}
