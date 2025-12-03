@@ -164,9 +164,9 @@ const Schedule = () => {
   return (
     <div className="schedule-container">
       
-      <div className="page-title">
+      <h2 className="page-title">
         <FaCalendarDay /> Plan Zajęć
-      </div>
+      </h2>
 
       <div className="week-navigation-card">
         <button className="nav-btn" onClick={() => changeWeek(-1)}>
