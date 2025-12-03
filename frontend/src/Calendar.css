@@ -1,25 +1,3 @@
-/* frontend/src/YearlyCalendar.css */
-
-/* --- 1. AGRESYWNE UKRYWANIE PASKÓW PRZEWIJANIA --- */
-/* Ukrywamy pasek, ale zachowujemy funkcję przewijania */
-
-.yearly-container,
-.schedule-table {
-  /* Firefox */
-  scrollbar-width: none !important;
-  /* IE 10+ */
-  -ms-overflow-style: none !important;
-}
-
-.yearly-container::-webkit-scrollbar,
-.schedule-table::-webkit-scrollbar {
-  /* Chrome, Safari, Opera */
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  background: transparent !important;
-}
-
 /* Zabezpieczenie wymiarów */
 .yearly-container * {
   box-sizing: border-box;
@@ -31,8 +9,9 @@
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
-  /* Blokujemy suwak boczny, ale pozwalamy na scrollowanie treści przez rodzica (Layout) */
-  overflow-x: hidden; 
+  
+  /* ZMIANA: Usunięto 'overflow-x: hidden', aby pasek był systemowy */
+  /* overflow-x: hidden; <- USUNIĘTE */
 }
 
 /* --- TYTUŁ STRONY --- */
@@ -221,17 +200,19 @@
 @media (max-width: 768px) {
   
   .yearly-container {
-    width: 100vw;
+    /* ZMIANA: Usunięto width: 100vw i overflow-x: hidden */
+    width: 100%; 
     max-width: 100%;
     padding: 0 10px;
-    overflow-x: hidden; 
     margin: 0;
   }
 
   .schedule-table {
     display: block;
     width: 100%;
-    overflow-x: auto; /* Przewijanie poziome tabeli */
+    /* To zostawiamy, żeby tabela przewijała się wewnątrz strony, 
+       ale dzięki usunięciu overflow-x z rodzica, pasek będzie wyglądał standardowo */
+    overflow-x: auto; 
     -webkit-overflow-scrolling: touch;
   }
 
