@@ -125,12 +125,14 @@
 .message-time { font-size: 10px; color: #aaa; margin-top: 4px; margin-left: 5px; text-align: right; }
 .read-status { margin-left: 5px; }
 
-/* Input */
+/* --- INPUT (POPRAWIONY) --- */
 .chat-input-area {
   padding: 15px 25px;
   background-color: #fff;
   border-top: 1px solid #f0f0f0;
-  display: flex; align-items: center; gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .chat-input-area input {
@@ -139,9 +141,31 @@
   border-radius: 25px;
   border: 1px solid #e0e0e0;
   background-color: #f9f9f9;
-  font-size: 14px; outline: none; transition: all 0.2s;
+  
+  /* Kolor tekstu wpisywanego (Czarny) */
+  color: #333; 
+  font-size: 14px; 
+  outline: none; 
+  transition: all 0.2s;
 }
-.chat-input-area input:focus { border-color: #f2c94c; background-color: #fff; }
+
+/* Styl tekstu podglądowego (Placeholder) */
+.chat-input-area input::placeholder {
+  color: #aaa;
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+/* Ukrywanie placeholdera po kliknięciu */
+.chat-input-area input:focus::placeholder {
+  opacity: 0;
+  color: transparent;
+}
+
+.chat-input-area input:focus { 
+  border-color: #f2c94c; 
+  background-color: #fff; 
+}
 
 .chat-input-area button {
   background: none; border: none; color: #f2c94c; font-size: 20px;
