@@ -41,9 +41,25 @@ const Layout = () => {
     });
   }, [navigate]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+    
+    // 1. Najpierw usuwamy token lokalnie, żeby zatrzymać pętle zapytań (np. w Dashboardzie)
     localStorage.removeItem('token');
+    
+    // 2. Przekierowujemy natychmiast, żeby odmontować komponenty
     navigate('/');
+    
+    // 3. Wysyłamy żądanie "pożegnalne" do serwera w tle
+    if (token) {
+      try {
+        await axios.post('http://127.0.0.1:8000/api/users/logout/', {}, {
+          headers: { Authorization: `Token ${token}` }
+        });
+      } catch (error) {
+        console.log("Sesja wygasła lub błąd wylogowania (to normalne przy wielu kartach).");
+      }
+    }
   };
 
   if (!user) return null;

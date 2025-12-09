@@ -1,198 +1,163 @@
 /* frontend/src/Messages.css */
 
-/* Kontener główny - wyrównanie do lewej */
+/* Zabezpieczenie wymiarów */
+.messages-container * { box-sizing: border-box; }
+
+/* --- GŁÓWNY KONTENER (ZGODNY Z SCHEDULE/SETTINGS) --- */
 .messages-container {
-  max-width: 1100px;
   width: 100%;
-  margin: 0 auto;
-  padding: 0;
+  margin: 0;
+  padding: 0; /* Wyrównanie do lewej */
   font-family: 'Segoe UI', sans-serif;
+  max-width: 1100px; /* Ograniczenie szerokości */
+  
+  /* Czat musi mieć wysokość, żeby działał scroll wewnątrz */
+  height: calc(100vh - 100px); 
+  display: flex;
+  flex-direction: column;
 }
 
-/* TYTUŁ */
+/* --- TYTUŁ STRONY (ZGODNY Z RESZTĄ) --- */
 .page-title {
   color: #333;
   font-size: 24px;
   font-weight: 700;
+  
   margin-bottom: 20px;
   margin-left: 0;
   padding-left: 15px;
-  border-left: 5px solid #f2c94c;
-  display: flex; align-items: center; gap: 15px;
-}
-.page-title svg { color: #f2c94c; font-size: 28px; }
-
-/* KONTROLKI (Taby i Przycisk) */
-.messages-controls {
+  
+  border-left: 5px solid #f2c94c; /* Miodowy pasek */
+  
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
   gap: 15px;
+  flex-shrink: 0; /* Tytuł nie może się kurczyć */
 }
 
-.tabs-container {
-  display: flex;
+.page-title svg {
+  color: #f2c94c;
+  font-size: 28px;
+}
+
+/* --- KARTA CZATU (Biały Box) --- */
+.chat-card {
   background: white;
-  padding: 5px;
-  border-radius: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.tab-btn {
-  border: none;
-  background: none;
-  padding: 10px 25px;
-  border-radius: 25px;
-  font-weight: 600;
-  color: #666;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
-  transition: all 0.2s;
-}
-
-.tab-btn.active {
-  background-color: #f2c94c;
-  color: white;
-  box-shadow: 0 2px 8px rgba(242, 201, 76, 0.4);
-}
-
-.new-message-btn {
-  background-color: #333;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 25px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 8px;
-  transition: transform 0.2s;
-}
-.new-message-btn:hover { transform: translateY(-2px); background-color: #555; }
-
-/* LISTA WIADOMOŚCI */
-.messages-list {
+  border-radius: 20px; /* Zaokrąglenie 20px */
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Cień */
+  border: 1px solid #e0e0e0;
+  
+  /* Rozciągnięcie na resztę wysokości */
+  flex: 1; 
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  overflow: hidden; /* Żeby input i header nie wystawały poza zaokrąglenie */
+  margin-bottom: 20px;
 }
 
-.empty-state {
-  text-align: center; padding: 40px; color: #888; background: white; border-radius: 20px;
-}
+/* --- ELEMENTY CZATU WEWNĄTRZ KARTY --- */
 
-/* KARTA WIADOMOŚCI */
-.message-card {
-  background: white;
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  cursor: pointer;
-  transition: all 0.2s;
-  border-left: 5px solid transparent;
-}
-
-.message-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-}
-
-/* Nieprzeczytana */
-.message-card.unread {
-  background-color: #fffdf5; /* Lekko żółte tło */
-  border-left-color: #f2c94c; /* Pasek nieprzeczytanej */
-}
-.message-card.unread .msg-subject { font-weight: 800; color: #000; }
-.message-card.unread .msg-counterparty { color: #000; font-weight: 700; }
-
-/* Nagłówek karty */
-.message-header {
+/* Header Czat */
+.chat-header {
+  padding: 15px 25px;
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 15px;
+  background-color: #fff;
 }
+
+.director-avatar {
+  width: 45px; height: 45px;
+  background-color: #e3f2fd; color: #1565c0;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;
+  position: relative;
+}
+
+.header-info h3 { margin: 0; font-size: 16px; color: #333; }
+
+/* Statusy */
+.status-indicator { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.status-indicator.online { color: #4caf50; }
+.status-indicator.offline { color: #999; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot.green { background-color: #4caf50; }
+.dot.gray { background-color: #ccc; }
+.avatar-online-dot {
+  position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px;
+  background-color: #4caf50; border: 2px solid #fff; border-radius: 50%;
+}
+
+/* Obszar Wiadomości */
+.messages-area {
+  flex: 1; /* Wypełnia środek karty */
+  padding: 20px 25px;
+  overflow-y: auto; /* Przewijanie tylko tutaj */
+  background-color: #fcfcfc; /* Bardzo jasne tło dla kontrastu z białą kartą */
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* Wiersz wiadomości */
+.message-row { display: flex; align-items: flex-end; gap: 10px; max-width: 80%; }
+.message-row.sent { align-self: flex-end; flex-direction: row-reverse; }
+.message-row.received { align-self: flex-start; }
 
 .msg-avatar {
-  width: 40px; height: 40px;
-  background-color: #f0f2f5;
-  border-radius: 50%;
-  display: flex; justify-content: center; align-items: center;
-  color: #555; font-size: 18px;
-  flex-shrink: 0;
-}
-.message-card.unread .msg-avatar { background-color: #fff3e0; color: #f2c94c; }
-
-.msg-info { flex: 1; }
-
-.msg-top-row {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 5px;
+  width: 30px; height: 30px; border-radius: 50%; background-color: #ddd;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: bold; color: #555; flex-shrink: 0;
 }
 
-.msg-counterparty { font-size: 14px; font-weight: 600; color: #444; }
-.msg-date { font-size: 11px; color: #999; display: flex; align-items: center; gap: 5px; }
+.bubble-wrapper { display: flex; flex-direction: column; }
+.sender-name { font-size: 11px; color: #999; margin-bottom: 2px; margin-left: 5px; }
 
-.msg-subject { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 5px; }
-.msg-preview { font-size: 13px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Dymki */
+.message-bubble {
+  padding: 10px 15px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word;
+}
+.sent .message-bubble {
+  background-color: #f2c94c; color: #fff; border-bottom-right-radius: 4px;
+}
+.received .message-bubble {
+  background-color: #e4e6eb; color: #050505; border-bottom-left-radius: 4px;
+}
 
-.msg-chevron { color: #ccc; }
+.message-time { font-size: 10px; color: #aaa; margin-top: 4px; margin-left: 5px; text-align: right; }
+.read-status { margin-left: 5px; }
 
-/* TREŚĆ ROZWINIĘTA */
-.message-body-full {
-  margin-top: 15px;
-  padding-top: 15px;
+/* Input */
+.chat-input-area {
+  padding: 15px 25px;
+  background-color: #fff;
   border-top: 1px solid #f0f0f0;
-  animation: fadeIn 0.3s ease;
-  cursor: default; /* Żeby klikanie w tekst nie zwijało */
+  display: flex; align-items: center; gap: 10px;
 }
 
-.full-text {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #333;
-  white-space: pre-wrap; /* Zachowuje entery */
-  margin-bottom: 15px;
+.chat-input-area input {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 25px;
+  border: 1px solid #e0e0e0;
+  background-color: #f9f9f9;
+  font-size: 14px; outline: none; transition: all 0.2s;
 }
+.chat-input-area input:focus { border-color: #f2c94c; background-color: #fff; }
 
-.message-actions { display: flex; justify-content: flex-end; }
-
-.reply-btn {
-  background: none; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px;
-  font-size: 13px; font-weight: 600; color: #555; cursor: pointer;
-  display: flex; align-items: center; gap: 6px; transition: 0.2s;
+.chat-input-area button {
+  background: none; border: none; color: #f2c94c; font-size: 20px;
+  cursor: pointer; padding: 10px; display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s;
 }
-.reply-btn:hover { background: #f2c94c; border-color: #f2c94c; color: white; }
+.chat-input-area button:hover:not(:disabled) { transform: scale(1.1); }
+.chat-input-area button:disabled { color: #ccc; cursor: default; }
+.chat-input-area button:focus { outline: none; } /* Bez ramki */
 
-/* MODAL (Style z Attendance.css działają, ale doprecyzujmy textarea) */
-.message-modal { width: 90%; max-width: 500px; text-align: left; }
-.message-modal h3 { text-align: center; margin-bottom: 20px; }
-
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; font-size: 12px; font-weight: 700; color: #666; margin-bottom: 5px; }
-.form-group input, .form-group textarea {
-  width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px;
-}
-.form-group textarea { resize: vertical; }
-
-.tab-btn:focus,
-.tab-btn:active,
-.new-message-btn:focus,
-.new-message-btn:active,
-.reply-btn:focus,
-.reply-btn:active,
-.modal-btn:focus,
-.modal-btn:active {
-  outline: none;
-  box-shadow: none; /* Usuwa też ewentualne cienie systemowe */
-}
-
-/* Przywrócenie cienia tylko dla aktywnego taba (opcjonalnie, żeby wyglądał ładnie) */
-.tab-btn.active {
-  box-shadow: 0 2px 8px rgba(242, 201, 76, 0.4);
-}
+.empty-chat { text-align: center; color: #999; margin-top: 50px; }
 
 /* RWD */
 @media (max-width: 768px) {
-  .msg-date { display: none; } /* Na telefonie ukryj datę w liście, żeby było czytelniej, lub pokaż ją pod spodem */
+  .messages-container {
+    padding: 0 10px; /* Mały margines na telefonie */
+    height: calc(100vh - 80px); /* Dopasowanie do menu mobilnego */
+  }
 }

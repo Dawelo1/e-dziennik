@@ -13,3 +13,6 @@ class MessageSerializer(serializers.ModelSerializer):
         read_only_fields = ['sender', 'created_at', 'is_read'] 
         # Nadawcę ustawiamy automatycznie, datę też.
         # is_read zmienia się osobnym endpointem (lub automatycznie przy otwarciu).
+        extra_kwargs = {
+            'receiver': {'required': False} 
+        }

@@ -4,6 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.contrib.auth.models import update_last_login # <--- WAŻNY IMPORT DO DATY LOGOWANIA
+from users.models import User
 
 # Importy potrzebne do logowania
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -63,32 +66,63 @@ class CurrentUserView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
-# --- TO JEST KLUCZOWY BRAKUJĄCY ELEMENT ---
 class CustomAuthToken(ObtainAuthToken):
     """
-    Logowanie za pomocą LOGINU lub E-MAILA.
+    Logowanie, które:
+    1. Zwraca token.
+    2. Aktualizuje datę logowania.
+    3. Ustawia status ONLINE dla dyrektora.
     """
     def post(self, request, *args, **kwargs):
-        data = request.data.copy()
-        login_input = data.get('username') # To co wpisał user (login lub email)
-        User = get_user_model()
-
-        # Jeśli wpisano email (małpę), znajdź login tego usera
-        if login_input and '@' in login_input:
-            try:
-                user = User.objects.get(email=login_input)
-                data['username'] = user.username
-            except User.DoesNotExist:
-                pass # Zostawiamy błędny email, system zwróci błąd logowania
-        
-        serializer = self.serializer_class(data=data, context={'request': request})
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
         
+        token, created = Token.objects.get_or_create(user=user)
+
+        # 1. Aktualizacja daty w bazie (to już mieliśmy)
+        update_last_login(None, user)
+
+        # 2. NOWOŚĆ: Jeśli loguje się Dyrektor -> ustawiamy go jako DOSTĘPNEGO natychmiast
+        if user.is_director:
+            cache_key = f'director_online_{user.id}'
+            cache.set(cache_key, True, 300) # 5 minut (300 sekund)
+
         return Response({
             'token': token.key,
             'user_id': user.pk,
             'email': user.email,
-            'role': 'director' if user.is_director else 'parent' # Opcjonalnie zwracamy rolę
+            'is_director': user.is_director
         })
+    
+class DirectorStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # 1. Pobierz wszystkich dyrektorów z bazy
+        directors = User.objects.filter(is_director=True)
+        
+        is_any_online = False
+        
+        # 2. Sprawdź cache dla każdego z nich
+        for director in directors:
+            cache_key = f'director_online_{director.id}'
+            if cache.get(cache_key):
+                is_any_online = True
+                break # Wystarczy, że jeden jest online
+
+        return Response({'is_online': is_any_online})
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Próba usunięcia tokena.
+        # Jeśli się uda -> zadziała sygnał on_token_delete i usunie cache.
+        try:
+            request.user.auth_token.delete()
+            return Response({"message": "Wylogowano pomyślnie."})
+        except Exception as e:
+            # Jeśli tokena nie ma lub jest błąd, zwracamy info, ale front to zignoruje
+            return Response({"message": "Już wylogowany lub błąd tokena."}, status=200)

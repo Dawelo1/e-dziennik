@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings             
 from django.conf.urls.static import static 
+from users.views import CustomAuthToken
 
 # ZMIANA: Importujemy nasz nowy widok, a nie domyślny z rest_framework
 from users.views import CustomAuthToken
@@ -16,9 +17,7 @@ urlpatterns = [
     path('api/', include('core.urls')),
     path('api/communication/', include('communication.urls')),
     path('api/users/', include('users.urls')), 
-    
-    # ZMIANA: Używamy CustomAuthToken
-    path('api-token-auth/', CustomAuthToken.as_view(), name='api_token_auth')
+    path('api-token-auth/', CustomAuthToken.as_view(), name='api_token_auth'),
 ]
 
 if settings.DEBUG:

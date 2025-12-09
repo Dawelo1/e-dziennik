@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.ActiveDirectorMiddleware', #dodane
 ]
 
 # Pozwól Reactowi (zazwyczaj port 3000) łączyć się z API
