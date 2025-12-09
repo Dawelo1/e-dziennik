@@ -250,6 +250,20 @@
   border-radius: 4px;
 }
 
+/* POWIADOMIENIE (BADGE) W MENU */
+.menu-badge {
+  background-color: #e0245e; /* Czerwony */
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: auto; /* Przesuwa kropkę maksymalnie w prawo */
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(224, 36, 94, 0.3);
+}
+
 /* --- 📱 WERSJA MOBILNA (Media Queries) --- */
 @media (max-width: 768px) {
   
@@ -337,4 +351,18 @@
     padding: 15px;
     padding-bottom: 80px; 
   }
+
+  .menu-badge {
+    position: absolute;
+    top: 5px;
+    right: 15px; /* Pozycjonowanie nad ikoną */
+    margin-left: 0;
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+  
+  .menu-link {
+    position: relative; /* Potrzebne do pozycjonowania badge'a */
+  }
 }
+

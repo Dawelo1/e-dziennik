@@ -1,4 +1,6 @@
-from rest_framework import viewsets, permissions, serializers
+from rest_framework import viewsets, permissions, serializers, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django.db.models import Q
 from .models import Message
 from .serializers import MessageSerializer
@@ -10,7 +12,7 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Logika widoczności wiadomości:
+        Logika widoczności:
         1. Rodzic: Widzi tylko swoje rozmowy.
         2. Dyrektor: Widzi swoje rozmowy ORAZ rozmowy innych dyrektorów (Wspólna skrzynka).
         """
@@ -18,21 +20,15 @@ class MessageViewSet(viewsets.ModelViewSet):
 
         # SCENARIUSZ 1: Użytkownik jest DYREKTOREM
         if user.is_director:
-            # Dyrektor widzi:
-            # 1. Wiadomości, w których jest nadawcą LUB odbiorcą (standard).
-            # 2. ORAZ wiadomości wysłane przez rodziców do INNYCH dyrektorów (receiver__is_director=True).
-            # 3. ORAZ wiadomości wysłane przez INNYCH dyrektorów do rodziców (sender__is_director=True).
-            
             return Message.objects.filter(
                 Q(sender=user) | 
                 Q(receiver=user) |
                 Q(receiver__is_director=True) | # Przychodzące do administracji
                 Q(sender__is_director=True)     # Wychodzące od administracji
-            ).distinct() # distinct() usuwa duplikaty, gdyby warunki się pokrywały
+            ).distinct()
 
         # SCENARIUSZ 2: Użytkownik jest RODZICEM
         else:
-            # Rodzic widzi tylko swoje rozmowy
             return Message.objects.filter(
                 Q(sender=user) | Q(receiver=user)
             )
@@ -40,30 +36,45 @@ class MessageViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """
         Logika wysyłania:
-        1. Rodzic: Nie wybiera odbiorcy. System wysyła do pierwszego znalezionego Dyrektora.
-        2. Dyrektor: Musi wybrać odbiorcę z listy.
+        1. Rodzic -> Automatycznie do Dyrektora.
+        2. Dyrektor -> Musi wybrać odbiorcę.
         """
         sender = self.request.user
 
         # A. Wysyła RODZIC
         if sender.is_parent:
-            # Szukamy DOWOLNEGO dyrektora, żeby przypisać go technicznie jako odbiorcę.
-            # Dzięki zmianie w get_queryset, WSZYSCY dyrektorzy i tak to zobaczą.
             director = User.objects.filter(is_director=True).first()
 
             if not director:
                 raise serializers.ValidationError(
-                    {"receiver": "Błąd systemu: Nie znaleziono konta dyrektora. Skontaktuj się z placówką telefonicznie."}
+                    {"receiver": "Błąd systemu: Nie znaleziono konta dyrektora. Skontaktuj się z placówką."}
                 )
 
-            # Zapisujemy: Nadawca = Rodzic, Odbiorca = Automatycznie wybrany Dyrektor
             serializer.save(sender=sender, receiver=director)
 
-        # B. Wysyła DYREKTOR (lub Admin)
+        # B. Wysyła DYREKTOR
         else:
-            # Dyrektor musi wybrać odbiorcę w formularzu (frontend wyśle ID odbiorcy)
-            # Sprawdzamy czy odbiorca został wybrany w danych wejściowych
             if 'receiver' not in serializer.validated_data:
                  raise serializers.ValidationError({"receiver": "Jako Dyrektor musisz wybrać odbiorcę wiadomości."})
             
             serializer.save(sender=sender)
+
+    # --- NOWE METODY (TEGO BRAKOWAŁO W TWOIM KODZIE) ---
+
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        """
+        Zwraca liczbę nieprzeczytanych wiadomości dla zalogowanego użytkownika.
+        """
+        user = request.user
+        count = Message.objects.filter(receiver=user, is_read=False).count()
+        return Response({'count': count})
+
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        """
+        Oznacza wszystkie wiadomości odebrane przez użytkownika jako przeczytane.
+        """
+        user = request.user
+        updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+        return Response({'status': 'marked', 'updated_count': updated})

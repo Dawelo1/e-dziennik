@@ -12,7 +12,7 @@ import {
   FaEnvelope, 
   FaUserSlash, 
   FaCalendarAlt, 
-  FaCalendarDay, // Zmieniona ikona dla Planu Zajęć
+  FaCalendarDay, 
   FaUtensils, 
   FaMoneyBillWave, 
   FaCog,
@@ -23,6 +23,9 @@ import {
 const Layout = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  
+  // NOWY STAN: Licznik nieprzeczytanych wiadomości
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -31,33 +34,51 @@ const Layout = () => {
       return;
     }
 
-    axios.get('http://127.0.0.1:8000/api/users/me/', {
-      headers: { Authorization: `Token ${token}` }
-    })
-    .then(response => setUser(response.data))
-    .catch(() => {
-      localStorage.removeItem('token');
-      navigate('/');
-    });
+    const config = { headers: { Authorization: `Token ${token}` } };
+
+    // 1. Pobierz dane użytkownika
+    axios.get('http://127.0.0.1:8000/api/users/me/', config)
+      .then(response => setUser(response.data))
+      .catch(() => {
+        localStorage.removeItem('token');
+        navigate('/');
+      });
+
+    // 2. NOWOŚĆ: Funkcja pobierająca licznik nieprzeczytanych wiadomości
+    const fetchUnread = () => {
+      axios.get('http://127.0.0.1:8000/api/communication/messages/unread_count/', config)
+        .then(res => setUnreadCount(res.data.count))
+        .catch(err => console.error("Błąd pobierania licznika:", err));
+    };
+
+    // Wywołaj raz od razu
+    fetchUnread();
+
+    // Ustaw interwał odświeżania (co 5 sekund)
+    const interval = setInterval(fetchUnread, 5000);
+
+    // Sprzątanie po odmontowaniu
+    return () => clearInterval(interval);
+
   }, [navigate]);
 
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
     
-    // 1. Najpierw usuwamy token lokalnie, żeby zatrzymać pętle zapytań (np. w Dashboardzie)
+    // 1. Usuwamy token lokalnie
     localStorage.removeItem('token');
     
-    // 2. Przekierowujemy natychmiast, żeby odmontować komponenty
+    // 2. Przekierowujemy
     navigate('/');
     
-    // 3. Wysyłamy żądanie "pożegnalne" do serwera w tle
+    // 3. Wylogowujemy z backendu
     if (token) {
       try {
         await axios.post('http://127.0.0.1:8000/api/users/logout/', {}, {
           headers: { Authorization: `Token ${token}` }
         });
       } catch (error) {
-        console.log("Sesja wygasła lub błąd wylogowania (to normalne przy wielu kartach).");
+        console.log("Sesja wygasła lub błąd wylogowania.");
       }
     }
   };
@@ -78,13 +99,11 @@ const Layout = () => {
         </div>
 
         <div className="header-user-section">
-          {/* Zastąpione pole wyszukiwania */}
           <div className="info-section" onClick={() => navigate('/info')}>
             <FaInfoCircle style={{ marginRight: 8, fontSize: '16px', color: '#f2c94c' }} />
             Informacje
           </div>
           
-          {/* Statyczny profil (tylko wygląd) */}
           <div className="user-profile-static">
             <div className="user-avatar">
               {user.first_name ? user.first_name[0] : user.username[0].toUpperCase()}
@@ -95,7 +114,6 @@ const Layout = () => {
             </div>
           </div>
 
-          {/* Przycisk wylogowania (tylko ikona działa) */}
           <div 
             className="logout-icon-btn" 
             onClick={handleLogout} 
@@ -117,11 +135,14 @@ const Layout = () => {
               </NavLink>
             </li>
             
-            {/* USUNIĘTO: Tablica Postów (będzie na dashboardzie) */}
-
             <li>
               <NavLink to="/messages" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaEnvelope /></span> Wiadomości
+                <span className="menu-icon"><FaEnvelope /></span> 
+                Wiadomości
+                {/* --- NOWOŚĆ: Wyświetlanie Badge'a --- */}
+                {unreadCount > 0 && (
+                  <span className="menu-badge">{unreadCount}</span>
+                )}
               </NavLink>
             </li>
 
@@ -139,7 +160,6 @@ const Layout = () => {
               </NavLink>
             </li>
 
-            {/* ZMIANA NAZWY: Plan Zajęć */}
             <li>
               <NavLink to="/schedule" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                 <span className="menu-icon"><FaCalendarDay /></span> Plan Zajęć

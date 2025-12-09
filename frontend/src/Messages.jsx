@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Messages.css';
-import { FaPaperPlane, FaUserTie, FaEnvelope } from 'react-icons/fa'; // Dodano FaEnvelope do tytułu
+import { FaPaperPlane, FaUserTie, FaEnvelope } from 'react-icons/fa';
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
@@ -18,12 +18,14 @@ const Messages = () => {
     return { headers: { Authorization: `Token ${token}` } };
   };
 
+  // 1. Pobierz dane zalogowanego użytkownika
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
       .then(res => setCurrentUser(res.data))
       .catch(err => console.error(err));
   }, []);
 
+  // 2. Funkcja do pobierania wiadomości i statusu
   const fetchData = async () => {
     try {
       const [msgRes, statusRes] = await Promise.all([
@@ -41,12 +43,26 @@ const Messages = () => {
     }
   };
 
+  // --- NOWOŚĆ: OZNACZANIE WIADOMOŚCI JAKO PRZECZYTANE ---
   useEffect(() => {
+    // 1. Oznacz jako przeczytane natychmiast po wejściu na stronę
+    axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {}, getAuthHeaders())
+      .then(() => {
+        console.log("Wiadomości oznaczone jako przeczytane.");
+      })
+      .catch(err => console.error("Błąd oznaczania wiadomości:", err));
+    
+    // 2. Pobierz dane od razu
     fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
+    // 3. Uruchom odświeżanie (Polling) co 3 sekundy
+    const interval = setInterval(fetchData, 3000);
+    
+    // 4. Czystka po wyjściu z komponentu
+    return () => clearInterval(interval);
+  }, []); // Ta pętla useEffect uruchamia się tylko RAZ
+
+  // Przewijanie na dół
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -62,7 +78,7 @@ const Messages = () => {
       }, getAuthHeaders());
 
       setNewMessage('');
-      fetchData();
+      fetchData(); // Natychmiastowe odświeżenie po wysłaniu
     } catch (err) {
       console.error("Błąd wysyłania:", err);
     }
@@ -76,18 +92,14 @@ const Messages = () => {
   if (loading || !currentUser) return <div style={{padding: 20}}>Ładowanie czatu... 🐝</div>;
 
   return (
-    // 1. GŁÓWNY KONTENER (Zgodny z Schedule/Settings)
     <div className="messages-container">
       
-      {/* 2. TYTUŁ STRONY (Zgodny z resztą) */}
       <h2 className="page-title">
         <FaEnvelope /> Wiadomości
       </h2>
 
-      {/* 3. KARTA CZATU (To jest ten biały box) */}
       <div className="chat-card">
         
-        {/* HEADER CZATU WEWNĄTRZ KARTY */}
         <div className="chat-header">
           <div className="director-avatar">
             <FaUserTie />
@@ -103,7 +115,6 @@ const Messages = () => {
           </div>
         </div>
 
-        {/* OBSZAR WIADOMOŚCI */}
         <div className="messages-area">
           {messages.length === 0 ? (
             <div className="empty-chat">
@@ -135,7 +146,6 @@ const Messages = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* INPUT */}
         <form className="chat-input-area" onSubmit={handleSendMessage}>
           <input 
             type="text" 
