@@ -3,6 +3,8 @@ from users.models import User
 from django_cryptography.fields import encrypt # Szyfrowanie RODO
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
+from PIL import Image
+import os
 
 class Group(models.Model):
     name = models.CharField(max_length=100, verbose_name="Nazwa Grupy")
@@ -112,6 +114,16 @@ class Post(models.Model):
         null=True,
         verbose_name="Zdjęcie"
     )
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        
+        if self.image:
+            img = Image.open(self.image.path)
+            if img.height > 1200 or img.width > 1200:
+                output_size = (1200, 1200)
+                img.thumbnail(output_size)
+                img.save(self.image.path, quality=80, optimize=True)
     
     # Data dodania - automatycznie ustawi się "teraz"
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data publikacji")
@@ -278,7 +290,6 @@ class GalleryItem(models.Model):
     def __str__(self):
         return f"{self.title} ({self.created_at.date()})"
 
-# 2. Model Pojedynczego Zdjęcia w Albumie
 class GalleryImage(models.Model):
     gallery_item = models.ForeignKey(GalleryItem, on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to='gallery_albums/%Y/%m/', verbose_name="Zdjęcie")
@@ -286,3 +297,22 @@ class GalleryImage(models.Model):
 
     def __str__(self):
         return f"Zdjęcie do: {self.gallery_item.title}"
+
+    # --- AUTOMATYCZNA KOMPRESJA ---
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs) # Najpierw zapisz oryginał
+
+        if self.image:
+            img_path = self.image.path
+            
+            # Otwórz zdjęcie
+            img = Image.open(img_path)
+            
+            # Jeśli zdjęcie jest bardzo duże (szerokość lub wysokość > 1200px)
+            if img.height > 1200 or img.width > 1200:
+                output_size = (1200, 1200)
+                img.thumbnail(output_size) # Zmniejsz zachowując proporcje
+                
+                # Zapisz ponownie (nadpisz) z optymalizacją
+                # quality=70 znacznie zmniejsza wagę, a oko nie widzi różnicy
+                img.save(img_path, quality=80, optimize=True)

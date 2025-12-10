@@ -1,0 +1,250 @@
+/* frontend/src/ImageGrid.css */
+
+.fb-image-grid {
+  display: grid;
+  gap: 2px; /* Cieniutkie przerwy jak na FB */
+  width: 100%;
+  height: 400px; /* Stała wysokość galerii */
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 15px;
+  border: 1px solid #eee;
+  background-color: #f0f0f0;
+}
+
+.grid-item {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+.grid-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Zdjęcie wypełnia kafelek bez deformacji */
+  transition: transform 0.3s;
+  cursor: pointer;
+  display: block;
+}
+
+.grid-item:hover img {
+  transform: scale(1.05);
+}
+
+/* --- UKŁADY SIATKI --- */
+
+/* 1 ZDJĘCIE - Pełny wymiar */
+.fb-image-grid.grid-1 {
+  grid-template-columns: 1fr;
+  height: auto;
+  max-height: 500px;
+}
+
+/* 2 ZDJĘCIA - Pionowy podział */
+.fb-image-grid.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 3 ZDJĘCIA - Jedno duże po lewej, dwa małe po prawej */
+.fb-image-grid.grid-3 {
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.fb-image-grid.grid-3 .item-0 {
+  grid-row: 1 / 3; /* Pierwsze zdjęcie zajmuje całą lewą kolumnę */
+}
+
+/* 4+ ZDJĘĆ - Siatka 2x2 (Jedno duże góra, 3 małe dół) */
+.fb-image-grid.grid-4 {
+  grid-template-columns: 1fr 1fr 1fr; /* 3 kolumny */
+  grid-template-rows: 2fr 1fr;        /* Góra wyższa */
+}
+.fb-image-grid.grid-4 .item-0 {
+  grid-column: 1 / 4; /* Pierwsze zdjęcie na całą szerokość góry */
+}
+
+/* NAKŁADKA "+5" */
+.more-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.more-overlay:hover {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* --- LIGHTBOX (Pełnoekranowy) --- */
+
+.lightbox-overlay {
+  position: fixed; /* Musi być fixed */
+  top: 0;
+  left: 0;
+  width: 100vw;  /* Szerokość okna przeglądarki */
+  height: 100vh; /* Wysokość okna przeglądarki */
+  
+  background-color: rgba(0, 0, 0, 0.95); /* Bardzo ciemne tło */
+  
+  /* Bardzo wysoki z-index, żeby przykryć Menu, Header i wszystko inne */
+  z-index: 2147483647; 
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Kontener na zdjęcie */
+.lightbox-content {
+  position: relative;
+  /* Zamiast %, używamy jednostek viewportu, żeby nie wychodziło poza ekran */
+  width: auto;
+  height: auto;
+  max-width: 90vw; 
+  max-height: 85vh;
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.lightbox-content img {
+  /* Zdjęcie ma się zmieścić w kontenerze */
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 85vh;
+  
+  border-radius: 4px;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  object-fit: contain; /* Gwarantuje, że całe zdjęcie będzie widoczne */
+  display: block; /* Usuwa dziwne paski pod zdjęciem */
+}
+
+.lightbox-counter {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* --- PRZYCISKI LIGHTBOXA (POPRAWIONE) --- */
+
+/* Wspólny styl dla wszystkich przycisków */
+.lightbox-close-btn,
+.lightbox-nav-btn {
+  background-color: rgba(0, 0, 0, 0.5); /* Ciemne półprzezroczyste tło */
+  color: #fff; /* Biała ikona */
+  border: none;
+  
+  width: 50px;
+  height: 50px;
+  border-radius: 50%; /* Idealne koło */
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  
+  z-index: 10000; 
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lightbox-close-btn:focus,
+.lightbox-nav-btn:focus {
+  outline: none;
+  border: none;
+}
+
+.lightbox-close-btn:hover,
+.lightbox-nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+/* Wymuszenie rozmiaru i koloru ikon */
+.lightbox-close-btn svg,
+.lightbox-nav-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: white;
+}
+
+/* --- POZYCJONOWANIE PRZYCISKÓW --- */
+
+.lightbox-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.lightbox-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Reset transformacji dla hovera nawigacji */
+.lightbox-nav-btn:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+
+.lightbox-nav-btn.prev {
+  left: 30px;
+}
+
+.lightbox-nav-btn.next {
+  right: 30px;
+}
+
+/* --- RWD (TELEFONY) --- */
+@media (max-width: 768px) {
+  /* Mniejsze przyciski na telefonie */
+  .lightbox-close-btn,
+  .lightbox-nav-btn {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+  
+  .lightbox-close-btn svg,
+  .lightbox-nav-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .lightbox-close-btn {
+    top: 15px;
+    right: 15px;
+  }
+
+  .lightbox-nav-btn.prev {
+    left: 10px;
+  }
+
+  .lightbox-nav-btn.next {
+    right: 10px;
+  }
+}

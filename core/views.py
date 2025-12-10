@@ -180,8 +180,6 @@ class DailyMenuViewSet(viewsets.ReadOnlyModelViewSet):
 class GalleryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Zwraca listę albumów (Galeria).
-    Dyrektor widzi wszystko.
-    Rodzic widzi albumy ogólne ORAZ przypisane do grup jego dzieci.
     """
     serializer_class = GalleryItemSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -189,13 +187,17 @@ class GalleryViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         
-        # 1. Dyrektor
+        # 1. Dyrektor widzi wszystko
         if user.is_director:
             return GalleryItem.objects.all()
         
-        # 2. Rodzic
-        children = user.children.all()
+        # 2. Rodzic widzi albumy ogólne ORAZ przypisane do grup jego dzieci
+        
+        # --- POPRAWKA TUTAJ: user.child.all() zamiast user.children.all() ---
+        children = user.child.all() 
+        
         if not children.exists():
+            # Jeśli rodzic nie ma przypisanych dzieci, widzi tylko ogólne galerie
             return GalleryItem.objects.filter(target_group__isnull=True)
 
         parent_groups = [child.group for child in children]

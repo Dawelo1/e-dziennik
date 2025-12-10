@@ -18,6 +18,7 @@ import Meals from './Meals';
 import Schedule from './Schedule';
 import Calendar from './Calendar';
 import Messages from './Messages';
+import Gallery from './Gallery';
 
 const GeneralInfo = () => (
   <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '20px', height: '100%' }}>
@@ -50,6 +51,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/attendance" element={<Attendance />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/menu" element={<Meals />} />

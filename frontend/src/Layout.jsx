@@ -9,7 +9,7 @@ import beeLogo from './assets/bee.png';
 // Ikony (bez zmian)
 import { 
   FaHome, FaEnvelope, FaUserSlash, FaCalendarAlt, FaCalendarDay, 
-  FaUtensils, FaMoneyBillWave, FaCog, FaSignOutAlt, FaInfoCircle
+  FaUtensils, FaMoneyBillWave, FaCog, FaSignOutAlt, FaInfoCircle, FaImages
 } from 'react-icons/fa';
 
 const Layout = () => {
@@ -131,14 +131,20 @@ const Layout = () => {
             )}
 
             <li>
-              <NavLink to="/calendar" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaCalendarAlt /></span> Kalendarz
+              <NavLink to="/schedule" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                <span className="menu-icon"><FaCalendarDay /></span> Zajęcia
               </NavLink>
             </li>
 
             <li>
-              <NavLink to="/schedule" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaCalendarDay /></span> Zajęcia
+              <NavLink to="/gallery" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                <span className="menu-icon"><FaImages /></span> Galeria
+              </NavLink>
+            </li>
+
+            <li>
+              <NavLink to="/calendar" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                <span className="menu-icon"><FaCalendarAlt /></span> Kalendarz
               </NavLink>
             </li>
 
