@@ -60,15 +60,20 @@ const Messages = () => {
 
       setMessages(prevMessages => {
         const isNewMessage = sorted.length > prevMessages.length;
-        
         if (isNewMessage && isUserAtBottomRef.current) {
           setTimeout(scrollToBottom, 100);
         }
-        
         return sorted;
       });
 
       setIsDirectorOnline(statusRes.data.is_online);
+
+      // --- ZMIANA: Ciągłe oznaczanie jako przeczytane ---
+      // Jeśli jesteśmy na stronie i pobieramy dane, to znaczy, że czytamy.
+      // Wysyłamy sygnał do bazy, żeby zaktualizować 'is_read'.
+      // Dzięki temu, jak wyjdziemy ze strony, Layout nie pobierze "starego nieprzeczytanego".
+      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {}, getAuthHeaders());
+
     } catch (err) {
       console.error("Błąd pobierania:", err);
     } finally {
@@ -76,10 +81,9 @@ const Messages = () => {
     }
   };
 
+  // Start i Polling (Ten useEffect zastępuje poprzedni)
   useEffect(() => {
-    axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {}, getAuthHeaders())
-      .catch(err => console.error(err));
-    
+    // Pierwsze pobranie
     fetchData().then(() => {
       setTimeout(scrollToBottom, 200);
     });
