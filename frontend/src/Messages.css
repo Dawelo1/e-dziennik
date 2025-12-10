@@ -44,6 +44,34 @@
   position: relative; 
 }
 
+/* 1. Dla przeglądarek Firefox */
+.messages-area {
+  scrollbar-width: thin;          /* Cienki pasek */
+  scrollbar-color: #ccc transparent; /* Kolor suwaka i tła */
+}
+
+/* 2. Dla Chrome, Edge, Safari (WebKit) */
+.messages-area::-webkit-scrollbar {
+  width: 6px; /* Bardzo wąski pasek */
+}
+
+.messages-area::-webkit-scrollbar-track {
+  background: transparent; /* Tło paska przezroczyste */
+  margin: 5px 0; /* Odstęp od góry i dołu */
+}
+
+.messages-area::-webkit-scrollbar-thumb {
+  background-color: #d0d0d0; /* Jasnoszary kolor suwaka */
+  border-radius: 20px;       /* Zaokrąglone końce (Pastylka) */
+  border: 2px solid transparent; /* Margines wewnątrz suwaka dla efektu "pływania" */
+  background-clip: content-box;
+}
+
+/* Po najechaniu myszką na pasek - zrób go wyraźniejszym */
+.messages-area::-webkit-scrollbar-thumb:hover {
+  background-color: #a0a0a0; 
+}
+
 /* --- ELEMENTY WEWNĘTRZNE --- */
 
 .chat-header {
