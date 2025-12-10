@@ -86,6 +86,15 @@
   background: white; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);
 }
 
+.post-actions-bar {
+  display: flex;
+  justify-content: flex-end; /* <--- TO JEST ZMIANA (było space-between lub flex-start) */
+  align-items: center;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
 /* RWD */
 @media (max-width: 768px) {
   .gallery-container { padding: 0 10px; }

@@ -271,6 +271,7 @@ class GalleryItem(models.Model):
     title = models.CharField(max_length=200, verbose_name="Tytuł albumu")
     description = models.TextField(blank=True, verbose_name="Opis wydarzenia")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data dodania")
+    likes = models.ManyToManyField(User, related_name='liked_galleries', blank=True)
     
     # Podobnie jak w Postach - widoczność dla grupy lub dla wszystkich
     target_group = models.ForeignKey(

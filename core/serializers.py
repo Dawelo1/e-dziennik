@@ -143,12 +143,27 @@ class GalleryImageSerializer(serializers.ModelSerializer):
 
 class GalleryItemSerializer(serializers.ModelSerializer):
     formatted_date = serializers.SerializerMethodField()
-    # Zagnieżdżamy zdjęcia wewnątrz albumu
     images = GalleryImageSerializer(many=True, read_only=True)
+    
+    # NOWE POLA:
+    likes_count = serializers.IntegerField(source='likes.count', read_only=True)
+    is_liked_by_user = serializers.SerializerMethodField()
 
     class Meta:
         model = GalleryItem
-        fields = ['id', 'title', 'description', 'created_at', 'formatted_date', 'target_group', 'images']
+        # Pamiętaj, żeby dodać nowe pola do listy fields!
+        fields = [
+            'id', 'title', 'description', 'created_at', 'formatted_date', 
+            'target_group', 'images', 
+            'likes_count', 'is_liked_by_user' # <--- Dodaj to
+        ]
 
     def get_formatted_date(self, obj):
         return obj.created_at.strftime("%d-%m-%Y")
+
+    # NOWA METODA:
+    def get_is_liked_by_user(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False

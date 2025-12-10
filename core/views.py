@@ -205,3 +205,20 @@ class GalleryViewSet(viewsets.ReadOnlyModelViewSet):
         return GalleryItem.objects.filter(
             Q(target_group__isnull=True) | Q(target_group__in=parent_groups)
         ).distinct()
+    
+    @action(detail=True, methods=['post'])
+    def like(self, request, pk=None):
+        album = self.get_object()
+        user = request.user
+
+        if album.likes.filter(id=user.id).exists():
+            album.likes.remove(user) # Odlubienie
+            liked = False
+        else:
+            album.likes.add(user) # Polubienie
+            liked = True
+
+        return Response({
+            'liked': liked, 
+            'likes_count': album.likes.count()
+        })
