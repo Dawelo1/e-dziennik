@@ -49,11 +49,6 @@
   color: #333; 
 }
 
-.post-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-}
-
 .post-header {
   display: flex;
   align-items: center;
