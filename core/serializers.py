@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from django.utils import timezone
-from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment
+from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage
 
 class ChildSerializer(serializers.ModelSerializer):
     # Automatyczne rozszyfrowanie medical_info przy odczycie
@@ -135,3 +135,20 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(id=request.user.id).exists()
         return False
+    
+class GalleryImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GalleryImage
+        fields = ['id', 'image', 'caption']
+
+class GalleryItemSerializer(serializers.ModelSerializer):
+    formatted_date = serializers.SerializerMethodField()
+    # Zagnieżdżamy zdjęcia wewnątrz albumu
+    images = GalleryImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = GalleryItem
+        fields = ['id', 'title', 'description', 'created_at', 'formatted_date', 'target_group', 'images']
+
+    def get_formatted_date(self, obj):
+        return obj.created_at.strftime("%d-%m-%Y")

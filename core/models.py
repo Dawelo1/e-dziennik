@@ -254,3 +254,35 @@ class RecurringPayment(models.Model):
         elif self.frequency == 'yearly':
             self.next_payment_date += relativedelta(years=1)
         self.save()
+
+class GalleryItem(models.Model):
+    title = models.CharField(max_length=200, verbose_name="Tytuł albumu")
+    description = models.TextField(blank=True, verbose_name="Opis wydarzenia")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data dodania")
+    
+    # Podobnie jak w Postach - widoczność dla grupy lub dla wszystkich
+    target_group = models.ForeignKey(
+        'Group', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='gallery_items',
+        verbose_name="Dla grupy (puste = dla wszystkich)"
+    )
+
+    class Meta:
+        verbose_name = "Album Zdjęć"
+        verbose_name_plural = "Galeria Zdjęć"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.created_at.date()})"
+
+# 2. Model Pojedynczego Zdjęcia w Albumie
+class GalleryImage(models.Model):
+    gallery_item = models.ForeignKey(GalleryItem, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='gallery_albums/%Y/%m/', verbose_name="Zdjęcie")
+    caption = models.CharField(max_length=200, blank=True, verbose_name="Podpis (opcjonalnie)")
+
+    def __str__(self):
+        return f"Zdjęcie do: {self.gallery_item.title}"

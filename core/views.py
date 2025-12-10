@@ -2,8 +2,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.decorators import action
-from .models import Child, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment
-from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer
+from .models import Child, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem
+from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer
 
 class ChildViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ChildSerializer
@@ -176,3 +176,30 @@ class DailyMenuViewSet(viewsets.ReadOnlyModelViewSet):
         if start_date and end_date:
             return queryset.filter(date__range=[start_date, end_date])
         return queryset
+    
+class GalleryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Zwraca listę albumów (Galeria).
+    Dyrektor widzi wszystko.
+    Rodzic widzi albumy ogólne ORAZ przypisane do grup jego dzieci.
+    """
+    serializer_class = GalleryItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        # 1. Dyrektor
+        if user.is_director:
+            return GalleryItem.objects.all()
+        
+        # 2. Rodzic
+        children = user.children.all()
+        if not children.exists():
+            return GalleryItem.objects.filter(target_group__isnull=True)
+
+        parent_groups = [child.group for child in children]
+        
+        return GalleryItem.objects.filter(
+            Q(target_group__isnull=True) | Q(target_group__in=parent_groups)
+        ).distinct()

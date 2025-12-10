@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu, PostComment, RecurringPayment
+from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu, PostComment, RecurringPayment, GalleryItem, GalleryImage
 
 
 # Prosta rejestracja - pozwoli dodawać/edytować elementy
@@ -163,3 +163,15 @@ class RecurringPaymentAdmin(admin.ModelAdmin):
     list_editable = ('is_active', 'next_payment_date') # Szybka edycja daty i włączania/wyłączania
 
 admin.site.register(RecurringPayment, RecurringPaymentAdmin)
+
+# To pozwala dodawać zdjęcia BEZPOŚREDNIO w widoku Albumu
+class GalleryImageInline(admin.TabularInline):
+    model = GalleryImage
+    extra = 5 # Pokaże od razu 5 pustych miejsc na zdjęcia (można dodać więcej plusem)
+
+class GalleryItemAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_at', 'target_group')
+    inlines = [GalleryImageInline] # Podpinamy zdjęcia do widoku albumu
+
+# Rejestracja w panelu
+admin.site.register(GalleryItem, GalleryItemAdmin)
