@@ -3,223 +3,181 @@
 /* Zabezpieczenie wymiarów */
 .messages-container * { box-sizing: border-box; }
 
-/* --- GŁÓWNY KONTENER (ZGODNY Z SCHEDULE/SETTINGS) --- */
+/* --- GŁÓWNY KONTENER --- */
 .messages-container {
   width: 100%;
   margin: 0;
-  padding: 0; /* Wyrównanie do lewej */
+  padding: 0;
   font-family: 'Segoe UI', sans-serif;
-  max-width: 1100px; /* Ograniczenie szerokości */
-  
-  /* Czat musi mieć wysokość, żeby działał scroll wewnątrz */
-  height: calc(100vh - 100px); 
+  max-width: 1100px;
+  height: calc(100vh - 140px); 
   display: flex;
   flex-direction: column;
 }
 
-/* --- TYTUŁ STRONY (ZGODNY Z RESZTĄ) --- */
+/* --- TYTUŁ STRONY --- */
 .page-title {
   color: #333;
   font-size: 24px;
   font-weight: 700;
-  
   margin-bottom: 20px;
   margin-left: 0;
   padding-left: 15px;
-  
-  border-left: 5px solid #f2c94c; /* Miodowy pasek */
-  
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-shrink: 0; /* Tytuł nie może się kurczyć */
+  border-left: 5px solid #f2c94c;
+  display: flex; align-items: center; gap: 15px; flex-shrink: 0;
 }
+.page-title svg { color: #f2c94c; font-size: 28px; }
 
-.page-title svg {
-  color: #f2c94c;
-  font-size: 28px;
-}
-
-/* --- KARTA CZATU (Biały Box) --- */
+/* --- KARTA CZATU --- */
 .chat-card {
   background: white;
-  border-radius: 20px; /* Zaokrąglenie 20px */
-  box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Cień */
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
   border: 1px solid #e0e0e0;
-  
-  /* Rozciągnięcie na resztę wysokości */
   flex: 1; 
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* Żeby input i header nie wystawały poza zaokrąglenie */
+  overflow: hidden;
   margin-bottom: 20px;
+  
+  /* Ważne dla pozycjonowania przycisku przewijania */
+  position: relative; 
 }
 
-/* --- ELEMENTY CZATU WEWNĄTRZ KARTY --- */
+/* --- ELEMENTY WEWNĘTRZNE --- */
 
-/* Header Czat */
 .chat-header {
   padding: 15px 25px;
   border-bottom: 1px solid #f0f0f0;
-  display: flex;
-  align-items: center;
-  gap: 15px;
+  display: flex; align-items: center; gap: 15px;
   background-color: #fff;
 }
-
 .director-avatar {
-  width: 45px; height: 45px;
-  background-color: #e3f2fd; color: #1565c0;
-  border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;
-  position: relative;
+  width: 45px; height: 45px; background-color: #e3f2fd; color: #1565c0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; position: relative;
 }
-
 .header-info h3 { margin: 0; font-size: 16px; color: #333; }
 
-/* Statusy */
 .status-indicator { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
 .status-indicator.online { color: #4caf50; }
 .status-indicator.offline { color: #999; }
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .dot.green { background-color: #4caf50; }
 .dot.gray { background-color: #ccc; }
-.avatar-online-dot {
-  position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px;
-  background-color: #4caf50; border: 2px solid #fff; border-radius: 50%;
-}
+.avatar-online-dot { position: absolute; bottom: 2px; right: 2px; width: 10px; height: 10px; background-color: #4caf50; border: 2px solid #fff; border-radius: 50%; }
 
-/* Obszar Wiadomości */
+/* --- OBSZAR WIADOMOŚCI --- */
 .messages-area {
-  flex: 1; /* Wypełnia środek karty */
+  flex: 1;
   padding: 20px 25px;
-  overflow-y: auto; /* Przewijanie tylko tutaj */
-  background-color: #fcfcfc; /* Bardzo jasne tło dla kontrastu z białą kartą */
+  overflow-y: auto;
+  background-color: #fcfcfc;
   display: flex; flex-direction: column; gap: 10px;
 }
 
-/* Wiersz wiadomości */
 .message-row { display: flex; align-items: flex-end; gap: 10px; max-width: 80%; }
 .message-row.sent { align-self: flex-end; flex-direction: row-reverse; }
 .message-row.received { align-self: flex-start; }
 
-.msg-avatar {
-  width: 30px; height: 30px; border-radius: 50%; background-color: #ddd;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: bold; color: #555; flex-shrink: 0;
-}
-
+.msg-avatar { width: 30px; height: 30px; border-radius: 50%; background-color: #ddd; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: #555; flex-shrink: 0; }
 .bubble-wrapper { display: flex; flex-direction: column; }
 .sender-name { font-size: 11px; color: #999; margin-bottom: 2px; margin-left: 5px; }
 
-/* Dymki */
-.message-bubble {
-  padding: 10px 15px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word;
-}
-.sent .message-bubble {
-  background-color: #f2c94c; color: #fff; border-bottom-right-radius: 4px;
-}
-.received .message-bubble {
-  background-color: #e4e6eb; color: #050505; border-bottom-left-radius: 4px;
-}
+.message-bubble { padding: 10px 15px; border-radius: 18px; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; }
+.sent .message-bubble { background-color: #f2c94c; color: #fff; border-bottom-right-radius: 4px; }
+.received .message-bubble { background-color: #e4e6eb; color: #050505; border-bottom-left-radius: 4px; }
 
 .message-time { font-size: 10px; color: #aaa; margin-top: 4px; margin-left: 5px; text-align: right; }
 .read-status { margin-left: 5px; }
 
-/* --- INPUT (POPRAWIONY) --- */
-.chat-input-area {
-  padding: 15px 25px;
-  background-color: #fff;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.chat-input-area input {
-  flex: 1;
-  padding: 12px 20px;
-  border-radius: 25px;
-  border: 1px solid #e0e0e0;
-  background-color: #f9f9f9;
-  
-  /* Kolor tekstu wpisywanego (Czarny) */
-  color: #333; 
-  font-size: 14px; 
-  outline: none; 
-  transition: all 0.2s;
-}
-
-/* Styl tekstu podglądowego (Placeholder) */
-.chat-input-area input::placeholder {
-  color: #aaa;
-  opacity: 1;
-  transition: opacity 0.2s;
-}
-
-/* Ukrywanie placeholdera po kliknięciu */
-.chat-input-area input:focus::placeholder {
-  opacity: 0;
-  color: transparent;
-}
-
-.chat-input-area input:focus { 
-  border-color: #f2c94c; 
-  background-color: #fff; 
-}
-
-.chat-input-area button {
-  background: none; border: none; color: #f2c94c; font-size: 20px;
-  cursor: pointer; padding: 10px; display: flex; align-items: center; justify-content: center;
-  transition: transform 0.2s;
-}
-.chat-input-area button:hover:not(:disabled) { transform: scale(1.1); }
-.chat-input-area button:disabled { color: #ccc; cursor: default; }
-.chat-input-area button:focus { outline: none; } /* Bez ramki */
-
-.empty-chat { text-align: center; color: #999; margin-top: 50px; }
-
-.messages-area {
-  position: relative; /* Ważne dla pozycjonowania przycisku */
-}
-
+/* --- PRZYCISK PRZEWIJANIA (POPRAWIONY) --- */
 .scroll-bottom-btn {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: 85px; 
+  left: 50%;
+  transform: translateX(-50%);
+  
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: #f2c94c;
-  color: white;
+  
+  /* Tło niebieskie */
+  background-color: #2196f3; 
+  
+  /* Kolor tekstu/ikony biały */
+  color: #ffffff !important; 
+  
   border: none;
   box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  display: flex;
-  align-items: center;
+  
+  /* Centrowanie ikony */
+  display: flex; 
+  align-items: center; 
   justify-content: center;
+  
   cursor: pointer;
   z-index: 100;
   transition: transform 0.2s, background-color 0.2s;
   animation: popIn 0.3s ease;
 }
 
-.scroll-bottom-btn:hover {
-  background-color: #e6b83a;
-  transform: scale(1.1);
+/* Wymuszenie stylu na samej ikonie (SVG) - TO JEST KLUCZOWE */
+.scroll-bottom-btn svg {
+  /* Wymuszamy biały kolor */
+  fill: #ffffff !important;
+  color: #ffffff !important;
+  
+  /* Sztywne wymiary */
+  width: 20px !important;
+  height: 20px !important;
+  
+  /* KLUCZOWE: Zapobiega zgniataniu ikony przez Flexbox */
+  min-width: 20px !important;
+  min-height: 20px !important;
 }
 
-.scroll-bottom-btn:focus {
-  outline: none;
+.scroll-bottom-btn:hover {
+  transform: translateX(-50%) scale(1.1); /* Zachowaj centrowanie przy powiększeniu */
+  background-color: #1976d2;
 }
+
+.scroll-bottom-btn:focus { outline: none; }
 
 @keyframes popIn {
-  from { transform: scale(0); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: translateX(-50%) scale(0); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
-/* RWD */
+/* --- INPUT --- */
+.chat-input-area {
+  padding: 15px 25px;
+  background-color: #fff;
+  border-top: 1px solid #f0f0f0;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 50; /* Żeby był nad listą wiadomości */
+}
+
+.chat-input-area input {
+  flex: 1; padding: 12px 20px; border-radius: 25px; border: 1px solid #e0e0e0;
+  background-color: #f9f9f9; color: #333; font-size: 14px; outline: none; transition: all 0.2s;
+}
+.chat-input-area input::placeholder { color: #aaa; opacity: 1; transition: opacity 0.2s; }
+.chat-input-area input:focus::placeholder { opacity: 0; color: transparent; }
+.chat-input-area input:focus { border-color: #f2c94c; background-color: #fff; }
+
+.chat-input-area button {
+  background: none; border: none; color: #f2c94c; font-size: 20px; cursor: pointer; padding: 10px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;
+}
+.chat-input-area button:hover:not(:disabled) { transform: scale(1.1); }
+.chat-input-area button:disabled { color: #ccc; cursor: default; }
+.chat-input-area button:focus { outline: none; }
+
+.empty-chat { text-align: center; color: #999; margin-top: 50px; }
+
 @media (max-width: 768px) {
   .messages-container {
-    padding: 0 10px; /* Mały margines na telefonie */
-    height: calc(100vh - 80px); /* Dopasowanie do menu mobilnego */
+    padding: 0 5px;
+    /* Na telefonie: Header(60) + Menu Dolne(60) + Paddingi(30) = ~150px */
+    height: calc(100vh - 160px); 
   }
 }
