@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Messages.css';
-import { FaPaperPlane, FaUserTie, FaEnvelope } from 'react-icons/fa';
+import { FaPaperPlane, FaUserTie, FaEnvelope, FaArrowDown } from 'react-icons/fa';
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
@@ -11,21 +11,45 @@ const Messages = () => {
   const [isDirectorOnline, setIsDirectorOnline] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  const messagesEndRef = useRef(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+
+  // Refy
+  const messagesEndRef = useRef(null);       
+  const messagesContainerRef = useRef(null); 
+  
+  // NOWOŚĆ: Ref do śledzenia, czy użytkownik jest na dole (nie powoduje re-renderów)
+  const isUserAtBottomRef = useRef(true); 
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return { headers: { Authorization: `Token ${token}` } };
   };
 
-  // 1. Pobierz dane zalogowanego użytkownika
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
       .then(res => setCurrentUser(res.data))
       .catch(err => console.error(err));
   }, []);
 
-  // 2. Funkcja do pobierania wiadomości i statusu
+  // --- FUNKCJA PRZEWIJANIA NA DÓŁ ---
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // --- OBSŁUGA SCROLLOWANIA (Śledzenie pozycji) ---
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    
+    // Margines błędu 100px (uznajemy, że jest na dole, nawet jak brakuje mu kawałeczka)
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    
+    // Aktualizujemy Ref (dla logiki) i State (dla widoku strzałki)
+    isUserAtBottomRef.current = isAtBottom;
+    setShowScrollButton(!isAtBottom);
+  };
+
   const fetchData = async () => {
     try {
       const [msgRes, statusRes] = await Promise.all([
@@ -34,7 +58,21 @@ const Messages = () => {
       ]);
 
       const sorted = msgRes.data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      setMessages(sorted);
+
+      setMessages(prevMessages => {
+        // Sprawdzamy, czy doszła NOWA wiadomość (porównując długość lub ID ostatniej)
+        const isNewMessage = sorted.length > prevMessages.length;
+        
+        // Logika Smart Scroll:
+        // Przewiń JEŚLI (doszła nowa wiadomość ORAZ użytkownik był na dole)
+        if (isNewMessage && isUserAtBottomRef.current) {
+          // setTimeout, żeby DOM zdążył się wyrenderować przed scrollem
+          setTimeout(scrollToBottom, 100);
+        }
+        
+        return sorted;
+      });
+
       setIsDirectorOnline(statusRes.data.is_online);
     } catch (err) {
       console.error("Błąd pobierania:", err);
@@ -43,29 +81,21 @@ const Messages = () => {
     }
   };
 
-  // --- NOWOŚĆ: OZNACZANIE WIADOMOŚCI JAKO PRZECZYTANE ---
+  // Start i Polling
   useEffect(() => {
-    // 1. Oznacz jako przeczytane natychmiast po wejściu na stronę
     axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {}, getAuthHeaders())
-      .then(() => {
-        console.log("Wiadomości oznaczone jako przeczytane.");
-      })
-      .catch(err => console.error("Błąd oznaczania wiadomości:", err));
+      .catch(err => console.error(err));
     
-    // 2. Pobierz dane od razu
-    fetchData();
+    // Pierwsze pobranie - wymuszamy scroll na dół
+    fetchData().then(() => {
+      setTimeout(scrollToBottom, 200);
+    });
 
-    // 3. Uruchom odświeżanie (Polling) co 3 sekundy
     const interval = setInterval(fetchData, 3000);
-    
-    // 4. Czystka po wyjściu z komponentu
     return () => clearInterval(interval);
-  }, []); // Ta pętla useEffect uruchamia się tylko RAZ
+  }, []);
 
-  // Przewijanie na dół
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // UWAGA: Usunąłem useEffect zależny od [messages], który powodował błędy!
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -78,7 +108,15 @@ const Messages = () => {
       }, getAuthHeaders());
 
       setNewMessage('');
-      fetchData(); // Natychmiastowe odświeżenie po wysłaniu
+      
+      // Po wysłaniu ZAWSZE wymuszamy scroll na dół (bo to my piszemy)
+      await fetchData();
+      setTimeout(scrollToBottom, 100);
+      
+      // Resetujemy flagę, że jesteśmy na dole
+      isUserAtBottomRef.current = true;
+      setShowScrollButton(false);
+
     } catch (err) {
       console.error("Błąd wysyłania:", err);
     }
@@ -115,7 +153,12 @@ const Messages = () => {
           </div>
         </div>
 
-        <div className="messages-area">
+        {/* OBSZAR WIADOMOŚCI */}
+        <div 
+          className="messages-area" 
+          ref={messagesContainerRef} 
+          onScroll={handleScroll}
+        >
           {messages.length === 0 ? (
             <div className="empty-chat">
               <p>Tu rozpoczyna się Twoja rozmowa z Dyrekcją.</p>
@@ -144,6 +187,16 @@ const Messages = () => {
             })
           )}
           <div ref={messagesEndRef} />
+          
+          {/* PRZYCISK "WRÓĆ NA DÓŁ" */}
+          {showScrollButton && (
+            <button className="scroll-bottom-btn" onClick={() => {
+              scrollToBottom();
+              isUserAtBottomRef.current = true; // Ręcznie ustawiamy, że jesteśmy na dole
+            }}>
+              <FaArrowDown />
+            </button>
+          )}
         </div>
 
         <form className="chat-input-area" onSubmit={handleSendMessage}>

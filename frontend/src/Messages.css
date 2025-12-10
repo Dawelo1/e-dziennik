@@ -178,6 +178,44 @@
 
 .empty-chat { text-align: center; color: #999; margin-top: 50px; }
 
+.messages-area {
+  position: relative; /* Ważne dla pozycjonowania przycisku */
+}
+
+.scroll-bottom-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f2c94c;
+  color: white;
+  border: none;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: transform 0.2s, background-color 0.2s;
+  animation: popIn 0.3s ease;
+}
+
+.scroll-bottom-btn:hover {
+  background-color: #e6b83a;
+  transform: scale(1.1);
+}
+
+.scroll-bottom-btn:focus {
+  outline: none;
+}
+
+@keyframes popIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 /* RWD */
 @media (max-width: 768px) {
   .messages-container {
