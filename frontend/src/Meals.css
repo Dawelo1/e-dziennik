@@ -217,6 +217,21 @@
 }
 .allergens-box svg { color: #8bc34a; font-size: 14px; }
 
+.nav-btn:disabled {
+  background-color: #f0f0f0;
+  color: #ccc;
+  border-color: #eee;
+  cursor: not-allowed;
+  transform: none !important; /* Wyłącz efekt wciskania */
+  box-shadow: none !important;
+}
+
+.nav-btn:disabled:hover {
+  background-color: #f0f0f0; /* Brak miodowego tła po najechaniu */
+  color: #ccc;
+  border-color: #eee;
+}
+
 /* RWD */
 @media (max-width: 768px) {
   .week-navigation-card {
