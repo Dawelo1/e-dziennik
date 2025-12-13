@@ -299,7 +299,34 @@
 .profile-username { margin: 5px 0 0 0; font-size: 14px; color: #888; }
 .spacer-20 { height: 20px; }
 
-/* --- AKTUALIZACJA RESPONSYWNOŚCI (DODAJ TO NA SAM DÓŁ PLIKU) --- */
+/* Przycisk usuwania avatara */
+.delete-avatar-btn {
+  background: none;
+  border: 1px solid #ffcdd2;
+  color: #e57373;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 15px;
+  transition: all 0.2s;
+}
+
+.delete-avatar-btn:hover {
+  background-color: #ffebee;
+  color: #c62828;
+  border-color: #c62828;
+}
+
+/* Wymuszenie wyrównania do prawej dla przycisków w kontenerach */
+.button-container-right {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
 
 /* Tablet (pionowo) i Mobile - Zmieniamy układ na jedną kolumnę */
 @media (max-width: 900px) {

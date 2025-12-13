@@ -56,11 +56,17 @@ class CurrentUserView(APIView):
         return Response(serializer.data)
     
     def patch(self, request):
-        """Pozwala edytować dane profilowe (email, telefon)"""
         user = request.user
-        # partial=True oznacza, że nie musimy wysyłać wszystkich pól, tylko te zmienione
+        data = request.data.copy() # Kopia, żeby móc edytować
+
+        # Specjalna logika: Jeśli frontend wyśle 'avatar': 'DELETE', usuwamy zdjęcie
+        if data.get('avatar') == 'DELETE':
+            user.avatar.delete(save=False) # Usuwa plik
+            user.avatar = None # Czyści pole w bazie
+            user.save()
+            return Response(UserSerializer(user).data)
+
         serializer = UserSerializer(user, data=request.data, partial=True)
-        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
