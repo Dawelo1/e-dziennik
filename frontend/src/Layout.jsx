@@ -1,12 +1,11 @@
 // frontend/src/Layout.jsx
 import React, { useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'; // <--- DODAJ useLocation
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-
 import './Layout.css';
 import beeLogo from './assets/bee.png';
 
-// Ikony (bez zmian)
+// Ikony
 import { 
   FaHome, FaEnvelope, FaUserSlash, FaCalendarAlt, FaCalendarDay, 
   FaUtensils, FaMoneyBillWave, FaCog, FaSignOutAlt, FaInfoCircle, FaImages
@@ -14,7 +13,7 @@ import {
 
 const Layout = () => {
   const navigate = useNavigate();
-  const location = useLocation(); // <--- Tu sprawdzamy aktualny adres
+  const location = useLocation(); 
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -37,7 +36,6 @@ const Layout = () => {
 
     // 2. Funkcja pobierająca licznik powiadomień
     const fetchUnread = () => {
-      // --- NOWA LOGIKA ---
       // Jeśli użytkownik jest na stronie wiadomości, nie pobieraj licznika (zakładamy 0)
       if (location.pathname === '/messages') {
         setUnreadCount(0);
@@ -53,18 +51,31 @@ const Layout = () => {
     const interval = setInterval(fetchUnread, 5000);
 
     return () => clearInterval(interval);
-  }, [navigate, location.pathname]); // <--- Dodajemy location.pathname do zależności, żeby reagował na zmianę strony
+  }, [navigate, location.pathname]);
+
+  // --- FUNKCJA NAPRAWIAJĄCA URL AVATARA ---
+  const getAvatarUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `http://127.0.0.1:8000${url}`;
+  };
 
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
+    
+    // 1. Najpierw czyścimy lokalnie i przekierowujemy
     localStorage.removeItem('token');
     navigate('/');
+
+    // 2. Próbujemy powiadomić serwer (fire and forget)
     if (token) {
       try {
         await axios.post('http://127.0.0.1:8000/api/users/logout/', {}, {
           headers: { Authorization: `Token ${token}` }
         });
-      } catch (error) { console.log("Logout error"); }
+      } catch (error) { 
+        console.log("Logout error (sesja mogła już wygasnąć)"); 
+      }
     }
   };
 
@@ -87,15 +98,25 @@ const Layout = () => {
             <FaInfoCircle style={{ marginRight: 8, fontSize: '16px', color: '#f2c94c' }} />
             Informacje
           </div>
+          
           <div className="user-profile-static">
             <div className="user-avatar">
-              {user.first_name ? user.first_name[0] : user.username[0].toUpperCase()}
+              {user.avatar ? (
+                <img 
+                  src={getAvatarUrl(user.avatar)} 
+                  alt="Avatar" 
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                />
+              ) : (
+                user.first_name ? user.first_name[0] : user.username[0].toUpperCase()
+              )}
             </div>
             <div className="user-name-box">
               <span className="user-name">{user.first_name} {user.last_name}</span>
               <span className="user-role">{user.is_director ? 'Administrator' : 'Rodzic'}</span>
             </div>
           </div>
+          
           <div className="logout-icon-btn" onClick={handleLogout} title="Wyloguj się">
             <FaSignOutAlt />
           </div>
@@ -116,8 +137,6 @@ const Layout = () => {
               <NavLink to="/messages" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                 <span className="menu-icon"><FaEnvelope /></span> 
                 Wiadomości
-                {/* Badge wyświetla się tylko jeśli unreadCount > 0.
-                    Dzięki zmianie wyżej, unreadCount będzie 0 jak jesteśmy w /messages */}
                 {unreadCount > 0 && <span className="menu-badge">{unreadCount}</span>}
               </NavLink>
             </li>

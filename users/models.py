@@ -20,6 +20,8 @@ class User(AbstractUser):
         verbose_name="Numer telefonu" # <--- Spolszczenie
     )
 
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name="Zdjęcie profilowe")
+
     class Meta:
         verbose_name = "Użytkownik"
         verbose_name_plural = "Użytkownicy"

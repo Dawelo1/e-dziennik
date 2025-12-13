@@ -3,6 +3,8 @@ from django.urls import path, include
 from django.conf import settings             
 from django.conf.urls.static import static 
 from users.views import CustomAuthToken
+from django.conf import settings
+from django.conf.urls.static import static
 
 # ZMIANA: Importujemy nasz nowy widok, a nie domyślny z rest_framework
 from users.views import CustomAuthToken
