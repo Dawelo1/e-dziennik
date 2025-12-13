@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Payments.css';
+import LoadingScreen from './LoadingScreen';
 import { 
   FaMoneyBillWave, 
   FaCopy, 
@@ -55,7 +56,7 @@ const Payments = () => {
   // Suma do zapłaty
   const totalUnpaid = unpaidPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
-  if (loading) return <div className="loading-state">Ładowanie płatności... 🐝</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie płatności..." />;
 
   return (
     <div className="payments-container">

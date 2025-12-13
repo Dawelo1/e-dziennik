@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Settings.css';
+import LoadingScreen from './LoadingScreen';
 import { 
   FaLock, 
   FaEnvelope, 
@@ -131,6 +132,8 @@ const Settings = () => {
       setLoading(false);
     }
   };
+
+  if (loading) return <LoadingScreen message="Wczytywanie ustawień..." />;
 
   return (
     <div className="settings-page-wrapper">

@@ -5,6 +5,7 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './Attendance.css';
 import { FaUserSlash, FaChild, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
+import LoadingScreen from './LoadingScreen';
 
 const Attendance = () => {
   const [children, setChildren] = useState([]);
@@ -178,7 +179,7 @@ const Attendance = () => {
     return null;
   };
 
-  if (loading) return <div style={{padding: 20}}>Ładowanie... 🐝</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie obecności..." />;
 
   return (
     <div className="attendance-container">

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './Messages.css';
 import { FaPaperPlane, FaUserTie, FaEnvelope, FaArrowDown } from 'react-icons/fa';
+import LoadingScreen from './LoadingScreen';
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
@@ -120,7 +121,7 @@ const Messages = () => {
     return date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
   };
 
-  if (loading || !currentUser) return <div style={{padding: 20}}>Ładowanie czatu... 🐝</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie wiadomości..." />;
 
   return (
     <div className="messages-container">

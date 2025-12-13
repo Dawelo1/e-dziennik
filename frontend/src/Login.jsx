@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-
-// Import stylów
 import './Login.css';
-
-// Import obrazków (Upewnij się, że nazwy plików i rozszerzenia .png/.jpeg są poprawne!)
+import LoadingScreen from './LoadingScreen';
 import bgImage from './assets/bg.png';        // Tło
 import BeeIcon from './assets/bee-icon.png'; // Mała ikona do pola input
 import padlockIcon from './assets/padlock-icon.png'; // Ikona kłódki do pola hasła
@@ -46,6 +43,8 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+ if (loading) return <LoadingScreen message="Logowanie..." />;
 
   return (
     <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>

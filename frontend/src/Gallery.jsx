@@ -4,6 +4,7 @@ import axios from 'axios';
 import './Gallery.css';
 import ImageGrid from './ImageGrid';
 import { FaImages, FaRegClock, FaHeart, FaRegHeart } from 'react-icons/fa'; // <--- Import serc
+import LoadingScreen from './LoadingScreen';
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);
@@ -55,7 +56,7 @@ const Gallery = () => {
     }
   };
 
-  if (loading) return <div style={{padding: 20}}>Ładowanie galerii... 📸</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie galerii..." />;
 
   return (
     <div className="gallery-container">

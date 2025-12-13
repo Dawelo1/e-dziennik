@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Meals.css';
+import LoadingScreen from './LoadingScreen';
 import { 
   FaUtensils, 
   FaChevronLeft, 
@@ -110,6 +111,8 @@ const Meals = () => {
     const dateStr = formatDateAPI(dateObj);
     return menuData.find(m => m.date === dateStr);
   };
+
+  if (loading) return <LoadingScreen message="Wczytywanie jadłospisu..." />;
 
   return (
     <div className="meals-container">

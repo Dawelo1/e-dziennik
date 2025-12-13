@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Schedule.css';
+import LoadingScreen from './LoadingScreen';
 import { 
   FaCalendarDay, 
   FaChevronLeft, 
@@ -159,7 +160,7 @@ const Schedule = () => {
 
   const scheduleData = getProcessedEvents();
 
-  if (loading) return <div style={{padding: 20}}>Ładowanie planu... 🐝</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie planu..." />;
 
   return (
     <div className="schedule-container">

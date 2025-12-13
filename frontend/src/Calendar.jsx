@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Calendar.css'; // Upewnij się, że nazwa pliku CSS jest poprawna
+import LoadingScreen from './LoadingScreen';
 import { 
   FaCalendarAlt, 
   FaChevronLeft, 
@@ -58,7 +59,7 @@ const Calendar = () => {
     return `${year}-${m}-${d}`;
   };
 
-  if (loading) return <div style={{padding: 20}}>Ładowanie harmonogramu... 🐝</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie kalendarza..." />;
 
   return (
     <div className="yearly-container">

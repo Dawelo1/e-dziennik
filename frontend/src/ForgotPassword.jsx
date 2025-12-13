@@ -41,6 +41,9 @@ const ForgotPassword = () => {
 
   return (
     <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>
+
+      {status === 'loading' && <LoadingScreen message="Wysyłanie linku..." />}
+
       <div className="login-card">
         
         {/* LOGO */}

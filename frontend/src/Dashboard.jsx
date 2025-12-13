@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import LoadingScreen from './LoadingScreen';
 
 // Style i ikony
 import './Dashboard.css';
@@ -181,7 +182,7 @@ const Dashboard = () => {
     }));
   };
 
-  if (loading) return <div style={{padding: 20}}>Ładowanie pulpitu... 🐝</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie strony..." />;
 
   return (
     <div className="dashboard-grid">
