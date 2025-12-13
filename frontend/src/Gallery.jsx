@@ -61,9 +61,9 @@ const Gallery = () => {
   return (
     <div className="gallery-container">
       
-      <div className="page-title">
+      <h2 className="page-title">
         <FaImages /> Galeria Zdjęć
-      </div>
+      </h2>
 
       <div className="gallery-feed">
         {albums.length === 0 ? (

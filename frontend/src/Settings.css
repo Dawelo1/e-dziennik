@@ -176,18 +176,90 @@
   border: 1px solid #ffcdd2;
 }
 
-/* --- Responsywność --- */
-@media (max-width: 768px) {
-  .inputs-grid, .inputs-grid-2col {
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Dwie równe kolumny */
+  gap: 30px;
+  align-items: start;
+}
+
+.settings-column {
+  display: flex;
+  flex-direction: column;
+  /* Brak gap, odstępy realizowane są przez margin-bottom kart */
+}
+
+/* Specjalny styl dla karty medycznej (Czerwony akcent) */
+.medical-card {
+  border-left: 5px solid #e0245e;
+}
+
+.medical-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* Pole tekstowe (Textarea) */
+.medical-textarea {
+  width: 100%;
+  height: 150px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background-color: #fff5f8; /* Bardzo jasny różowy/czerwony odcień */
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: #333;
+  resize: vertical; /* Pozwala rozciągać tylko w pionie */
+  box-sizing: border-box;
+  outline: none;
+  transition: border 0.2s, background-color 0.2s;
+}
+
+.medical-textarea:focus {
+  border-color: #e0245e;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(224, 36, 94, 0.1);
+}
+
+.medical-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.medical-hint {
+  font-size: 11px;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* --- AKTUALIZACJA RESPONSYWNOŚCI (DODAJ TO NA SAM DÓŁ PLIKU) --- */
+
+/* Tablet (pionowo) i Mobile - Zmieniamy układ na jedną kolumnę */
+@media (max-width: 900px) {
+  .settings-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Istniejące media query dla mobile (zaktualizowane o stopkę medyczną) */
+@media (max-width: 768px) {
+  /* ... twoje istniejące style tutaj zostają ... */
+  
+  /* Dodaj to wewnątrz istniejącego @media lub na końcu: */
+  .medical-footer {
+    flex-direction: column;
     gap: 15px;
+    align-items: flex-start;
   }
   
-  .settings-wide-card {
-    padding: 20px;
-  }
-  
-  .honey-btn {
+  .medical-footer button {
     width: 100%;
   }
 }

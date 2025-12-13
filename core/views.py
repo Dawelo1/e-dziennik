@@ -5,15 +5,26 @@ from rest_framework.decorators import action
 from .models import Child, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem
 from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer
 
-class ChildViewSet(viewsets.ReadOnlyModelViewSet):
+class ChildViewSet(viewsets.ModelViewSet):
     serializer_class = ChildSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'patch', 'head', 'options']
 
     def get_queryset(self):
         user = self.request.user
         if user.is_director:
             return Child.objects.all()
         return user.child.all()
+    
+    def update(self, request, *args, **kwargs):
+        # Zabezpieczenie: Pozwalamy edytować TYLKO medical_info
+        # Nawet jak ktoś wyśle inne dane, my je ignorujemy
+        if not request.user.is_director:
+            allowed_data = {'medical_info': request.data.get('medical_info', '')}
+            # Podmieniamy dane w requescie na przefiltrowane
+            request._full_data = allowed_data
+            
+        return super().update(request, *args, **kwargs)
 
 class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
