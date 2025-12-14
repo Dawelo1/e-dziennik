@@ -166,6 +166,9 @@ class GalleryItemSerializer(serializers.ModelSerializer):
     # NOWE POLA:
     likes_count = serializers.IntegerField(source='likes.count', read_only=True)
     is_liked_by_user = serializers.SerializerMethodField()
+    likers_names = serializers.SerializerMethodField()
+    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    author_avatar = serializers.ImageField(source='author.avatar', read_only=True)
 
     class Meta:
         model = GalleryItem
@@ -173,7 +176,8 @@ class GalleryItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'created_at', 'formatted_date', 
             'target_group', 'images', 
-            'likes_count', 'is_liked_by_user' # <--- Dodaj to
+            'likes_count', 'is_liked_by_user', 'likers_names',
+            'author_name', 'author_avatar'
         ]
 
     def get_formatted_date(self, obj):
@@ -185,3 +189,11 @@ class GalleryItemSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(id=request.user.id).exists()
         return False
+
+    def get_likers_names(self, obj):
+        users = obj.likes.all()
+        names = []
+        for u in users:
+            full_name = u.get_full_name()
+            names.append(full_name if full_name else u.username)
+        return names

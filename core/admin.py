@@ -170,8 +170,14 @@ class GalleryImageInline(admin.TabularInline):
     extra = 5 # Pokaże od razu 5 pustych miejsc na zdjęcia (można dodać więcej plusem)
 
 class GalleryItemAdmin(admin.ModelAdmin):
-    list_display = ('title', 'created_at', 'target_group')
+    list_display = ('title', 'created_at', 'target_group', 'author')
     inlines = [GalleryImageInline] # Podpinamy zdjęcia do widoku albumu
+
+    def save_model(self, request, obj, form, change):
+        # Ustaw autora (dyrektora) na aktualnego użytkownika jeśli nie ustawiono
+        if not obj.author:
+            obj.author = request.user
+        super().save_model(request, obj, form, change)
 
 # Rejestracja w panelu
 admin.site.register(GalleryItem, GalleryItemAdmin)

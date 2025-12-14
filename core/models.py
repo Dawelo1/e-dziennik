@@ -273,6 +273,14 @@ class GalleryItem(models.Model):
     description = models.TextField(blank=True, verbose_name="Opis wydarzenia")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data dodania")
     likes = models.ManyToManyField(User, related_name='liked_galleries', blank=True)
+    author = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='authored_gallery_items',
+        verbose_name="Autor (dyrektor)"
+    )
     
     # Podobnie jak w Postach - widoczność dla grupy lub dla wszystkich
     target_group = models.ForeignKey(

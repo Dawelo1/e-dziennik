@@ -59,6 +59,21 @@
   display: flex; justify-content: center; align-items: center;
   color: white; font-weight: bold; font-size: 20px;
   margin-right: 15px;
+  overflow: hidden;
+}
+
+.gallery-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gallery-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .gallery-info h4 { margin: 0; font-size: 15px; color: #333; }
@@ -91,6 +106,31 @@
   padding-top: 15px;
   margin-top: 15px;
 }
+
+/* Tooltip for like button */
+.like-btn { position: relative; }
+.like-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  transform: translateY(-8px);
+  background: #ffffff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  white-space: normal;
+  display: inline-block;
+  max-width: 240px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+.like-btn:hover .like-tooltip { opacity: 1; }
+.like-tooltip-item { line-height: 1.4; }
 
 /* RWD */
 @media (max-width: 768px) {

@@ -3,12 +3,18 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Gallery.css';
 import ImageGrid from './ImageGrid';
-import { FaImages, FaRegClock, FaHeart, FaRegHeart } from 'react-icons/fa'; // <--- Import serc
+import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const getAvatarUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `http://127.0.0.1:8000${url}`;
+  };
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -73,9 +79,17 @@ const Gallery = () => {
             <div key={album.id} className="gallery-card">
               
               <div className="gallery-header">
-                <div className="gallery-avatar">P</div>
+                <div className="gallery-avatar">
+                  {album.author_avatar ? (
+                    <img src={getAvatarUrl(album.author_avatar)} alt="Avatar" />
+                  ) : (
+                    <div className="gallery-avatar-placeholder">
+                      {(album.author_name && album.author_name[0]) ? album.author_name[0].toUpperCase() : 'D'}
+                    </div>
+                  )}
+                </div>
                 <div className="gallery-info">
-                  <h4>Dyrektor Przedszkola</h4>
+                  <h4>{album.author_name || 'Dyrektor Przedszkola'}</h4>
                   <span className="gallery-date">
                     <FaRegClock /> {album.formatted_date}
                   </span>
@@ -96,8 +110,29 @@ const Gallery = () => {
                     className={`action-btn like-btn ${album.is_liked_by_user ? 'liked' : ''}`}
                     onClick={() => handleLike(album.id)}
                  >
-                    {album.is_liked_by_user ? <FaHeart color="#e0245e" /> : <FaRegHeart />} 
+                    {album.is_liked_by_user ? <FaThumbsUp color="#2196f3" /> : <FaRegThumbsUp />} 
                     <span>{album.likes_count > 0 ? album.likes_count : 'Lubię to'}</span>
+                    <span className="like-tooltip">
+                      {album.likes_count > 0 ? (
+                        (() => {
+                          const names = Array.isArray(album.likers_names) ? album.likers_names : [];
+                          const shown = names.slice(0, 5);
+                          const remaining = Math.max(0, names.length - shown.length);
+                          return (
+                            <>
+                              {shown.map((n, i) => (
+                                <div className="like-tooltip-item" key={`${n}-${i}`}>{n}</div>
+                              ))}
+                              {remaining > 0 && (
+                                <div className="like-tooltip-item">i {remaining} innych</div>
+                              )}
+                            </>
+                          );
+                        })()
+                      ) : (
+                        'Nikt jeszcze nie polubił'
+                      )}
+                    </span>
                  </button>
               </div>
 
