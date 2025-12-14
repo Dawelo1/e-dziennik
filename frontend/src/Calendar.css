@@ -9,9 +9,6 @@
   margin: 0;
   padding: 0;
   font-family: 'Segoe UI', sans-serif;
-  
-  /* ZMIANA: Usunięto 'overflow-x: hidden', aby pasek był systemowy */
-  /* overflow-x: hidden; <- USUNIĘTE */
 }
 
 /* --- TYTUŁ STRONY --- */
@@ -19,13 +16,10 @@
   color: #333;
   font-size: 24px;
   font-weight: 700;
-  
   margin-bottom: 20px;
   margin-left: 0;
   padding-left: 15px;
-  
   border-left: 5px solid #f2c94c;
-  
   display: flex;
   align-items: center;
   gap: 15px;
@@ -36,19 +30,36 @@
   font-size: 28px;
 }
 
+/* --- UKŁAD DWUKOLUMNOWY (Grid) --- */
+.calendar-content-wrapper {
+  display: grid;
+  grid-template-columns: 2fr 1fr; 
+  gap: 30px;
+  align-items: start;
+  width: 100%;
+  margin-left: 0; 
+}
+
+/* --- NOWY KONTENER GRUPUJĄCY LEWĄ STRONĘ --- */
+.left-column-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px; /* Odstęp między kontrolkami a tabelą */
+  width: 100%;
+}
+
 /* --- KARTA NAWIGACJI ROKU --- */
 .year-controls {
   background: white;
   border-radius: 20px;
   padding: 20px 30px;
   
+  /* ZMIANY: */
+  width: 100%; /* Rozciągnij na pełną szerokość rodzica (czyli kolumny 2fr) */
+  max-width: 100%; /* Usunięto ograniczenie 65.5% */
+  margin: 0; /* Marginesy usunięte, odstęp reguluje gap w .left-column-content */
+  
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-  margin-bottom: 30px;
-  
-  max-width: 1100px;
-  width: 100%;
-  margin-left: 0;
-  
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -63,17 +74,6 @@
 .nav-btn:hover { background: #f2c94c; border-color: #f2c94c; color: white; transform: translateY(-2px); }
 .nav-btn:focus, .nav-btn:active { outline: none; box-shadow: none; }
 
-/* --- UKŁAD DWUKOLUMNOWY (Grid) --- */
-.calendar-content-wrapper {
-  display: grid;
-  grid-template-columns: 1fr 250px; 
-  gap: 30px;
-  align-items: start;
-  
-  max-width: 1100px;
-  width: 100%;
-  margin-left: 0; 
-}
 
 /* --- TABELA HARMONOGRAMU --- */
 .schedule-table {
@@ -196,11 +196,10 @@
   .yearly-container { padding: 0 15px; } 
 }
 
-/* --- TELEFONY (GŁÓWNA POPRAWKA) --- */
+/* --- TELEFONY --- */
 @media (max-width: 768px) {
   
   .yearly-container {
-    /* ZMIANA: Usunięto width: 100vw i overflow-x: hidden */
     width: 100%; 
     max-width: 100%;
     padding: 0 10px;
@@ -210,8 +209,6 @@
   .schedule-table {
     display: block;
     width: 100%;
-    /* To zostawiamy, żeby tabela przewijała się wewnątrz strony, 
-       ale dzięki usunięciu overflow-x z rodzica, pasek będzie wyglądał standardowo */
     overflow-x: auto; 
     -webkit-overflow-scrolling: touch;
   }
@@ -233,10 +230,6 @@
   
   .month-col-header { background-color: #fcfcfc; }
   .month-name-col { background-color: #fffbf0; }
-  
-  .year-navigation-card {
-    padding: 15px; flex-direction: row; justify-content: space-between; width: 100%;
-  }
   
   .current-year-label { font-size: 18px; }
 }

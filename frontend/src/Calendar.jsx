@@ -1,7 +1,7 @@
 // frontend/src/YearlyCalendar.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './Calendar.css'; // Upewnij się, że nazwa pliku CSS jest poprawna
+import './Calendar.css'; 
 import LoadingScreen from './LoadingScreen';
 import { 
   FaCalendarAlt, 
@@ -68,85 +68,86 @@ const Calendar = () => {
         <FaCalendarAlt /> Harmonogram Roczny
       </h2>
 
-      <div className="year-controls">
-        <button className="nav-btn" onClick={() => setCurrentYear(currentYear - 1)}>
-          <FaChevronLeft />
-        </button>
-        <div className="current-year-label">{currentYear}</div>
-        <button className="nav-btn" onClick={() => setCurrentYear(currentYear + 1)}>
-          <FaChevronRight />
-        </button>
-      </div>
-
+      {/* ZMIANA STRUKTURY: year-controls przeniesione do środka wrapper */}
       <div className="calendar-content-wrapper">
         
-        {/* KOLUMNA LEWA: TABELA */}
-        <div className="schedule-table">
-          <div className="schedule-header-row">
-            <div className="month-col-header">Miesiąc</div>
-            <div className="days-grid-header">
-              {daysHeader.map((d, i) => (
-                <span key={i} className={i >= 5 ? 'weekend-header' : ''}>{d}</span>
-              ))}
-            </div>
+        {/* LEWA STRONA (2fr): Zawiera Nawigację Roku ORAZ Tabelę */}
+        <div className="left-column-content">
+          
+          <div className="year-controls">
+            <button className="nav-btn" onClick={() => setCurrentYear(currentYear - 1)}>
+              <FaChevronLeft />
+            </button>
+            <div className="current-year-label">{currentYear}</div>
+            <button className="nav-btn" onClick={() => setCurrentYear(currentYear + 1)}>
+              <FaChevronRight />
+            </button>
           </div>
 
-          {months.map((monthName, monthIndex) => {
-            const daysCount = getDaysInMonth(monthIndex, currentYear);
-            const firstDayOffset = getFirstWeekDay(monthIndex, currentYear);
-            
-            const blanks = Array.from({ length: firstDayOffset }, (_, i) => (
-              <div key={`blank-${i}`} className="day-cell empty"></div>
-            ));
+          <div className="schedule-table">
+            <div className="schedule-header-row">
+              <div className="month-col-header">Miesiąc</div>
+              <div className="days-grid-header">
+                {daysHeader.map((d, i) => (
+                  <span key={i} className={i >= 5 ? 'weekend-header' : ''}>{d}</span>
+                ))}
+              </div>
+            </div>
 
-            const days = Array.from({ length: daysCount }, (_, i) => {
-              const day = i + 1;
-              const dateStr = formatDateString(currentYear, monthIndex, day);
-              const dateObj = new Date(currentYear, monthIndex, day);
-              const dayOfWeek = dateObj.getDay();
+            {months.map((monthName, monthIndex) => {
+              const daysCount = getDaysInMonth(monthIndex, currentYear);
+              const firstDayOffset = getFirstWeekDay(monthIndex, currentYear);
+              
+              const blanks = Array.from({ length: firstDayOffset }, (_, i) => (
+                <div key={`blank-${i}`} className="day-cell empty"></div>
+              ));
 
-              let classes = "day-cell";
-              let tooltipText = null; // Zmienna na tekst dymka
+              const days = Array.from({ length: daysCount }, (_, i) => {
+                const day = i + 1;
+                const dateStr = formatDateString(currentYear, monthIndex, day);
+                const dateObj = new Date(currentYear, monthIndex, day);
+                const dayOfWeek = dateObj.getDay();
 
-              // 1. Dzień wolny
-              if (closures[dateStr]) {
-                classes += " closed";
-                tooltipText = closures[dateStr]; // Przypisujemy powód
-              } else if (dayOfWeek === 0 || dayOfWeek === 6) {
-                classes += " weekend";
-              } else {
-                classes += " open";
-              }
+                let classes = "day-cell";
+                let tooltipText = null;
 
-              const todayStr = new Date().toISOString().split('T')[0];
-              if (dateStr === todayStr) classes += " today";
+                if (closures[dateStr]) {
+                  classes += " closed";
+                  tooltipText = closures[dateStr];
+                } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                  classes += " weekend";
+                } else {
+                  classes += " open";
+                }
+
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (dateStr === todayStr) classes += " today";
+
+                return (
+                  <div key={day} className={classes}>
+                    {day}
+                    {tooltipText && (
+                      <span className="custom-tooltip">{tooltipText}</span>
+                    )}
+                  </div>
+                );
+              });
 
               return (
-                // Usunięto atrybut title={title}, aby nie dublować dymków
-                <div key={day} className={classes}>
-                  {day}
-                  
-                  {/* Renderujemy własny tooltip, jeśli jest tekst */}
-                  {tooltipText && (
-                    <span className="custom-tooltip">{tooltipText}</span>
-                  )}
+                <div key={monthName} className="schedule-row">
+                  <div className="month-name-col">{monthName}</div>
+                  <div className="days-grid-col">
+                    {blanks}
+                    {days}
+                  </div>
                 </div>
               );
-            });
-
-            return (
-              <div key={monthName} className="schedule-row">
-                <div className="month-name-col">{monthName}</div>
-                <div className="days-grid-col">
-                  {blanks}
-                  {days}
-                </div>
-              </div>
-            );
-          })}
+            })}
+          </div>
         </div>
+        {/* KONIEC LEWEJ STRONY */}
 
-        {/* KOLUMNA PRAWA: LEGENDA */}
+        {/* PRAWA STRONA (1fr): LEGENDA */}
         <div className="legend-card">
           <h4>Legenda</h4>
           <div className="legend-list">

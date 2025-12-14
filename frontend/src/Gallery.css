@@ -1,7 +1,9 @@
 /* frontend/src/Gallery.css */
 
 /* Zabezpieczenie wymiarów */
-.gallery-container * { box-sizing: border-box; }
+.gallery-container * { 
+  box-sizing: border-box; 
+}
 
 /* --- GŁÓWNY KONTENER (Zgodny z resztą) --- */
 .gallery-container {
@@ -25,7 +27,9 @@
   align-items: center; 
   gap: 15px;
 }
-.page-title svg { color: #f2c94c; font-size: 28px; }
+.page-title svg { 
+color: #f2c94c; font-size: 28px; 
+}
 
 /* --- LISTA ALBUMÓW --- */
 .gallery-feed {
