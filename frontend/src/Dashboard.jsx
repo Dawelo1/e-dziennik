@@ -375,7 +375,7 @@ const handleLikeComment = async (postId, commentId) => {
             </div>
           </div>
           <div className="widget-card">
-            <div className="widget-title">Najbliższe i Ważne</div>
+            <div className="widget-title">Najbliższe i Ważne Wydarzenia</div>
             {widgetData.length === 0 ? <p style={{fontSize: 13, color: '#999'}}>Brak nadchodzących wydarzeń.</p> : 
               widgetData.map(item => (
                 <div key={item.id} className={`event-item ${item.type === 'payment' ? 'payment-type' : 'event-type'} ${item.isOverdue ? 'overdue' : ''}`}

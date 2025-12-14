@@ -284,6 +284,9 @@
   display: flex;
   flex-direction: column;
   gap: 25px;
+  position: sticky; /* Pozostaje przyklejona podczas scrollowania treści */
+  top: 0; /* Przylega do górnej krawędzi obszaru przewijania */
+  align-self: start; /* Upewnia się, że kolumna nie rozciąga się w pionie */
 }
 
 .widget-card {
