@@ -166,8 +166,14 @@
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 15px;
+}
+
+.comment-row {
+  display: flex;
+  align-items: flex-start; /* Wyrównaj do góry */
+  gap: 10px;
 }
 
 /* Dymek komentarza */
@@ -179,19 +185,29 @@
   color: #1c1e21;
 }
 
+.comment-bubble {
+  background-color: #f0f2f5;
+  padding: 8px 12px;
+  border-radius: 18px; /* Bardziej zaokrąglony */
+  /* Ważne: dymek dopasowuje się do treści, ale nie szerszy niż kontener */
+  max-width: calc(100% - 50px); 
+  display: flex;
+  flex-direction: column;
+}
+
 .comment-author {
-  font-weight: bold;
+  font-weight: 700;
   font-size: 12px;
   color: #000;
-  margin-bottom: 3px;
-  display: block;
+  margin-bottom: 2px;
 }
 
 .comment-text {
   color: #333;
+  font-size: 13px;
   line-height: 1.4;
+  word-wrap: break-word;
 }
-
 /* --- POLE WPISYWANIA KOMENTARZA --- */
 .comment-input-area {
   display: flex;
@@ -392,6 +408,62 @@
 .event-item.overdue .event-meta {
   color: #d32f2f;
   font-weight: bold;
+}
+
+.comment-my-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0; /* Nie zgniataj avatara */
+  border: 1px solid #eee;
+}
+
+.comment-my-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comment-avatar-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #eee;
+}
+
+.comment-avatar-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Placeholder (gdy brak zdjęcia) */
+.comment-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #f2c94c; /* Miodowy */
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+
+
+/* Poprawka dla input area, żeby pomieścił avatar */
+.comment-input-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 25px;
+  padding: 5px 10px 5px 5px; /* Mniejszy padding z lewej, bo jest avatar */
 }
 
 /* --- RWD --- */

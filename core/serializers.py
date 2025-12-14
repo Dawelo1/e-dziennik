@@ -105,10 +105,11 @@ class MessageSerializer(serializers.ModelSerializer):
     
 class PostCommentSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.get_full_name', read_only=True) # Imię Nazwisko autora
+    author_avatar = serializers.ImageField(source='author.avatar', read_only=True)
 
     class Meta:
         model = PostComment
-        fields = ['id', 'author_name', 'content', 'created_at']
+        fields = ['id', 'author_name', 'author_avatar', 'content', 'created_at']
 
 class PostSerializer(serializers.ModelSerializer):
     formatted_date = serializers.SerializerMethodField()
