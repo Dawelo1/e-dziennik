@@ -7,7 +7,8 @@ import {
   FaCalendarAlt, 
   FaChevronLeft, 
   FaChevronRight,
-  FaInfoCircle
+  FaInfoCircle,
+  FaMap
 } from 'react-icons/fa';
 
 const Calendar = () => {
@@ -149,7 +150,7 @@ const Calendar = () => {
 
         {/* PRAWA STRONA (1fr): LEGENDA */}
         <div className="legend-card">
-          <h4>Legenda</h4>
+          <h4><FaMap />Legenda</h4>
           <div className="legend-list">
             <div className="legend-item">
               <span className="sample open"></span> Dni nauki

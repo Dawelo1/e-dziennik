@@ -156,17 +156,23 @@
 
 /* --- LEGENDA --- */
 .legend-card {
-  background: white;
-  border-radius: 20px;
-  padding: 25px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-  border: 1px solid #f0f0f0;
-  position: sticky; top: 20px;
+  background-color: #e3f2fd;
+  border-left: 5px solid #2196f3;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  border-radius: 12px;
+  position: sticky; 
+  top: 20px;
 }
 
 .legend-card h4 {
-  margin: 0 0 20px 0; color: #333; font-size: 16px; text-transform: uppercase;
-  border-bottom: 2px solid #f2c94c; padding-bottom: 10px; display: inline-block;
+  margin: 0 0 10px 0; 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  font-size: 16px; 
+  font-weight: 700;
+  color: #0d47a1;
 }
 
 .legend-list { display: flex; flex-direction: column; gap: 12px; }
@@ -179,10 +185,19 @@
 .sample.today { border: 2px solid #000; }
 
 .legend-info {
-  margin-top: 20px; padding-top: 15px; border-top: 1px dashed #eee;
-  display: flex; gap: 8px; color: #888; font-size: 12px; line-height: 1.4;
+  padding-top: 15px;
+  border-top: 1px dashed #eee;
+  display: flex;
+  gap: 8px; color: #888;
+  font-size: 12px;
+  line-height: 1.4;
 }
-.legend-info svg { color: #f2c94c; font-size: 16px; margin-top: 2px; }
+
+.legend-info svg { 
+  color: #f2c94c;
+  font-size: 16px;
+  margin-top: 2px;
+}
 
 /* --- RWD (TELEFONY I TABLETY) --- */
 @media (max-width: 900px) {
