@@ -17,6 +17,7 @@ import {
   FaMoneyBillWave, 
   FaExclamationCircle 
 } from 'react-icons/fa';
+import LoadingScreen from './LoadingScreen';
 
 const Dashboard = () => {
   const [posts, setPosts] = useState([]);
@@ -224,11 +225,11 @@ const handleLikeComment = async (postId, commentId) => {
     }));
   };
 
-  if (loading) return <div style={{padding: 20}}>Ładowanie pulpitu... 🐝</div>;
+  if (loading) return <LoadingScreen message="Wczytywanie pulpitu..." />;
 
   return (
     <div className="dashboard-container">
-      <div className="page-title"><FaBullhorn /> Tablica Postów</div>
+      <h2 className="page-title"><FaBullhorn /> Tablica Postów</h2>
 
       <div className="dashboard-grid">
         <div className="feed-column">

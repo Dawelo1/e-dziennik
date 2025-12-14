@@ -278,8 +278,12 @@ const Settings = () => {
                  <FaNotesMedical color="#e0245e"/> {child.first_name} {child.last_name}
                </div>
                <div className="medical-info-section">
-                  <p className="medical-label">Informacje medyczne / Alergie:</p>
-                  <textarea className="medical-textarea" value={child.medical_info||''} onChange={e => handleMedicalChange(child.id, e.target.value)} />
+                  <p className="medical-label">Informacje medyczne/alergie:</p>
+                  <textarea 
+                    className={`medical-textarea ${child.medical_info && child.medical_info.trim() ? 'filled' : ''}`}
+                    value={child.medical_info||''}
+                    onChange={e => handleMedicalChange(child.id, e.target.value)}
+                  />
                   <div className="medical-footer">
                     <span className="medical-hint"><FaChild/> Widoczne dla dyrekcji.</span>
                     <button className="honey-btn" onClick={() => handleMedicalUpdate(child.id, child.medical_info)}>Zapisz</button>
