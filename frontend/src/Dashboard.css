@@ -122,6 +122,39 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.like-btn {
+  position: relative;
+}
+
+.like-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  transform: translateY(-8px);
+  background: #ffffff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  white-space: normal;
+  display: inline-block;
+  max-width: 240px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 5;
+}
+
+.like-btn:hover .like-tooltip {
+  opacity: 1;
+}
+
+.like-tooltip-item {
+  line-height: 1.4;
+}
+
 /* USUWA CZARNĄ RAMKĘ PO KLIKNIĘCIU */
 .action-btn:focus, 
 .action-btn:active,
@@ -137,10 +170,10 @@
 
 /* Stan polubienia */
 .like-btn.liked {
-  color: #e0245e;
+  color: #2196f3;
 }
 .like-btn.liked svg {
-  fill: #e0245e;
+  fill: #2196f3;
 }
 
 /* --- SEKCJA KOMENTARZY (Rozwijana) --- */
@@ -464,6 +497,104 @@
   border: 1px solid #ccc;
   border-radius: 25px;
   padding: 5px 10px 5px 5px; /* Mniejszy padding z lewej, bo jest avatar */
+}
+
+.comment-block {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+/* Akcje pod komentarzem (Like) */
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 50px; /* Odsunięcie pod dymek (zależy od szerokości avatara) */
+  margin-top: 2px;
+}
+
+.comment-like-link {
+  font-size: 11px;
+  font-weight: 700;
+  color: #65676b;
+  cursor: pointer;
+}
+
+.comment-like-link:hover {
+  text-decoration: underline;
+}
+
+.comment-like-link.liked {
+  color: #2196f3; /* Niebieski jak polubione */
+}
+
+.comment-likes-count {
+  font-size: 11px;
+  color: #65676b;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: white;
+  padding: 1px 4px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 50px; /* Odsunięcie pod dymek (zależy od awatara) */
+  margin-top: 2px;
+  font-size: 11px;
+  color: #65676b;
+}
+
+/* Przycisk "Lubię to!" */
+.comment-like-link {
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.comment-like-link:hover {
+  text-decoration: underline;
+}
+
+.comment-like-link.liked {
+  color: #2196f3; /* Niebieski jak polubione */
+}
+
+/* Licznik lajków przy komentarzu */
+.comment-likes-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background-color: white;
+  padding: 2px 4px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  cursor: default;
+  font-weight: 600;
+  color: #555;
+}
+
+/* Kółeczko z ikoną serca wewnątrz licznika */
+.tiny-like-icon {
+  width: 14px;
+  height: 14px;
+  background-color: #2196f3;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Data komentarza */
+.comment-date {
+  color: #888;
+  font-weight: 400;
 }
 
 /* --- RWD --- */

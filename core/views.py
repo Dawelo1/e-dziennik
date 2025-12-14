@@ -233,3 +233,26 @@ class GalleryViewSet(viewsets.ReadOnlyModelViewSet):
             'liked': liked, 
             'likes_count': album.likes.count()
         })
+    
+class CommentViewSet(viewsets.GenericViewSet):
+    queryset = PostComment.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+
+    # AKCJA: Polub komentarz
+    # POST /api/comments/{id}/like/
+    @action(detail=True, methods=['post'])
+    def like(self, request, pk=None):
+        comment = self.get_object()
+        user = request.user
+
+        if comment.likes.filter(id=user.id).exists():
+            comment.likes.remove(user)
+            liked = False
+        else:
+            comment.likes.add(user)
+            liked = True
+
+        return Response({
+            'liked': liked, 
+            'likes_count': comment.likes.count()
+        })

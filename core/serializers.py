@@ -106,22 +106,31 @@ class MessageSerializer(serializers.ModelSerializer):
 class PostCommentSerializer(serializers.ModelSerializer):
     author_name = serializers.CharField(source='author.get_full_name', read_only=True) # Imię Nazwisko autora
     author_avatar = serializers.ImageField(source='author.avatar', read_only=True)
+    likes_count = serializers.IntegerField(source='likes.count', read_only=True)
+    is_liked_by_user = serializers.SerializerMethodField()
 
     class Meta:
         model = PostComment
-        fields = ['id', 'author_name', 'author_avatar', 'content', 'created_at']
+        fields = ['id', 'author_name', 'author_avatar', 'content', 'created_at', 'likes_count', 'is_liked_by_user']
+
+    def get_is_liked_by_user(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(id=request.user.id).exists()
+        return False
 
 class PostSerializer(serializers.ModelSerializer):
     formatted_date = serializers.SerializerMethodField()
     likes_count = serializers.IntegerField(source='likes.count', read_only=True)
     is_liked_by_user = serializers.SerializerMethodField()
     comments = PostCommentSerializer(many=True, read_only=True)
+    likers_names = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = [
             'id', 'title', 'content', 'image', 'created_at', 'formatted_date', 'target_group',
-            'likes_count', 'is_liked_by_user', 'comments'
+            'likes_count', 'is_liked_by_user', 'comments', 'likers_names'
         ]
 
     def get_formatted_date(self, obj):
@@ -136,6 +145,14 @@ class PostSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated:
             return obj.likes.filter(id=request.user.id).exists()
         return False
+
+    def get_likers_names(self, obj):
+        users = obj.likes.all()
+        names = []
+        for u in users:
+            full_name = u.get_full_name()
+            names.append(full_name if full_name else u.username)
+        return names
     
 class GalleryImageSerializer(serializers.ModelSerializer):
     class Meta:
