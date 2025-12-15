@@ -54,7 +54,7 @@ function App() {
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/schedule" element={<Schedule />} />
-          <Route path="/menu" element={<Meals />} />
+          <Route path="/meals" element={<Meals />} />
           <Route path="/payments" element={<Payments />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/info" element={<Info />} />

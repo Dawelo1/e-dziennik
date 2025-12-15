@@ -168,7 +168,7 @@ const Layout = () => {
             </li>
 
             <li>
-              <NavLink to="/menu" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+              <NavLink to="/meals" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                 <span className="menu-icon"><FaUtensils /></span> Jadłospis
               </NavLink>
             </li>
