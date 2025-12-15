@@ -1,7 +1,11 @@
 /* frontend/src/Payments.css */
 
+/* 1. KLUCZOWA POPRAWKA: Box-sizing dla spójności wymiarów */
+.payments-container * {
+  box-sizing: border-box;
+}
+
 .payments-container {
-  /* ZGODNOŚĆ Z SETTINGS: Kontener na całą szerokość, bez paddingu */
   width: 100%;
   margin: 0;
   padding: 0;
@@ -13,14 +17,10 @@
   color: #333;
   font-size: 24px;
   font-weight: 700;
-  
-  /* ZGODNOŚĆ Z SETTINGS: Marginesy */
   margin-bottom: 20px;
   margin-left: 0;
   padding-left: 15px;
-  
-  border-left: 5px solid #f2c94c; /* Miodowy pasek */
-  
+  border-left: 5px solid #f2c94c;
   display: flex;
   align-items: center;
   gap: 15px;
@@ -34,26 +34,22 @@
 /* --- KARTA PODSUMOWANIA (Górna) --- */
 .combined-info-card {
   background: white;
-  border-radius: 20px; /* ZGODNOŚĆ: 20px */
-  padding: 0; /* Padding jest wewnątrz sekcji */
-  
-  /* ZGODNOŚĆ Z SETTINGS: Cień i Max-width */
+  border-radius: 20px;
+  padding: 0;
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-  max-width: 1100px; /* Ograniczenie szerokości tylko dla karty */
   
-  margin-bottom: 40px;
+  /* ZMIANA: Zamiast max-width, ustawiamy 2/3 szerokości i centrujemy */
+  width: 66.666%;
+  margin: 0 auto 40px auto; /* 0 góra, auto prawo, 40 dół, auto lewo */
+  max-width: none; 
+  
   display: flex;
   overflow: hidden;
   min-height: 180px;
 }
 
-.combined-info-card.has-debt {
-  border-left: 8px solid #e0245e;
-}
-
-.combined-info-card.all-clear {
-  border-left: 8px solid #4caf50;
-}
+.combined-info-card.has-debt { border-left: 8px solid #e0245e; }
+.combined-info-card.all-clear { border-left: 8px solid #4caf50; }
 
 /* Lewa strona (Suma) */
 .info-section-left {
@@ -138,18 +134,18 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  /* ZGODNOŚĆ: Ograniczenie szerokości listy */
-  max-width: 1100px;
+  
+  /* ZMIANA: Wyśrodkowanie listy 2/3 */
+  width: 66.666%;
+  margin: 0 auto;
+  max-width: none;
 }
 
 .payment-card {
   background: white;
-  border-radius: 20px; /* ZGODNOŚĆ: 20px */
+  border-radius: 20px;
   padding: 25px 30px;
-  
-  /* ZGODNOŚĆ: Cień */
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-  
   display: grid;
   grid-template-columns: 1.5fr 2fr 1fr;
   align-items: center;
@@ -163,10 +159,7 @@
   box-shadow: 0 8px 25px rgba(0,0,0,0.08);
 }
 
-.payment-card.unpaid {
-  border-left: 5px solid #ff9800; 
-}
-
+.payment-card.unpaid { border-left: 5px solid #ff9800; }
 .payment-card.paid {
   border-left: 5px solid #e0e0e0;
   background-color: #ffffff;
@@ -182,12 +175,12 @@
 .transfer-data { display: flex; flex-direction: column; }
 .data-label { font-size: 10px; color: #999; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; }
 
-/* STYLIZACJA INPUTA (ZGODNOŚĆ Z SETTINGS) */
+/* STYLIZACJA INPUTA */
 .copy-box {
-  background-color: #fcfcfc; /* Jasne tło jak w settings */
+  background-color: #fcfcfc;
   border: 1px solid #e0e0e0;
-  padding: 12px 15px; /* Padding jak w settings input */
-  border-radius: 12px; /* Zaokrąglenie jak w settings */
+  padding: 12px 15px;
+  border-radius: 12px;
   display: flex; justify-content: space-between; align-items: center;
   cursor: pointer; transition: all 0.2s;
 }
@@ -195,7 +188,7 @@
 .copy-box:hover { 
   border-color: #f2c94c; 
   background-color: #fff; 
-  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.1); /* Cień po najechaniu */
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.1); 
 }
 
 .copy-box code { font-weight: 700; font-size: 15px; color: #333; font-family: 'Segoe UI', sans-serif; }
@@ -210,12 +203,15 @@
 .status-unpaid { background-color: #fff3e0; color: #ef6c00; }
 .status-paid { background-color: #e8f5e9; color: #2e7d32; }
 
-/* --- PRZYCISK HISTORII (Poprawiony) --- */
+/* --- HISTORIA --- */
 .history-section {
-  margin-top: 40px;
   padding-top: 20px;
   border-top: 2px dashed #eee;
-  max-width: 1100px; /* Ograniczenie szerokości */
+  
+  /* ZMIANA: Wyśrodkowanie sekcji historii 2/3 */
+  width: 66.666%;
+  margin: 40px auto 0 auto;
+  max-width: none;
 }
 
 .toggle-history-btn {
@@ -223,22 +219,17 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  
   margin: 0 auto 30px auto; 
   padding: 12px 30px;
-  
-  /* Styl kafelka */
   background-color: white; 
   border: none;
   border-radius: 30px;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Cień spójny */
-  
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
   color: #555;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
-  
   outline: none;
 }
 
@@ -250,7 +241,15 @@
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
-  .combined-info-card { flex-direction: column; }
+  /* Na tabletach i telefonach wracamy do pełnej szerokości */
+  .combined-info-card,
+  .payments-list,
+  .history-section {
+    width: 100%;
+    padding: 0 15px; /* Dodatkowy padding żeby nie dotykało krawędzi */
+  }
+
+  .combined-info-card { flex-direction: column; padding: 0; }
   .info-section-left, .info-section-right { border-right: none; border-bottom: 1px solid #f0f0f0; text-align: center; padding: 30px; }
   .info-section-right { border-bottom: none; }
   

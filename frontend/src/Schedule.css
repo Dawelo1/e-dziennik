@@ -36,7 +36,7 @@
 }
 
 /* NAWIGACJA */
-.week-navigation-card {
+.schedule-container .week-navigation-card {
   background: white;
   border-radius: 20px;
   padding: 15px 30px;
@@ -45,12 +45,30 @@
   justify-content: space-between; 
   align-items: center;
   margin: 0 auto 20px auto;
+  
+  /* Szerokość zgodna z tabelą */
   width: 66.666%;
 }
-.current-week-label { font-size: 16px; font-weight: 700; color: #444; text-transform: uppercase; }
+
+.current-week-label { 
+  font-size: 16px; 
+  font-weight: 700; 
+  color: #444; 
+  text-transform: uppercase; 
+}
+
 .nav-btn {
-  background: #fcfcfc; border: 1px solid #e0e0e0; padding: 10px 20px; border-radius: 30px; cursor: pointer; color: #555; font-weight: 600;
-  display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+  background: #fcfcfc; 
+  border: 1px solid #e0e0e0; 
+  padding: 10px 20px; 
+  border-radius: 30px; 
+  cursor: pointer; 
+  color: #555; 
+  font-weight: 600;
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  transition: all 0.2s;
 }
 .nav-btn:hover { background: #f2c94c; border-color: #f2c94c; color: white; transform: translateY(-2px); }
 .nav-btn:focus { outline: none; }

@@ -1,11 +1,15 @@
 /* frontend/src/Meals.css */
+.meals-container * {
+  box-sizing: border-box;
+}
 
 /* --- GŁÓWNY KONTENER (ZGODNY Z SETTINGS) --- */
 .meals-container {
   width: 100%;
-  margin: 0;
+  margin: 0 auto;
   padding: 0; /* Kluczowe dla wyrównania do lewej */
   font-family: 'Segoe UI', sans-serif;
+  max-width: none;
 }
 
 /* --- TYTUŁ STRONY (ZGODNY Z SETTINGS) --- */
@@ -13,14 +17,10 @@
   color: #333;
   font-size: 24px;
   font-weight: 700;
-  
-  /* Marginesy i Paddingi identyczne jak w Settings */
   margin-bottom: 20px;
   margin-left: 0;
   padding-left: 15px;
-  
   border-left: 5px solid #f2c94c; /* Miodowy pasek */
-  
   display: flex;
   align-items: center;
   gap: 15px;
@@ -32,19 +32,18 @@
 }
 
 /* --- KARTA NAWIGACJI (Styl .settings-wide-card) --- */
-.week-navigation-card {
+.meals-container .week-navigation-card {
   background: white;
-  border-radius: 20px; /* ZGODNOŚĆ: 20px */
-  padding: 20px 40px; /* Padding podobny do kart ustawień */
-  
-  /* ZGODNOŚĆ: Cień i Max-width */
+  border-radius: 20px;
+  padding: 15px 30px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-  max-width: 1100px; 
-  
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin: 0 auto 20px auto;
+  
+  /* Upewnij się, że szerokość jest identyczna jak .meals-grid */
+  width: 66.666%; 
 }
 
 .current-week-label {
@@ -57,10 +56,10 @@
 
 /* Przyciski nawigacji */
 .nav-btn {
-  background-color: #fcfcfc;
+  background: #fcfcfc;
   border: 1px solid #e0e0e0;
-  padding: 10px 25px;
-  border-radius: 25px; /* Zaokrąglenie przycisków jak honey-btn */
+  padding: 10px 20px;
+  border-radius: 30px; /* Zaokrąglenie przycisków jak honey-btn */
   cursor: pointer;
   font-weight: 600;
   color: #555;
@@ -84,8 +83,8 @@
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Responsywne kolumny */
   gap: 30px; /* Odstęp taki jak w inputs-grid */
   
-  /* Ograniczenie szerokości całej siatki, żeby nie rozjechała się względem nawigacji */
-  max-width: 1100px; 
+  width: 66.666%;
+  margin: 0 auto; 
 }
 
 /* --- KARTA DNIA (Styl .settings-wide-card, ale mniejsza) --- */

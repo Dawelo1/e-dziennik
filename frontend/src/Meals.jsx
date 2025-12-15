@@ -136,7 +136,7 @@ const Meals = () => {
         </button>
         
         <div className="current-week-label">
-          Tydzień: {formatDateDisplay(monday)} - {formatDateDisplay(friday)}
+          {formatDateDisplay(monday)} - {formatDateDisplay(friday)}
         </div>
         
         <button className="nav-btn" onClick={() => changeWeek(1)}>
