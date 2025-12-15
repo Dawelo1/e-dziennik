@@ -105,8 +105,8 @@ const Attendance = () => {
       setMessage({ type: 'error', text: 'Nie można modyfikować obecności wstecz.' });
       return;
     }
-    if (dateStr === todayStr && now.getHours() >= 8) {
-      setMessage({ type: 'error', text: 'Zmiany na dzisiaj możliwe tylko do godz. 8:00.' });
+    if (dateStr === todayStr && now.getHours() >= 7) {
+      setMessage({ type: 'error', text: 'Zmiany na dzisiaj możliwe tylko do godz. 7:00.' });
       return;
     }
 
@@ -230,7 +230,7 @@ const Attendance = () => {
               <li>Kliknij w dzień roboczy, aby zgłosić nieobecność.</li>
               <li>Najedź na czerwony dzień, aby zobaczyć powód wolnego.</li>
               <li>Weekendy są zablokowane.</li>
-              <li>Na bieżący dzień zmiany możliwe do <strong>godz. 08:00</strong>.</li>
+              <li>Na bieżący dzień zmiany możliwe do <strong>godz. 07:00</strong>.</li>
             </ul>
           </div>
 

@@ -40,7 +40,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
         """
         Tutaj sprawdzamy reguły:
         1. Nie można zgłaszać wstecz.
-        2. Nie można zgłaszać na dzisiaj po godzinie 8:00.
+        2. Nie można zgłaszać na dzisiaj po godzinie 7:00.
         """
         target_date = data['date'] # Data, którą zaznaczył rodzic (nieobecność)
         now = timezone.now()       # Aktualny czas serwera
@@ -50,12 +50,12 @@ class AttendanceSerializer(serializers.ModelSerializer):
         if target_date < today:
             raise serializers.ValidationError("Nie można zgłaszać nieobecności wstecz.")
 
-        # Sprawdzenie 2: Jeśli to dzisiaj, czy jest przed 8:00?
+        # Sprawdzenie 2: Jeśli to dzisiaj, czy jest przed 7:00?
         if target_date == today:
             current_hour = now.hour
             # Uwaga: upewnij się w settings.py że masz TIME_ZONE = 'Europe/Warsaw'
-            if current_hour >= 8:
-                raise serializers.ValidationError("Na dzisiaj można zgłaszać nieobecność tylko do godziny 8:00.")
+            if current_hour >= 7:
+                raise serializers.ValidationError("Na dzisiaj można zgłaszać nieobecność tylko do godziny 7:00.")
 
         return data
     
