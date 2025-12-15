@@ -18,9 +18,12 @@ const Payments = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
+  const [copiedIban, setCopiedIban] = useState(false);
   
   // Nowy stan do ukrywania/pokazywania historii
   const [showHistory, setShowHistory] = useState(false);
+
+  const ibanNumber = 'PL 12 3456 0000 1111 2222 3333 4444';
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -47,6 +50,12 @@ const Payments = () => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleCopyIban = () => {
+    navigator.clipboard.writeText(ibanNumber.replace(/\s/g, ''));
+    setCopiedIban(true);
+    setTimeout(() => setCopiedIban(false), 2000);
   };
 
   // Filtrowanie płatności
@@ -85,8 +94,15 @@ const Payments = () => {
         <div className="info-section-right">
           <h4 className="bank-title">Dane do przelewu:</h4>
           <p className="bank-name">Przedszkole "Pszczółka Maja"</p>
-          <div className="iban-box">
-            PL 12 3456 0000 1111 2222 3333 4444
+          <div 
+            className="iban-box copyable" 
+            onClick={handleCopyIban}
+            title="Kliknij aby skopiować"
+          >
+            <code>{ibanNumber}</code>
+            <span className="copy-icon">
+              {copiedIban ? <FaCheckCircle color="green"/> : <FaCopy />}
+            </span>
           </div>
           <p className="bank-warning">W tytule podawaj WYŁĄCZNIE wygenerowany kod.</p>
         </div>

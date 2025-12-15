@@ -80,18 +80,25 @@ class Payment(models.Model):
         super().save(*args, **kwargs)
 
     def generate_unique_title(self):
-        # Format: Imię(1)Nazwisko(1)/DDMMYYYY/XXX
-        # XXX to unikalny kod dnia
-        first = self.child.first_name[0].upper()
-        last = self.child.last_name[0].upper()
-        today = datetime.date.today()
-        date_str = today.strftime("%d%m%y")
+        # Format: Imie/Nazwisko/MMRRRR/CCC
         
-        # Licznik dla dzisiejszych płatności
-        count = Payment.objects.filter(created_at__date=today).count() + 1
-        unique_code = f"{count:03d}" # np. 001, 002
+        first_name = self.child.first_name
+        last_name = self.child.last_name
+        
+        today = datetime.date.today()
+        date_str = today.strftime("%m%Y") # Format MMRRRR (np. 122025)
+        
+        # Liczymy ile płatności powstało w TYM miesiącu i dodajemy 1
+        # Dzięki temu numeracja resetuje się każdego miesiąca (001, 002...)
+        count = Payment.objects.filter(
+            created_at__year=today.year, 
+            created_at__month=today.month
+        ).count() + 1
+        
+        unique_code = f"{count:03d}" # Formatowanie do 3 cyfr (np. 001, 015, 120)
 
-        return f"{first}{last}/{date_str}/{unique_code}"
+        # Wynik np.: Jan/Kowalski/122025/001
+        return f"{first_name}/{last_name}/{date_str}/{unique_code}"
     
     class Meta:
         verbose_name = "Płatność"

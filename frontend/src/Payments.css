@@ -120,6 +120,36 @@
   border-radius: 12px;
   margin-bottom: 10px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.iban-box.copyable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.iban-box.copyable:hover {
+  background-color: #fffbf0;
+  border-color: #f2c94c;
+  box-shadow: 0 2px 8px rgba(242, 201, 76, 0.2);
+}
+
+.iban-box code {
+  font-family: 'Courier New', monospace;
+}
+
+.iban-box .copy-icon {
+  font-size: 16px;
+  color: #999;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.iban-box:hover .copy-icon {
+  color: #f2c94c;
 }
 
 .bank-warning {
