@@ -5,7 +5,7 @@ import bgImage from './assets/bg.png';
 
 const Terms = () => {
   return (
-    <div className="login-container" style={{ backgroundImage: `url(${bgImage})`, alignItems: 'flex-start', paddingTop: '50px', paddingBottom: '50px', overflowY: 'auto' }}>
+    <div className="login-container" style={{ backgroundImage: `url(${bgImage})`, alignItems: 'flex-start',  overflowY: 'auto' }}>
       <div className="login-card" style={{ maxWidth: '800px', textAlign: 'left', margin: 'auto' }}>
         
         <h2 style={{ color: '#5d4037', marginBottom: '20px', borderBottom: '2px solid #f2c94c', paddingBottom: '10px' }}>
