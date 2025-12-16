@@ -1,12 +1,8 @@
-// frontend/src/ForgotPassword.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-
-// Style i obrazki
 import './Login.css';
 import bgImage from './assets/bg.png';
-import beeLogo from './assets/bee.png';
 import { FaEnvelope } from 'react-icons/fa';
 
 const ForgotPassword = () => {

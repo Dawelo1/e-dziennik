@@ -1,14 +1,15 @@
-// frontend/src/Settings.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import Cropper from 'react-easy-crop'; // <--- BIBLIOTEKA KADROWANIA
-import { getCroppedImg } from './cropUtils'; // <--- NASZA FUNKCJA POMOCNICZA
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from './cropUtils';
 import './Settings.css';
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
   FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
-} from 'react-icons/fa';
+} 
+from 'react-icons/fa';
 
 const Settings = () => {
   const [currentData, setCurrentData] = useState({
@@ -32,11 +33,6 @@ const Settings = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   const getAvatarUrl = (url) => {
     if (!url) return null;

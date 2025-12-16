@@ -1,6 +1,5 @@
-// frontend/src/ImageGrid.jsx
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom'; // <--- 1. NOWY IMPORT
+import { createPortal } from 'react-dom';
 import './ImageGrid.css';
 import { FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 

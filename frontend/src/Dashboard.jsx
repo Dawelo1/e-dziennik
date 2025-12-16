@@ -1,10 +1,9 @@
-// frontend/src/Dashboard.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-// Style i ikony
 import './Dashboard.css';
+import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 import { 
   FaBullhorn, 
   FaUserSlash, 
@@ -16,8 +15,9 @@ import {
   FaRegCommentDots,
   FaMoneyBillWave, 
   FaExclamationCircle 
-} from 'react-icons/fa';
-import LoadingScreen from './LoadingScreen';
+} 
+from 'react-icons/fa';
+
 
 const Dashboard = () => {
   const [posts, setPosts] = useState([]);
@@ -29,11 +29,6 @@ const Dashboard = () => {
   const [expandedComments, setExpandedComments] = useState({});
 
   const navigate = useNavigate();
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   const getAvatarUrl = (url) => {
     if (!url) return null;

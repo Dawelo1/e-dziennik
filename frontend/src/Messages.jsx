@@ -4,6 +4,7 @@ import axios from 'axios';
 import './Messages.css';
 import { FaPaperPlane, FaUserTie, FaEnvelope, FaArrowDown } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
@@ -20,11 +21,6 @@ const Messages = () => {
   
   // Ref do śledzenia pozycji użytkownika
   const isUserAtBottomRef = useRef(true); 
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())

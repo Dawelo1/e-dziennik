@@ -1,4 +1,3 @@
-// frontend/src/Info.jsx
 import React from 'react';
 import './Info.css';
 import { 

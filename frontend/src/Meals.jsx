@@ -1,8 +1,8 @@
-// frontend/src/Meals.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Meals.css';
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 import { 
   FaUtensils, 
   FaChevronLeft, 
@@ -12,17 +12,13 @@ import {
   FaAppleAlt, 
   FaLeaf, 
   FaInfoCircle 
-} from 'react-icons/fa';
+} 
+from 'react-icons/fa';
 
 const Meals = () => {
   const [menuData, setMenuData] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date()); 
   const [loading, setLoading] = useState(true);
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   const getMonday = (d) => {
     const date = new Date(d);

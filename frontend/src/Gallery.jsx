@@ -5,6 +5,7 @@ import './Gallery.css';
 import ImageGrid from './ImageGrid';
 import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);
@@ -14,11 +15,6 @@ const Gallery = () => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
     return `http://127.0.0.1:8000${url}`;
-  };
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
   };
 
   useEffect(() => {

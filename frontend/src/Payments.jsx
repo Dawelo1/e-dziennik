@@ -1,8 +1,8 @@
-// frontend/src/Payments.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Payments.css';
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 import { 
   FaMoneyBillWave, 
   FaCopy, 
@@ -12,7 +12,8 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaCalendarCheck
-} from 'react-icons/fa';
+} 
+from 'react-icons/fa';
 
 const Payments = () => {
   const [payments, setPayments] = useState([]);
@@ -24,11 +25,6 @@ const Payments = () => {
   const [showHistory, setShowHistory] = useState(false);
 
   const ibanNumber = 'PL 12 3456 0000 1111 2222 3333 4444';
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   useEffect(() => {
     const fetchData = async () => {

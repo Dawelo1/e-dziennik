@@ -6,6 +6,7 @@ import 'react-calendar/dist/Calendar.css';
 import './Attendance.css';
 import { FaUserSlash, FaChild, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 
 const Attendance = () => {
   const [children, setChildren] = useState([]);
@@ -22,11 +23,6 @@ const Attendance = () => {
   const [modal, setModal] = useState({
     isOpen: false, type: null, date: null, recordId: null
   });
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   useEffect(() => {
     const fetchData = async () => {

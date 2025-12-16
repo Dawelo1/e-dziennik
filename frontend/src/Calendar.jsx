@@ -3,13 +3,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Calendar.css'; 
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 import { 
   FaCalendarAlt, 
   FaChevronLeft, 
   FaChevronRight,
   FaInfoCircle,
   FaMap
-} from 'react-icons/fa';
+} 
+from 'react-icons/fa';
 
 const Calendar = () => {
   const [closures, setClosures] = useState({});
@@ -22,11 +24,6 @@ const Calendar = () => {
   ];
 
   const daysHeader = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   useEffect(() => {
     const fetchData = async () => {

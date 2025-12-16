@@ -1,8 +1,8 @@
-// frontend/src/Schedule.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Schedule.css';
 import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from './authUtils';
 import { 
   FaCalendarDay, 
   FaChevronLeft, 
@@ -10,7 +10,8 @@ import {
   FaUtensils,
   FaStar,
   FaClock
-} from 'react-icons/fa';
+} 
+from 'react-icons/fa';
 
 const Schedule = () => {
   const [activities, setActivities] = useState([]);
@@ -29,11 +30,6 @@ const Schedule = () => {
     { title: 'Obiad', start: '12:00', duration: 60, icon: <FaUtensils />, type: 'meal' },
     { title: 'Podwieczorek', start: '15:00', duration: 30, icon: <FaUtensils />, type: 'meal' }
   ];
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { Authorization: `Token ${token}` } };
-  };
 
   const getMonday = (d) => {
     const date = new Date(d);

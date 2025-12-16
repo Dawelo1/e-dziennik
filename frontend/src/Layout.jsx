@@ -4,6 +4,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
 import beeLogo from './assets/bee.png';
+import { getToken, removeToken, getAuthHeaders } from './authUtils';
 
 // Ikony
 import { 
@@ -18,13 +19,13 @@ const Layout = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) {
       navigate('/');
       return;
     }
 
-    const config = { headers: { Authorization: `Token ${token}` } };
+    const config = getAuthHeaders();
 
     // 1. Pobierz dane usera
     axios.get('http://127.0.0.1:8000/api/users/me/', config)
@@ -61,10 +62,10 @@ const Layout = () => {
   };
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     
     // 1. Najpierw czyścimy lokalnie i przekierowujemy
-    localStorage.removeItem('token');
+    removeToken();
     navigate('/');
 
     // 2. Próbujemy powiadomić serwer (fire and forget)

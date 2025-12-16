@@ -1,15 +1,21 @@
+// frontend/src/Login.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 import LoadingScreen from './LoadingScreen';
-import bgImage from './assets/bg.png';        // Tło
-import BeeIcon from './assets/bee-icon.png'; // Mała ikona do pola input
-import padlockIcon from './assets/padlock-icon.png'; // Ikona kłódki do pola hasła
+import bgImage from './assets/bg.png';
+import BeeIcon from './assets/bee-icon.png';
+import padlockIcon from './assets/padlock-icon.png';
+import { setToken } from './authUtils';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  
+  // NOWY STAN: Czy zapamiętać użytkownika?
+  const [rememberMe, setRememberMe] = useState(false);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -21,19 +27,15 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // 1. Logowanie do Django
       const response = await axios.post('http://127.0.0.1:8000/api-token-auth/', {
         username: username,
         password: password
       });
 
-      // 2. Zapisz token
       const token = response.data.token;
-      localStorage.setItem('token', token);
 
-      console.log("Zalogowano! Token:", token);
+      setToken(token, rememberMe);
       
-      // 3. Przekierowanie
       navigate('/dashboard');
 
     } catch (err) {
@@ -44,13 +46,12 @@ const Login = () => {
     }
   };
 
- if (loading) return <LoadingScreen message="Logowanie..." />;
+  if (loading) return <LoadingScreen message="Logowanie..." />;
 
   return (
     <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>
       <div className="login-card">
         
-        {/* Sekcja Logo */}
         <div className="logo-section">
           <div className="bee-logo"></div>
           <div className="school-name">
@@ -59,13 +60,10 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Komunikat błędu */}
         {error && <div className="error-msg">{error}</div>}
 
-        {/* Formularz */}
         <form onSubmit={handleLogin}>
           
-          {/* Pole Login/Email */}
           <div className="input-group">
             <input 
               type="text" 
@@ -74,18 +72,11 @@ const Login = () => {
               onChange={(e) => setUsername(e.target.value)}
               required
             />
-            
-            {/* --- TUTAJ JEST ZMIANA: Własna ikona PNG --- */}
             <span className="input-icon">
-              <img 
-                src={BeeIcon} 
-                alt="user icon" 
-                style={{ width: '20px', height: '20px', objectFit: 'contain' }} 
-              />
+              <img src={BeeIcon} alt="user icon" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
             </span> 
           </div>
 
-          {/* Pole Hasło */}
           <div className="input-group">
             <input 
               type="password" 
@@ -94,20 +85,19 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-             {/* Ikona kłódki z biblioteki */}
             <span className="input-icon">
-              <img 
-                src={padlockIcon} 
-                alt="user icon" 
-                style={{ width: '20px', height: '20px', objectFit: 'contain' }} 
-              />
+              <img src={padlockIcon} alt="lock icon" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
             </span> 
           </div>
 
-          {/* Opcje pod polami */}
           <div className="options-row">
             <label className="remember-me">
-              <input type="checkbox" />
+              {/* Podpięcie stanu do checkboxa */}
+              <input 
+                type="checkbox" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
               Zapamiętaj mnie
             </label>
             <Link to="/forgot-password" className="forgot-link">
@@ -115,21 +105,14 @@ const Login = () => {
             </Link>
           </div>
 
-          {/* Przycisk */}
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Logowanie...' : 'ZALOGUJ SIĘ'}
           </button>
         </form>
 
-        {/* Stopka */}
         <div className="footer-links">
-          {/* Zamieniamy <span> na <Link> */}
-          <Link to="/regulamin" style={{ color: '#999', textDecoration: 'none' }}>
-            Regulamin
-          </Link>
-          <Link to="/polityka-prywatnosci" style={{ color: '#999', textDecoration: 'none' }}>
-            Polityka Prywatności
-          </Link>
+          <Link to="/regulamin" style={{ color: '#999', textDecoration: 'none' }}>Regulamin</Link>
+          <Link to="/polityka-prywatnosci" style={{ color: '#999', textDecoration: 'none' }}>Polityka Prywatności</Link>
         </div>
       </div>
     </div>
