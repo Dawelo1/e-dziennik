@@ -114,7 +114,7 @@ const Layout = () => {
             </div>
             <div className="user-name-box">
               <span className="user-name">{user.first_name} {user.last_name}</span>
-              <span className="user-role">{user.is_director ? 'Administrator' : 'Rodzic'}</span>
+              <span className="user-role">{user.is_director ? 'Dyrektor' : 'Rodzic'}</span>
             </div>
           </div>
           
