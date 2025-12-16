@@ -286,7 +286,8 @@ class GalleryItem(models.Model):
         null=True,
         blank=True,
         related_name='authored_gallery_items',
-        verbose_name="Autor (dyrektor)"
+        verbose_name="Autor (dyrektor)",
+        editable=False
     )
     
     # Podobnie jak w Postach - widoczność dla grupy lub dla wszystkich

@@ -1,0 +1,40 @@
+.drop-zone {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 20px;
+  background-color: #fafafa;
+}
+
+.thumbnails-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.thumbnail {
+  width: 100px; height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.thumbnail img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.thumb-delete {
+  position: absolute; top: 5px; right: 5px;
+  background: rgba(0,0,0,0.6); color: white;
+  border: none; border-radius: 50%;
+  width: 20px; height: 20px;
+  display: flex; justify-content: center; align-items: center;
+  font-size: 10px; cursor: pointer;
+}
+
+.add-thumb {
+  border: 2px dashed #ccc;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  color: #999; cursor: pointer;
+}
+.add-thumb:hover { background-color: #f0f0f0; }

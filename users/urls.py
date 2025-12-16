@@ -1,13 +1,23 @@
 from django.urls import path, include
-from .views import ChangePasswordView, CurrentUserView, DirectorStatusView, LogoutView
+from rest_framework.routers import DefaultRouter
+from .views import (
+    ChangePasswordView, 
+    CurrentUserView, 
+    DirectorStatusView, 
+    LogoutView, 
+    UserManagementViewSet
+)
+
+# Router automatycznie tworzy ścieżki dla ViewSetów (CRUD)
+router = DefaultRouter()
+router.register(r'manage', UserManagementViewSet, basename='user-manage')
 
 urlpatterns = [
-    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+    # 1. Ścieżki z routera (czyli /api/users/manage/...)
+    path('', include(router.urls)),
 
-    # --- RESET HASŁA ---
-    # To utworzy endpointy:
-    # POST /api/users/password_reset/         -> Zgłoszenie chęci resetu (wysyła maila)
-    # POST /api/users/password_reset/confirm/ -> Ustawienie nowego hasła (wymaga tokenu)
+    # 2. Indywidualne ścieżki (APIView)
+    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     path('me/', CurrentUserView.as_view(), name='current-user'),
     path('director-status/', DirectorStatusView.as_view(), name='director-status'),

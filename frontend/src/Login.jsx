@@ -13,7 +13,6 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   
-  // NOWY STAN: Czy zapamiętać użytkownika?
   const [rememberMe, setRememberMe] = useState(false);
 
   const [error, setError] = useState('');
@@ -32,11 +31,22 @@ const Login = () => {
         password: password
       });
 
-      const token = response.data.token;
+      // --- ZMIANA POCZĄTEK ---
+      // Pobieramy token ORAZ flagę is_director z odpowiedzi serwera
+      const { token, is_director } = response.data;
 
+      // Zapisujemy token (używając funkcji z authUtils)
       setToken(token, rememberMe);
+
+      console.log("Zalogowano! Token:", token);
       
-      navigate('/dashboard');
+      // Logika przekierowania zależna od roli:
+      if (is_director) {
+        navigate('/director/dashboard'); // Dyrektor idzie do swojego panelu
+      } else {
+        navigate('/dashboard'); // Rodzic idzie do zwykłego dashboardu
+      }
+      // --- ZMIANA KONIEC ---
 
     } catch (err) {
       console.error(err);
@@ -92,7 +102,6 @@ const Login = () => {
 
           <div className="options-row">
             <label className="remember-me">
-              {/* Podpięcie stanu do checkboxa */}
               <input 
                 type="checkbox" 
                 checked={rememberMe}

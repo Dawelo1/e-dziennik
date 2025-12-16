@@ -48,3 +48,35 @@ class UserSerializer(serializers.ModelSerializer):
         # Zwracamy to, co potrzebne frontendowi do działania
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number', 'avatar']
         read_only_fields = ['id', 'username', 'is_director', 'is_parent']
+
+class UserManagementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_director', 'is_parent', 'password', 'last_login']
+        read_only_fields = ['last_login']
+        extra_kwargs = {'password': {'write_only': True, 'required': False}} # Hasło write-only
+
+    def create(self, validated_data):
+        # Wyciągamy hasło, żeby je zahaszować
+        password = validated_data.pop('password', None)
+        user = User(**validated_data)
+        
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password() # Jeśli nie podano hasła
+            
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        # Przy edycji też musimy uważać na hasło
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+            
+        if password:
+            instance.set_password(password)
+            
+        instance.save()
+        return instance

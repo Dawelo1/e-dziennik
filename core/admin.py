@@ -170,13 +170,24 @@ class GalleryImageInline(admin.TabularInline):
     extra = 5 # Pokaże od razu 5 pustych miejsc na zdjęcia (można dodać więcej plusem)
 
 class GalleryItemAdmin(admin.ModelAdmin):
+    # Wyświetlamy autora w liście albumów
     list_display = ('title', 'created_at', 'target_group', 'author')
-    inlines = [GalleryImageInline] # Podpinamy zdjęcia do widoku albumu
+    
+    # Podpinamy inline do wgrywania wielu zdjęć
+    inlines = [GalleryImageInline] 
+    
+    # --- ZMIANY TUTAJ ---
+    
+    # 1. Ukrywamy pole 'author' w formularzu edycji/dodawania
+    exclude = ('author',)
 
+    # 2. Automatycznie przypisujemy autora przy zapisywaniu NOWEGO albumu
     def save_model(self, request, obj, form, change):
-        # Ustaw autora (dyrektora) na aktualnego użytkownika jeśli nie ustawiono
-        if not obj.author:
+        # 'change' jest True przy edycji, a False przy tworzeniu
+        # Ustawiamy autora tylko przy tworzeniu (if not change)
+        if not change:
             obj.author = request.user
+            
         super().save_model(request, obj, form, change)
 
 # Rejestracja w panelu

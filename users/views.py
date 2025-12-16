@@ -1,17 +1,16 @@
-from rest_framework import status, generics
+from rest_framework import status, generics, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.contrib.auth.models import update_last_login # <--- WAŻNY IMPORT DO DATY LOGOWANIA
+from django.contrib.auth.models import update_last_login
 from users.models import User
-
-# Importy potrzebne do logowania
+from .permissions import IsDirector
+from .serializers import UserManagementSerializer
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-
 from .serializers import ChangePasswordSerializer, UserSerializer
 
 class ChangePasswordView(generics.UpdateAPIView):
@@ -132,3 +131,15 @@ class LogoutView(APIView):
         except Exception as e:
             # Jeśli tokena nie ma lub jest błąd, zwracamy info, ale front to zignoruje
             return Response({"message": "Już wylogowany lub błąd tokena."}, status=200)
+        
+class UserManagementViewSet(viewsets.ModelViewSet):
+    """
+    API dla Dyrektora do zarządzania wszystkimi użytkownikami.
+    """
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserManagementSerializer
+    permission_classes = [IsDirector] # Tylko Dyrektor tu wejdzie
+    
+    # Dodajemy wyszukiwanie i filtrowanie
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number']

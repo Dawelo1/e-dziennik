@@ -1,0 +1,219 @@
+/* frontend/src/director/DirectorUsers.css */
+
+/* Kontener główny (spójny z resztą) */
+.director-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Nagłówek z przyciskiem po prawej */
+.page-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* WYSZUKIWARKA */
+.search-bar-container {
+  background: white;
+  padding: 15px 20px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  margin-bottom: 30px;
+}
+
+.search-icon { color: #aaa; font-size: 18px; }
+
+.search-bar-container input {
+  border: none;
+  outline: none;
+  font-size: 16px;
+  width: 100%;
+  color: #333;
+}
+
+/* TABELA */
+.table-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  overflow-x: auto; /* Przewijanie na mobile */
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px; /* Wymusza szerokość na mobile */
+}
+
+.custom-table th {
+  text-align: left;
+  padding: 15px;
+  color: #888;
+  font-size: 12px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.custom-table td {
+  padding: 15px;
+  border-bottom: 1px solid #f9f9f9;
+  vertical-align: middle;
+  color: #333;
+  font-size: 14px;
+}
+
+.custom-table tr:last-child td { border-bottom: none; }
+.custom-table tr:hover { background-color: #fafafa; }
+
+/* Komórka Użytkownika */
+.user-cell { display: flex; align-items: center; gap: 12px; }
+
+.avatar-circle {
+  width: 35px; height: 35px; border-radius: 50%;
+  display: flex; justify-content: center; align-items: center;
+  font-weight: 700; color: white; font-size: 16px;
+}
+.avatar-circle.director { background-color: #e0245e; } /* Różowy dla dyrekcji */
+.avatar-circle.parent { background-color: #f2c94c; }   /* Żółty dla rodzica */
+
+.username-text { font-weight: 600; }
+
+/* Kontakt */
+.contact-info { display: flex; flex-direction: column; }
+.sub-text { font-size: 12px; color: #999; margin-top: 2px; }
+
+/* Odznaki Ról */
+.role-badge {
+  padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.role-badge.director { background-color: #fce4ec; color: #ad1457; }
+.role-badge.parent { background-color: #fff8e1; color: #f57f17; }
+
+/* Akcje */
+.text-right { text-align: right; }
+.text-center { text-align: center; color: #999; }
+
+.action-icon-btn {
+  background: none; border: none; cursor: pointer; padding: 8px;
+  font-size: 16px; transition: transform 0.2s;
+  color: #999;
+}
+.action-icon-btn:hover { transform: scale(1.2); }
+.action-icon-btn.edit:hover { color: #2196f3; }
+.action-icon-btn.delete:hover { color: #e57373; }
+
+/* --- FORMULARZ W MODALU --- */
+.modal-content.large {
+  max-width: 600px;
+}
+
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.full-width { grid-column: 1 / -1; }
+
+.form-group label {
+  display: block; font-size: 12px; font-weight: 700; color: #555; margin-bottom: 5px;
+}
+
+.form-group input, .form-group select {
+  width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px;
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+.password-input-wrapper input { padding-left: 35px; }
+.password-input-wrapper .field-icon { left: 10px; }
+
+.form-error {
+  color: #d32f2f; background-color: #ffebee; padding: 10px;
+  border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 13px;
+}
+/* W pliku DirectorUsers.css lub nowym DirectorAttendance.css */
+
+.filter-bar {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  align-items: stretch;
+}
+
+.date-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: white;
+  padding: 0 15px;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.date-filter-container input[type="date"] {
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #333;
+  padding: 15px 0;
+  background: transparent;
+}
+
+.clear-date-btn {
+  background: #eee;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 16px;
+  color: #888;
+  cursor: pointer;
+}
+
+.checkbox-list {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  background-color: #fafafa;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: auto; /* Reset szerokości */
+  margin-right: 10px;
+}
+
+/* W pliku DirectorUsers.css */
+
+.form-fieldset {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
+.form-fieldset legend {
+  padding: 0 10px;
+  font-weight: 700;
+  color: #555;
+  font-size: 14px;
+}

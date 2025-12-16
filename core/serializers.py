@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.utils import timezone
 from django.utils import timezone
-from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage
+from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group
+from drf_writable_nested import WritableNestedModelSerializer
 
 class ChildSerializer(serializers.ModelSerializer):
     # Automatyczne rozszyfrowanie medical_info przy odczycie
@@ -37,24 +38,23 @@ class AttendanceSerializer(serializers.ModelSerializer):
         # Status ustawiamy automatycznie na 'absent', rodzic nie wybiera "obecny"
 
     def validate(self, data):
-        """
-        Tutaj sprawdzamy reguły:
-        1. Nie można zgłaszać wstecz.
-        2. Nie można zgłaszać na dzisiaj po godzinie 7:00.
-        """
-        target_date = data['date'] # Data, którą zaznaczył rodzic (nieobecność)
-        now = timezone.now()       # Aktualny czas serwera
+        # Pobieramy użytkownika, który wysyła żądanie
+        request = self.context.get("request")
+        
+        # --- ZMIANA: Jeśli to Dyrektor, OMIŃ WSZYSTKIE WALIDACJE CZASOWE ---
+        if request and request.user.is_director:
+            return data # Zezwól na wszystko
+
+        # --- Logika dla Rodzica (bez zmian) ---
+        target_date = data['date']
+        now = timezone.now()
         today = now.date()
 
-        # Sprawdzenie 1: Czy data nie jest z przeszłości?
         if target_date < today:
             raise serializers.ValidationError("Nie można zgłaszać nieobecności wstecz.")
 
-        # Sprawdzenie 2: Jeśli to dzisiaj, czy jest przed 7:00?
         if target_date == today:
-            current_hour = now.hour
-            # Uwaga: upewnij się w settings.py że masz TIME_ZONE = 'Europe/Warsaw'
-            if current_hour >= 7:
+            if now.getHours() >= 7:
                 raise serializers.ValidationError("Na dzisiaj można zgłaszać nieobecność tylko do godziny 7:00.")
 
         return data
@@ -159,31 +159,34 @@ class GalleryImageSerializer(serializers.ModelSerializer):
         model = GalleryImage
         fields = ['id', 'image', 'caption']
 
-class GalleryItemSerializer(serializers.ModelSerializer):
+class GalleryItemSerializer(WritableNestedModelSerializer):
     formatted_date = serializers.SerializerMethodField()
-    images = GalleryImageSerializer(many=True, read_only=True)
     
-    # NOWE POLA:
+    # ZMIANA: Jawnie oznaczamy to pole jako tylko do odczytu dla zapytań GET
+    # Drf-writable-nested jest na tyle sprytny, że mimo to pozwoli na zapis
+    # przez metody create/update w widoku (bo tam operujemy na danych, a nie na serializerze).
+    images = GalleryImageSerializer(many=True, read_only=True) 
+
     likes_count = serializers.IntegerField(source='likes.count', read_only=True)
     is_liked_by_user = serializers.SerializerMethodField()
     likers_names = serializers.SerializerMethodField()
-    author_name = serializers.CharField(source='author.get_full_name', read_only=True)
-    author_avatar = serializers.ImageField(source='author.avatar', read_only=True)
+    
+    # USUWAMY: Te pola, bo model GalleryItem nie ma autora
+    # author_name = serializers.CharField(source='author.get_full_name', read_only=True)
+    # author_avatar = serializers.ImageField(source='author.avatar', read_only=True)
 
     class Meta:
         model = GalleryItem
-        # Pamiętaj, żeby dodać nowe pola do listy fields!
+        # Pamiętaj, żeby usunąć 'author_name' i 'author_avatar' z fields!
         fields = [
             'id', 'title', 'description', 'created_at', 'formatted_date', 
             'target_group', 'images', 
-            'likes_count', 'is_liked_by_user', 'likers_names',
-            'author_name', 'author_avatar'
+            'likes_count', 'is_liked_by_user', 'likers_names'
         ]
 
     def get_formatted_date(self, obj):
         return obj.created_at.strftime("%d-%m-%Y")
 
-    # NOWA METODA:
     def get_is_liked_by_user(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
@@ -191,9 +194,12 @@ class GalleryItemSerializer(serializers.ModelSerializer):
         return False
 
     def get_likers_names(self, obj):
-        users = obj.likes.all()
-        names = []
-        for u in users:
-            full_name = u.get_full_name()
-            names.append(full_name if full_name else u.username)
+        # Ograniczmy listę np. do 5 ostatnich osób, żeby nie wysyłać setek nazwisk
+        users = obj.likes.all()[:5] 
+        names = [u.get_full_name() or u.username for u in users]
         return names
+    
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ['id', 'name', 'teachers_info']
