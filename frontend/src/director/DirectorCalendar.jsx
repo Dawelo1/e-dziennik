@@ -77,9 +77,9 @@ const DirectorCalendar = () => {
     <div className="director-container">
       
       <div className="page-header-row">
-        <div className="page-title">
+        <h2 className="page-title">
           <FaCalendarAlt /> Zarządzanie Dniami Wolnymi
-        </div>
+        </h2>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Dzień Wolny
         </button>

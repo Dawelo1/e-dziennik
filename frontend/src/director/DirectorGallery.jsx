@@ -150,7 +150,7 @@ const DirectorGallery = () => {
     <div className="director-container">
       
       <div className="page-header-row">
-        <div className="page-title"><FaImages /> Galeria Zdjęć</div>
+        <h2 className="page-title"><FaImages /> Galeria Zdjęć</h2>
         <button className="honey-btn" onClick={() => openModal()}><FaPlus /> Dodaj Album</button>
       </div>
 

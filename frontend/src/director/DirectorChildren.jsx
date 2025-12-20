@@ -152,9 +152,9 @@ const DirectorChildren = () => {
     <div className="director-container">
       
       <div className="page-header-row">
-        <div className="page-title">
+        <h2 className="page-title">
           <FaChild /> Kartoteki Dzieci
-        </div>
+        </h2>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Dziecko
         </button>

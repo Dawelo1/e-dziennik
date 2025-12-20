@@ -158,9 +158,9 @@ const DirectorPosts = () => {
     <div className="director-container">
       
       <div className="page-header-row">
-        <div className="page-title">
+        <h2 className="page-title">
           <FaBullhorn /> Tablica Ogłoszeń
-        </div>
+        </h2>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Ogłoszenie
         </button>

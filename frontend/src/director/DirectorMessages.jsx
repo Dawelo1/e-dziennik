@@ -143,9 +143,9 @@ const DirectorMessages = () => {
 
   return (
     <div className="director-container">
-      <div className="page-title">
+      <h2 className="page-title">
         <FaEnvelope /> Wiadomości
-      </div>
+      </h2>
 
       <div className="messages-layout-grid">
         

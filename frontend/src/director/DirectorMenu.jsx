@@ -100,9 +100,9 @@ const DirectorMenu = () => {
     <div className="director-container">
       
       <div className="page-header-row">
-        <div className="page-title">
+        <h2 className="page-title">
           <FaUtensils /> Zarządzanie Jadłospisem
-        </div>
+        </h2>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Jadłospis na Dzień
         </button>

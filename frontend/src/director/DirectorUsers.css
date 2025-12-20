@@ -1,5 +1,26 @@
 /* frontend/src/director/DirectorUsers.css */
 
+.settings-main-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 700;
+  
+  margin-bottom: 20px;
+  margin-left: 0;
+  padding-left: 15px;
+  
+  border-left: 5px solid #f2c94c;
+  
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.settings-main-title svg {
+  color: #f2c94c;
+  font-size: 28px;
+}
+
 /* Kontener główny (spójny z resztą) */
 .director-container {
   width: 100%;

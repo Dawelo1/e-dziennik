@@ -170,7 +170,7 @@ const Settings = () => {
 
   return (
     <div className="settings-page-wrapper">
-      <h2 className="settings-main-title">
+      <h2 className="page-title">
         <FaUserCog /> Ustawienia Konta
       </h2>
 

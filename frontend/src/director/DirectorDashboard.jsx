@@ -34,9 +34,9 @@ const DirectorDashboard = () => {
 
   return (
     <div className="director-container">
-      <div className="page-title">
+      <h2 className="page-title">
         <FaChartLine /> Pulpit Zarządczy
-      </div>
+      </h2>
       
       {/* SIATKA STATYSTYK */}
       <div className="stats-grid">
