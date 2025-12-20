@@ -33,6 +33,7 @@ import DirectorAttendance from './director/DirectorAttendance';
 import DirectorSchedule from './director/DirectorSchedule';
 import DirectorMenu from './director/DirectorMenu';
 import DirectorCalendar from './director/DirectorCalendar';
+import DirectorSettings from './director/DirectorSettings';
 
 function App() {
   return (
@@ -86,7 +87,7 @@ function App() {
             <Route path="/director/groups" element={<DirectorGroups />} />
             <Route path="/director/children" element={<DirectorChildren />} />
             <Route path="/director/users" element={<DirectorUsers />} /> 
-            <Route path="/director/settings" element={<Settings />} />
+            <Route path="/director/settings" element={<DirectorSettings />} />
 
           </Route>
         </Route>

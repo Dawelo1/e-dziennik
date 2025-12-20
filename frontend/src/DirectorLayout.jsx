@@ -30,6 +30,13 @@ const DirectorLayout = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
+  // --- FUNKCJA NAPRAWIAJĄCA URL AVATARA ---
+  const getAvatarUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `http://127.0.0.1:8000${url}`;
+  };
+
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
       .then(response => setUser(response.data))
@@ -66,7 +73,15 @@ const DirectorLayout = () => {
         <div className="header-user-section">
            <div className="user-profile-static">
             <div className="user-avatar" style={{backgroundColor: '#e0245e'}}>
-               {user.first_name ? user.first_name[0] : 'D'}
+              {user.avatar ? (
+                <img 
+                  src={getAvatarUrl(user.avatar)} 
+                  alt="Avatar" 
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                />
+              ) : (
+                user.first_name ? user.first_name[0] : 'D'
+              )}
             </div>
             <div className="user-name-box">
               <span className="user-name">{user.first_name} {user.last_name}</span>

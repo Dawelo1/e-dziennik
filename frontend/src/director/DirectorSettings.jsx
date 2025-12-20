@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Cropper from 'react-easy-crop';
-import { getCroppedImg } from './cropUtils';
-import './Settings.css';
-import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from './authUtils';
+import { getCroppedImg } from '../cropUtils';
+import './DirectorSettings.css';
+import LoadingScreen from '../LoadingScreen';
+import { getAuthHeaders } from '../authUtils';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
   FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
@@ -16,9 +16,8 @@ const Settings = () => {
     email: '', phone_number: '', username: '', first_name: '', last_name: '', avatar: null
   });
 
-  const [formData, setFormData] = useState({ new_email: '', new_phone: '' });
+  const [formData, setFormData] = useState({ new_email: '', new_phone: '', new_first_name: '', new_last_name: '' });
   const [passwordData, setPasswordData] = useState({ old_password: '', new_password: '', confirm_password: '' });
-  const [children, setChildren] = useState([]);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
 
@@ -52,10 +51,6 @@ const Settings = () => {
           avatar: res.data.avatar
         });
       })
-      .catch(err => console.error(err));
-
-    axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders())
-      .then(res => setChildren(res.data))
       .catch(err => console.error(err));
   };
 
@@ -139,11 +134,15 @@ const Settings = () => {
     return `${'*'.repeat(phone.length - 3)}${phone.slice(-3)}`;
   };
 
-  const handleUpdateData = async (type) => { /* ... bez zmian ... */
+  const handleUpdateData = async (type) => {
     setLoading(true); setMessage({ type: '', text: '' });
     let payload = {};
     if (type === 'email' && formData.new_email) payload.email = formData.new_email;
     if (type === 'phone' && formData.new_phone) payload.phone_number = formData.new_phone;
+    if (type === 'name') {
+      if (formData.new_first_name) payload.first_name = formData.new_first_name;
+      if (formData.new_last_name) payload.last_name = formData.new_last_name;
+    }
 
     if (Object.keys(payload).length === 0) {
       setMessage({ type: 'error', text: 'Wpisz nową wartość przed zapisaniem.' }); setLoading(false); return;
@@ -152,13 +151,11 @@ const Settings = () => {
     try {
       await axios.patch('http://127.0.0.1:8000/api/users/me/', payload, getAuthHeaders());
       setMessage({ type: 'success', text: 'Dane zostały zaktualizowane pomyślnie.' });
-      fetchUserData(); setFormData(prev => ({ ...prev, new_email: '', new_phone: '' }));
+      fetchUserData(); setFormData(prev => ({ ...prev, new_email: '', new_phone: '', new_first_name: '', new_last_name: '' }));
     } catch (err) { setMessage({ type: 'error', text: 'Błąd aktualizacji.' }); } finally { setLoading(false); }
   };
 
-  const handlePasswordChange = async () => { /* ... bez zmian ... */ 
-    /* (Skopiuj logikę z poprzedniego pliku lub zostaw jeśli wiesz o co chodzi) */
-    /* Dla pewności wklejam skrót: */
+  const handlePasswordChange = async () => {
     if (!passwordData.old_password || !passwordData.new_password) { setMessage({ type: 'error', text: 'Wypełnij pola.' }); return; }
     if (passwordData.new_password !== passwordData.confirm_password) { setMessage({ type: 'error', text: 'Hasła różne.' }); return; }
     setLoading(true);
@@ -167,19 +164,6 @@ const Settings = () => {
       setMessage({ type: 'success', text: 'Hasło zmienione.' });
       setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
     } catch(e) { setMessage({ type: 'error', text: 'Błąd hasła.' }); } finally { setLoading(false); }
-  };
-  
-  const handleMedicalUpdate = async (childId, val) => {
-    setLoading(true);
-    try {
-        await axios.patch(`http://127.0.0.1:8000/api/children/${childId}/`, { medical_info: val }, getAuthHeaders());
-        setMessage({ type: 'success', text: 'Dane medyczne zapisane.' });
-    } catch(e) { setMessage({ type: 'error', text: 'Błąd zapisu.' }); }
-    finally { setLoading(false); }
-  };
-  
-  const handleMedicalChange = (id, val) => {
-      setChildren(prev => prev.map(c => c.id === id ? {...c, medical_info: val} : c));
   };
 
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
@@ -261,27 +245,23 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* DZIECI */}
+        {/* DANE OSOBOWE */}
         <div className="settings-column">
-          {children.map(child => (
-            <div key={child.id} className="settings-wide-card medical-card">
-               <div className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
-                 <FaNotesMedical color="#e0245e"/> {child.first_name} {child.last_name}
-               </div>
-               <div className="medical-info-section">
-                  <p className="medical-label">Informacje medyczne/alergie:</p>
-                  <textarea 
-                    className={`medical-textarea ${child.medical_info && child.medical_info.trim() ? 'filled' : ''}`}
-                    value={child.medical_info||''}
-                    onChange={e => handleMedicalChange(child.id, e.target.value)}
-                  />
-                  <div className="medical-footer">
-                    <span className="medical-hint"><FaChild/> Widoczne dla dyrekcji.</span>
-                    <button className="honey-btn" onClick={() => handleMedicalUpdate(child.id, child.medical_info)}>Zapisz</button>
-                  </div>
-               </div>
+          <div className="settings-wide-card">
+            <div className="card-title">Dane Osobowe</div>
+            <div className="inputs-grid-2col">
+              <div className="input-box read-only"><FaUser className="field-icon"/><input value={currentData.first_name} disabled/></div>
+              <div className="input-box"><FaUser className="field-icon"/><input placeholder="Nowe Imię" value={formData.new_first_name} onChange={e => setFormData({...formData, new_first_name: e.target.value})}/></div>
             </div>
-          ))}
+            <div className="spacer-20" style={{height: '20px'}}></div>
+            <div className="inputs-grid-2col">
+              <div className="input-box read-only"><FaUser className="field-icon"/><input value={currentData.last_name} disabled/></div>
+              <div className="input-box"><FaUser className="field-icon"/><input placeholder="Nowe Nazwisko" value={formData.new_last_name} onChange={e => setFormData({...formData, new_last_name: e.target.value})}/></div>
+            </div>
+            <div className="button-container-right">
+              <button className="honey-btn" onClick={() => handleUpdateData('name')}>Zapisz Dane Osobowe</button>
+            </div>
+          </div>
         </div>
       </div>
 

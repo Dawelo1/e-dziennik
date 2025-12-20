@@ -1,0 +1,425 @@
+/* frontend/src/Settings.css */
+
+.settings-page-wrapper {
+  /* ZMIANA: Usuwamy centrowanie i ograniczenie szerokości kontenera */
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.settings-main-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 700;
+  
+  margin-bottom: 20px;
+  margin-left: 0;
+  padding-left: 15px;
+  
+  border-left: 5px solid #f2c94c;
+  
+  /* Flexbox do wyrównania ikony i tekstu */
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Odstęp między ikoną a napisem */
+}
+
+/* Styl dla ikony w nagłówku */
+.settings-main-title svg {
+  color: #f2c94c; /* Miodowy kolor */
+  font-size: 28px; /* Nieco większa od tekstu */
+}
+
+/* --- Karta (Biały prostokąt) --- */
+.settings-wide-card {
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 30px 40px;
+  margin-bottom: 30px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05); /* Cień taki sam jak w Dashboard */
+  
+  /* ZMIANA: Ograniczenie szerokości przenosimy na karty */
+  max-width: 1100px; 
+  /* Jeśli chcesz, żeby karty też były na całą szerokość jak dashboard, usuń linię wyżej */
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+/* --- Siatki inputów --- */
+.inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px; /* Zwiększony odstęp dla oddechu */
+  align-items: end;
+}
+
+.inputs-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+/* --- Wygląd Inputa --- */
+.input-box {
+  position: relative;
+  width: 100%;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 15px 15px 15px 45px;
+  border: 1px solid #e0e0e0;
+  background-color: #fcfcfc; /* Delikatnie inny odcień bieli */
+  border-radius: 12px;        /* Zaokrąglenie jak w Dashboard */
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+
+.input-box input:focus {
+  border-color: #f2c94c;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.1);
+  outline: none;
+}
+
+.field-icon {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #bbb;
+  font-size: 16px;
+}
+
+/* Pola tylko do odczytu */
+.read-only input {
+  background-color: #f0f2f5; /* Szary jak tło komentarzy w Dashboard */
+  color: #666;
+  border-color: #eee;
+}
+
+.label-inside {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #999;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* --- Przycisk --- */
+.honey-btn {
+  background-color: #f2c94c;
+  color: #fff;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  box-shadow: 0 4px 10px rgba(242, 201, 76, 0.3);
+}
+
+.honey-btn:hover {
+  background-color: #e6b83a;
+  transform: translateY(-2px);
+}
+
+.honey-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-left {
+  margin-top: 10px;
+}
+
+.button-container-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* --- Alerty --- */
+.settings-alert {
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.settings-alert.success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.settings-alert.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Dwie równe kolumny */
+  gap: 30px;
+  align-items: start;
+}
+
+.settings-column {
+  display: flex;
+  flex-direction: column;
+  /* Brak gap, odstępy realizowane są przez margin-bottom kart */
+}
+
+/* Specjalny styl dla karty medycznej (Czerwony akcent) */
+.medical-card {
+  border-left: none;
+}
+
+.medical-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* Pole tekstowe (Textarea) */
+.medical-textarea {
+  width: 100%;
+  height: 100px; /* Dopasowane do rozmiaru zdjęcia profilowego */
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  background-color: #fff5f8; /* Bardzo jasny różowy/czerwony odcień */
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: #333;
+  resize: vertical; /* Pozwala rozciągać tylko w pionie */
+  box-sizing: border-box;
+  outline: none;
+  transition: border 0.2s, background-color 0.2s;
+}
+
+/* Gdy pole zawiera dane -> zielone tło */
+.medical-textarea.filled {
+  background-color: #e8f5e9; /* Jasna zieleń jak sukces */
+  border-color: #c8e6c9;
+}
+
+.medical-textarea:focus {
+  border-color: #e0245e;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(224, 36, 94, 0.1);
+}
+
+.medical-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.medical-hint {
+  font-size: 11px;
+  color: #999;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* --- SEKJA AVATARA --- */
+.profile-card-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.avatar-wrapper {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-bottom: 15px;
+  border: 3px solid #f2c94c; /* Miodowa ramka */
+  overflow: hidden;
+  box-sizing: border-box; /* Ujednolica całkowitą wysokość do 100px (z borderem) */
+}
+
+.settings-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.settings-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: bold;
+  color: #aaa;
+}
+
+/* Nakładka z aparatem po najechaniu */
+.avatar-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.profile-name { margin: 0; font-size: 20px; color: #333; }
+.profile-username { margin: 5px 0 0 0; font-size: 14px; color: #888; }
+.spacer-20 { height: 20px; }
+
+/* Przycisk usuwania avatara */
+.delete-avatar-btn {
+  background: none;
+  border: 1px solid #ffcdd2;
+  color: #e57373;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 15px;
+  transition: all 0.2s;
+}
+
+.delete-avatar-btn:hover {
+  background-color: #ffebee;
+  color: #c62828;
+  border-color: #c62828;
+}
+
+/* Wymuszenie wyrównania do prawej dla przycisków w kontenerach */
+.button-container-right {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: rgba(0,0,0,0.6); /* Ciemniejsze tło */
+  display: flex; justify-content: center; align-items: center;
+  z-index: 9999; animation: fadeIn 0.2s ease-out;
+  backdrop-filter: blur(3px); /* Rozmycie tła */
+}
+
+/* --- MODAL KADROWANIA (CROP) --- */
+.crop-modal-content {
+  background: white; width: 90%; max-width: 500px;
+  border-radius: 20px; padding: 20px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+.crop-title { margin: 0; color: #333; text-align: center; }
+
+.crop-container {
+  position: relative;
+  width: 100%;
+  height: 300px; /* Wysokość obszaru roboczego */
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #333;
+}
+
+.zoom-slider-container {
+  display: flex; align-items: center; gap: 10px; justify-content: center; color: #666; font-weight: bold;
+}
+
+.zoom-range {
+  width: 80%; accent-color: #f2c94c; cursor: pointer;
+}
+
+/* --- MODAL USUWANIA (DELETE) --- */
+.delete-modal-content {
+  background: white; padding: 30px; border-radius: 20px;
+  width: 90%; max-width: 400px; text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.warning-icon {
+  font-size: 40px; color: #e57373; margin-bottom: 15px;
+}
+
+.delete-modal-content h3 { margin: 0; color: #333; margin-bottom: 10px; }
+.delete-modal-content p { color: #666; margin-bottom: 25px; line-height: 1.5; font-size: 15px; }
+
+/* PRZYCISKI MODALI */
+.modal-actions { display: flex; justify-content: center; gap: 15px; }
+
+.modal-btn {
+  padding: 10px 20px; border: none; border-radius: 25px;
+  font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: transform 0.1s; font-size: 14px;
+}
+.modal-btn:hover { transform: translateY(-2px); }
+.modal-btn:active { transform: translateY(0); }
+.modal-btn:focus { outline: none; }
+
+.modal-btn.cancel { background-color: #f0f0f0; color: #333; }
+.modal-btn.confirm.success { background-color: #f2c94c; color: #fff; }
+.modal-btn.confirm.danger { background-color: #e0245e; color: #fff; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Tablet (pionowo) i Mobile - Zmieniamy układ na jedną kolumnę */
+@media (max-width: 900px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Istniejące media query dla mobile (zaktualizowane o stopkę medyczną) */
+@media (max-width: 768px) {
+  /* ... twoje istniejące style tutaj zostają ... */
+  
+  /* Dodaj to wewnątrz istniejącego @media lub na końcu: */
+  .medical-footer {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+  
+  .medical-footer button {
+    width: 100%;
+  }
+}
