@@ -57,7 +57,7 @@ const DirectorLayout = () => {
   if (!user) return null;
 
   return (
-    <div className="app-container director-theme"> 
+    <div className="app-container"> 
       {/* HEADER */}
       <header className="top-header" style={{ borderBottom: '3px solid #e0245e' }}> 
         {/* ^ Dodatkowy akcent kolorystyczny, żeby odróżnić panel dyrektora */}
