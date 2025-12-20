@@ -72,7 +72,7 @@ const DirectorDashboard = () => {
 
       {/* SEKCJA SZYBKICH SKRÓTÓW */}
       <div className="quick-actions-section">
-        <div className="page-title" style={{border: 'none', paddingLeft: 0, marginBottom: 15}}>
+        <div className="page-title title" style={{border: 'none', paddingLeft: 0, marginBottom: 15}}>
           Szybkie Akcje
         </div>
         <div className="actions-grid">

@@ -197,7 +197,7 @@ const DirectorUsers = () => {
                       <div className={`avatar-circle ${user.is_director ? 'director' : 'parent'}`}>
                         {user.first_name ? user.first_name[0] : user.username[0].toUpperCase()}
                       </div>
-                      <span className="username-text">@{user.username}</span>
+                      <span className="username-text">{user.username}</span>
                     </div>
                   </td>
                   <td>{user.first_name} {user.last_name}</td>
@@ -242,6 +242,7 @@ const DirectorUsers = () => {
                 <label>Login *</label>
                 <input 
                   type="text" required
+                  placeholder="Login użytkownika"
                   value={formData.username}
                   onChange={e => setFormData({...formData, username: e.target.value})}
                   disabled={!!editingUser}
@@ -261,22 +262,22 @@ const DirectorUsers = () => {
 
               <div className="form-group">
                 <label>Imię</label>
-                <input type="text" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})}/>
+                <input type="text" placeholder="Imię" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})}/>
               </div>
 
               <div className="form-group">
                 <label>Nazwisko</label>
-                <input type="text" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})}/>
+                <input type="text" placeholder="Nazwisko" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})}/>
               </div>
 
               <div className="form-group">
                 <label>E-mail</label>
-                <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}/>
+                <input type="email" placeholder="Adres e-mail" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}/>
               </div>
 
               <div className="form-group">
                 <label>Telefon</label>
-                <input type="text" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})}/>
+                <input type="text" placeholder="Numer telefonu" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})}/>
               </div>
 
               <div className="form-group full-width">
