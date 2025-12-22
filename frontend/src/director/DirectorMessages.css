@@ -171,6 +171,13 @@
 }
 .scroll-bottom-btn svg { fill: #fff !important; width: 20px !important; height: 20px !important; }
 
+.read-status {
+  margin-left: 5px;
+  font-size: 0.75rem;
+  color: #a0a0a0; /* lub inny kolor pasujący do Twojego stylu */
+  font-style: italic;
+}
+
 /* RWD */
 @media (max-width: 768px) {
   /* ... (sekcja mobilna bez zmian) ... */

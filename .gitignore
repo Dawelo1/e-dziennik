@@ -12,5 +12,8 @@ __pycache__/
 # Plik lokalnej bazy danych
 db.sqlite3
 
+# Pliki mediów
+media/
+
 # Pliki generowane przez VS Code
 .vscode/

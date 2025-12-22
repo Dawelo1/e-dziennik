@@ -73,8 +73,35 @@ class MessageViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def mark_all_read(self, request):
         """
-        Oznacza wszystkie wiadomości odebrane przez użytkownika jako przeczytane.
+        Oznacza wiadomości jako przeczytane.
+        - Dla Dyrektora (is_director=True): oznacza wiadomości od konkretnego Rodzica skierowane do dowolnego Dyrektora.
+        - Dla Rodzica: oznacza wiadomości otrzymane od Dyrekcji.
         """
         user = request.user
-        updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+        sender_id = request.data.get('sender_id') # ID rodzica przesłane z Reacta
+
+        updated = 0
+
+        # 1. SPRAWDZAMY CZY UŻYTKOWNIK TO DYREKTOR (używając Twojego pola is_director)
+        if user.is_director:
+            if sender_id:
+                # Logika "Wspólnej Skrzynki":
+                # Oznaczamy wiadomości, które:
+                # a) Wysłał dany Rodzic (sender_id)
+                # b) Są skierowane do osoby będącej Dyrektorem (receiver__is_director=True)
+                # c) Są nieprzeczytane
+                updated = Message.objects.filter(
+                    sender_id=sender_id,
+                    receiver__is_director=True,  # <--- KLUCZOWA ZMIANA
+                    is_read=False
+                ).update(is_read=True)
+            else:
+                # Zabezpieczenie: jeśli frontend nie wysłał sender_id, oznaczamy tylko te do zalogowanego usera
+                updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+
+        # 2. SCENARIUSZ DLA RODZICA (is_director=False)
+        else:
+            # Rodzic oznacza wiadomości wysłane konkretnie do niego
+            updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+
         return Response({'status': 'marked', 'updated_count': updated})
