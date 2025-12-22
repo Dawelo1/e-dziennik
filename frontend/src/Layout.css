@@ -236,6 +236,7 @@
   padding-right: 5px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 /* Styl paska przewijania głównej treści */

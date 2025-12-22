@@ -35,6 +35,9 @@ const DirectorMessages = () => {
       setCurrentUser(userRes.data);
       processMessages(messagesRes.data, myId, allUsersRes.data);
 
+      // Oznacz wszystkie jako przeczytane gdy jesteśmy na ekranie czatu (jak w widoku rodzica)
+      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {}, getAuthHeaders());
+
     } catch (err) {
       console.error("Błąd pobierania:", err);
     } finally {
@@ -155,7 +158,7 @@ const DirectorMessages = () => {
             <FaSearch />
             <input 
               type="text" 
-              placeholder="Szukaj lub rozpocznij rozmowę..."
+              placeholder="Szukaj odbiorcy..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
