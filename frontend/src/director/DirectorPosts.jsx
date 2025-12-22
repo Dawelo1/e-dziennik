@@ -7,7 +7,7 @@ import LoadingScreen from '../LoadingScreen';
 
 import { 
   FaBullhorn, FaPlus, FaEdit, FaTrash, FaSearch, 
-  FaImage, FaLayerGroup, FaSave 
+  FaImage, FaLayerGroup, FaSave, FaExclamationTriangle, FaTrashAlt 
 } from 'react-icons/fa';
 
 const DirectorPosts = () => {
@@ -32,6 +32,7 @@ const DirectorPosts = () => {
   const [formData, setFormData] = useState(initialForm);
   const [previewImage, setPreviewImage] = useState(null); // Podgląd zdjęcia
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null); // Post wybrany do usunięcia
 
   // 1. POBIERANIE DANYCH
   const fetchData = async () => {
@@ -132,14 +133,15 @@ const DirectorPosts = () => {
   };
 
   // 4. USUWANIE
-  const handleDelete = async (id) => {
-    if (!window.confirm("Usunąć ten post?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/newsfeed/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/newsfeed/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Błąd usuwania.");
+      alert("Nie udało się usunąć posta. Spróbuj ponownie później.");
       setLoading(false);
     }
   };
@@ -218,7 +220,7 @@ const DirectorPosts = () => {
                 <td style={{fontSize: 13, color: '#888'}}>{post.formatted_date}</td>
                 <td className="text-right">
                   <button className="action-icon-btn edit" onClick={() => openModal(post)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => handleDelete(post.id)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(post)}><FaTrash/></button>
                 </td>
               </tr>
             ))}
@@ -301,6 +303,24 @@ const DirectorPosts = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL POTWIERDZENIA USUNIĘCIA --- */}
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć ogłoszenie?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć ogłoszenie
+              {deleteTarget.title ? ` "${deleteTarget.title}"` : ''}? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}
