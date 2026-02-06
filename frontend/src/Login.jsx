@@ -37,8 +37,6 @@ const Login = () => {
 
       // Zapisujemy token (używając funkcji z authUtils)
       setToken(token, rememberMe);
-
-      console.log("Zalogowano! Token:", token);
       
       // Logika przekierowania zależna od roli:
       if (is_director) {
