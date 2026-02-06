@@ -29,7 +29,8 @@ const DirectorChildren = () => {
     date_of_birth: '',
     group: '',     // ID grupy
     parents: [],   // Tablica ID rodziców
-    medical_info: ''
+    medical_info: '',
+    meal_rate: '20.00'
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
@@ -73,14 +74,14 @@ const DirectorChildren = () => {
     if (child) {
       setEditingChild(child);
       setFormData({
-        first_name: child.first_name,
-        last_name: child.last_name,
-        date_of_birth: child.date_of_birth,
-        group: child.group, // API zwraca ID grupy w tym polu? Sprawdzimy.
-        // Jeśli serializer zwraca obiekty rodziców, musimy mapować na ID
-        parents: child.parents, 
-        medical_info: child.medical_info || ''
-      });
+      first_name: child.first_name,
+      last_name: child.last_name,
+      date_of_birth: child.date_of_birth,
+      group: child.group,
+      parents: child.parents, 
+      medical_info: child.medical_info || '',
+      meal_rate: child.meal_rate || '20.00'
+    });
     } else {
       setEditingChild(null);
       setFormData(initialForm);
@@ -242,6 +243,17 @@ const DirectorChildren = () => {
               <div className="form-group">
                 <label>Data urodzenia</label>
                 <input type="date" required value={formData.date_of_birth} onChange={e => setFormData({...formData, date_of_birth: e.target.value})}/>
+              </div>
+
+              <div className="form-group">
+                <label>Stawka żywieniowa (zł)</label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  required 
+                  value={formData.meal_rate} 
+                  onChange={e => setFormData({...formData, meal_rate: e.target.value})}
+                />
               </div>
 
               <div className="form-group">

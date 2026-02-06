@@ -30,7 +30,6 @@ const DirectorUsers = () => {
     email: '',
     phone_number: '',
     password: '',
-    role: 'parent'
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
@@ -72,7 +71,6 @@ const DirectorUsers = () => {
         email: user.email || '',
         phone_number: user.phone_number || '',
         password: '',
-        role: user.is_director ? 'director' : 'parent'
       });
     } else {
       setEditingUser(null);
@@ -90,8 +88,8 @@ const DirectorUsers = () => {
 
     const payload = {
       ...formData,
-      is_director: formData.role === 'director',
-      is_parent: formData.role === 'parent'
+      is_director: false,
+      is_parent: true
     };
 
     if (editingUser && !payload.password) {
@@ -247,17 +245,6 @@ const DirectorUsers = () => {
                   onChange={e => setFormData({...formData, username: e.target.value})}
                   disabled={!!editingUser}
                 />
-              </div>
-
-              <div className="form-group">
-                <label>Rola</label>
-                <select 
-                  value={formData.role} 
-                  onChange={e => setFormData({...formData, role: e.target.value})}
-                >
-                  <option value="parent">Rodzic</option>
-                  <option value="director">Dyrektor / Administrator</option>
-                </select>
               </div>
 
               <div className="form-group">

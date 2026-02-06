@@ -42,7 +42,6 @@ class Command(BaseCommand):
         # 2. Dla każdego dziecka liczymy nieobecności
         children = Child.objects.all()
         count = 0
-        rate = 20.00 # Stawka dzienna
 
         for child in children:
             # Policz zgłoszone nieobecności w tym miesiącu
@@ -57,13 +56,13 @@ class Command(BaseCommand):
             # Zabezpieczenie, żeby nie wyszło ujemnie (gdyby ktoś dodał więcej nieobecności niż dni pracy)
             if billable_days < 0: billable_days = 0
 
-            amount_to_pay = billable_days * rate
+            amount_to_pay = billable_days * child.meal_rate
 
             if amount_to_pay > 0:
                 Payment.objects.create(
                     child=child,
                     amount=amount_to_pay,
-                    description=f"Wyżywienie: {month_name} ({billable_days} dni x 20zł)",
+                    description=f"Wyżywienie: {month_name} ({billable_days} dni x {child.meal_rate} zł)",
                     is_paid=False
                 )
                 count += 1

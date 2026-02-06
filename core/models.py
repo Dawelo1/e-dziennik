@@ -23,6 +23,12 @@ class Child(models.Model):
     first_name = models.CharField(max_length=50, verbose_name="Imię" )
     last_name = models.CharField(max_length=50, verbose_name="Nazwisko" )
     date_of_birth = models.DateField(verbose_name="Data urodzenia" )
+    meal_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=20.00, 
+        verbose_name="Stawka żywieniowa"
+    )
     
     # Dane wrażliwe (RODO) - szyfrowane w bazie
     medical_info = encrypt(models.TextField(blank=True, help_text="Alergie, uwagi zdrowotne", verbose_name="Informacje medyczne"))

@@ -12,37 +12,34 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Logika widoczności:
-        1. Rodzic: Widzi tylko swoje rozmowy.
-        2. Dyrektor: Widzi swoje rozmowy ORAZ rozmowy innych dyrektorów (Wspólna skrzynka).
+        Zaktualizowana logika widoczności:
+        1. Rodzic: Widzi tylko swoją rozmowę z Dyrektorem.
+        2. Dyrektor: Widzi WSZYSTKIE wiadomości w systemie.
         """
         user = self.request.user
 
-        # SCENARIUSZ 1: Użytkownik jest DYREKTOREM
+        # A. DYREKTOR widzi całą korespondencję
         if user.is_director:
-            return Message.objects.filter(
-                Q(sender=user) | 
-                Q(receiver=user) |
-                Q(receiver__is_director=True) | # Przychodzące do administracji
-                Q(sender__is_director=True)     # Wychodzące od administracji
-            ).distinct()
+            # Sortujemy tak, aby najnowsze wiadomości były na dole (jak w czacie)
+            return Message.objects.all().order_by('created_at')
 
-        # SCENARIUSZ 2: Użytkownik jest RODZICEM
+        # B. RODZIC widzi tylko swoje wiadomości
         else:
             return Message.objects.filter(
                 Q(sender=user) | Q(receiver=user)
-            )
+            ).order_by('created_at')
 
     def perform_create(self, serializer):
         """
-        Logika wysyłania:
-        1. Rodzic -> Automatycznie do Dyrektora.
-        2. Dyrektor -> Musi wybrać odbiorcę.
+        Zaktualizowana logika wysyłania:
+        1. Rodzic: Automatycznie wysyła do jedynego Dyrektora.
+        2. Dyrektor: Musi wybrać odbiorcę (Rodzica).
         """
         sender = self.request.user
 
         # A. Wysyła RODZIC
         if sender.is_parent:
+            # Szukamy jedynego dyrektora w systemie
             director = User.objects.filter(is_director=True).first()
 
             if not director:
@@ -50,16 +47,22 @@ class MessageViewSet(viewsets.ModelViewSet):
                     {"receiver": "Błąd systemu: Nie znaleziono konta dyrektora. Skontaktuj się z placówką."}
                 )
 
+            # Zapisujemy wiadomość z automatycznie przypisanym odbiorcą
             serializer.save(sender=sender, receiver=director)
 
         # B. Wysyła DYREKTOR
-        else:
+        elif sender.is_director:
+            # Dyrektor musi podać odbiorcę (rodzica) w danych
             if 'receiver' not in serializer.validated_data:
                  raise serializers.ValidationError({"receiver": "Jako Dyrektor musisz wybrać odbiorcę wiadomości."})
             
             serializer.save(sender=sender)
+        
+        # C. Ktoś inny (np. Admin bez roli) nie może pisać
+        else:
+            raise permissions.PermissionDenied("Nie masz uprawnień do wysyłania wiadomości.")
 
-    # --- NOWE METODY (TEGO BRAKOWAŁO W TWOIM KODZIE) ---
+    # --- Metody dodatkowe ---
 
     @action(detail=False, methods=['get'])
     def unread_count(self, request):
@@ -73,35 +76,8 @@ class MessageViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def mark_all_read(self, request):
         """
-        Oznacza wiadomości jako przeczytane.
-        - Dla Dyrektora (is_director=True): oznacza wiadomości od konkretnego Rodzica skierowane do dowolnego Dyrektora.
-        - Dla Rodzica: oznacza wiadomości otrzymane od Dyrekcji.
+        Oznacza wszystkie wiadomości skierowane do zalogowanego użytkownika jako przeczytane.
         """
         user = request.user
-        sender_id = request.data.get('sender_id') # ID rodzica przesłane z Reacta
-
-        updated = 0
-
-        # 1. SPRAWDZAMY CZY UŻYTKOWNIK TO DYREKTOR (używając Twojego pola is_director)
-        if user.is_director:
-            if sender_id:
-                # Logika "Wspólnej Skrzynki":
-                # Oznaczamy wiadomości, które:
-                # a) Wysłał dany Rodzic (sender_id)
-                # b) Są skierowane do osoby będącej Dyrektorem (receiver__is_director=True)
-                # c) Są nieprzeczytane
-                updated = Message.objects.filter(
-                    sender_id=sender_id,
-                    receiver__is_director=True,  # <--- KLUCZOWA ZMIANA
-                    is_read=False
-                ).update(is_read=True)
-            else:
-                # Zabezpieczenie: jeśli frontend nie wysłał sender_id, oznaczamy tylko te do zalogowanego usera
-                updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
-
-        # 2. SCENARIUSZ DLA RODZICA (is_director=False)
-        else:
-            # Rodzic oznacza wiadomości wysłane konkretnie do niego
-            updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
-
+        updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
         return Response({'status': 'marked', 'updated_count': updated})
