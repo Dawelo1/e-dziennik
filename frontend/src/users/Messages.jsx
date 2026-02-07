@@ -186,8 +186,7 @@ const Messages = () => {
                       )}
                     </div>
                   )}
-                  <div className="bubble-wrapper">
-                    {!isMyMessage && <span className="sender-name">{msg.sender_name}</span>}
+                  <div className="bubble-wrapper">                   
                     <div className="message-bubble">{msg.body}</div>
                     <span className="message-time">
                       {formatTime(msg.created_at)}

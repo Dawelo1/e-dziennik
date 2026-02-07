@@ -23,6 +23,42 @@ const DirectorMessages = () => {
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const isUserAtBottomRef = useRef(true);
+  const activeConversationRef = useRef(null);
+  const currentUserRef = useRef(null);
+
+  useEffect(() => {
+    activeConversationRef.current = activeConversation;
+  }, [activeConversation]);
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  const markConversationRead = async (participantId) => {
+    const authConfig = getAuthHeaders();
+    if (!authConfig) {
+      removeToken();
+      navigate('/');
+      return;
+    }
+    try {
+      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {
+        sender_id: participantId
+      }, authConfig);
+    } catch (err) {
+      console.error("Błąd oznaczania jako przeczytane:", err);
+    }
+  };
+
+  const getConvSignature = (conv) => {
+    if (!conv) return '';
+    const lastMsg = conv.messages[conv.messages.length - 1];
+    const lastId = lastMsg ? lastMsg.id : 'none';
+    const unreadCount = conv.messages.reduce((count, m) => (
+      !m.is_read && m.sender === conv.participantId ? count + 1 : count
+    ), 0);
+    return `${conv.messages.length}:${lastId}:${unreadCount}`;
+  };
 
   // --- 1. POBIERANIE DANYCH ---
   const fetchData = async (myId) => {
@@ -73,19 +109,41 @@ const DirectorMessages = () => {
     const convArray = Object.values(grouped).sort((a, b) => {
       const aMsg = a.messages[a.messages.length - 1];
       const bMsg = b.messages[b.messages.length - 1];
-      if (aMsg && !bMsg) return -1;
-      if (!bMsg && aMsg) return 1;
-      if (aMsg && bMsg) return new Date(bMsg.created_at) - new Date(aMsg.created_at);
+      const aHas = Boolean(aMsg);
+      const bHas = Boolean(bMsg);
+
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+
+      if (aHas && bHas) {
+        const aTime = Date.parse(aMsg.created_at);
+        const bTime = Date.parse(bMsg.created_at);
+        const aTs = Number.isNaN(aTime) ? 0 : aTime;
+        const bTs = Number.isNaN(bTime) ? 0 : bTime;
+
+        if (aTs !== bTs) return bTs - aTs;
+      }
+
       return a.participantName.localeCompare(b.participantName);
     });
     setConversations(convArray);
 
-    if (activeConversation) {
-        const updatedActiveConv = convArray.find(c => c.participantId === activeConversation.participantId);
-        if (updatedActiveConv && updatedActiveConv.messages.length > activeConversation.messages.length) {
-            setActiveConversation(updatedActiveConv);
-            if (isUserAtBottomRef.current) setTimeout(scrollToBottom, 100);
+    const currentActive = activeConversationRef.current;
+    if (currentActive) {
+      const updatedActiveConv = convArray.find(c => c.participantId === currentActive.participantId);
+      if (updatedActiveConv) {
+        const currentSig = getConvSignature(currentActive);
+        const updatedSig = getConvSignature(updatedActiveConv);
+        if (currentSig !== updatedSig) {
+          setActiveConversation(updatedActiveConv);
+          if (isUserAtBottomRef.current) setTimeout(scrollToBottom, 100);
         }
+
+        const hasUnread = updatedActiveConv.messages.some(
+          m => !m.is_read && m.sender === updatedActiveConv.participantId
+        );
+        if (hasUnread) markConversationRead(updatedActiveConv.participantId);
+      }
     }
   };
   
@@ -141,20 +199,7 @@ const DirectorMessages = () => {
       const hasUnread = activeConversation.messages.some(m => !m.is_read && m.sender === activeConversation.participantId);
       
       if (hasUnread) {
-        const authConfig = getAuthHeaders();
-        if (!authConfig) {
-          removeToken();
-          navigate('/');
-          return;
-        }
-        axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {
-          sender_id: activeConversation.participantId 
-        }, authConfig)
-        .then(() => {
-            // Odśwież dane, żeby pogrubienie zniknęło
-            if (currentUser) fetchData(currentUser.id);
-        })
-        .catch(err => console.error("Błąd oznaczania jako przeczytane:", err));
+        markConversationRead(activeConversation.participantId);
       }
       
       setTimeout(scrollToBottom, 50);
