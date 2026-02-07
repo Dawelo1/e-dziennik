@@ -4,7 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Wspólne style
 import './DirectorGallery.css'; // Dedykowane style
-import LoadingScreen from '../LoadingScreen';
+import LoadingScreen from '../users/LoadingScreen';
 
 import { 
   FaImages, FaPlus, FaEdit, FaTrash, FaSearch, 

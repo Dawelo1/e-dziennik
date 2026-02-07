@@ -45,7 +45,7 @@
 
   /* 2. Wczytujemy CAŁY arkusz sprajtów jako tło */
   /* Upewnij się, że ścieżka do pliku jest poprawna! */
-  background-image: url('./assets/bee-animation.png');
+  background-image: url('../assets/bee-animation.png');
   
   /* 3. Skalujemy tło do pełnych wymiarów arkusza */
   background-size: 480px 270px;

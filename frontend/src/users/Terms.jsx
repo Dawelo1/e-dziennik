@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Login.css';
-import bgImage from './assets/bg.png';
+import bgImage from '../assets/bg.png';
 
 const Terms = () => {
   return (

@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import axios from 'axios';
-import { getAuthHeaders } from './authUtils';
-import LoadingScreen from './LoadingScreen';
+import { getAuthHeaders } from '../authUtils';
+import LoadingScreen from '../users/LoadingScreen';
 
 const DirectorRoute = () => {
   const [isDirector, setIsDirector] = useState(null);

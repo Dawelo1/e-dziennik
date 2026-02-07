@@ -6,7 +6,7 @@ import 'react-calendar/dist/Calendar.css';
 import './Attendance.css';
 import { FaUserSlash, FaChild, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from './authUtils';
+import { getAuthHeaders } from '../authUtils';
 
 const Attendance = () => {
   const [children, setChildren] = useState([]);

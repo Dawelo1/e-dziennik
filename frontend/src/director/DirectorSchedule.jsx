@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Wspólne style
-import LoadingScreen from '../LoadingScreen';
+import LoadingScreen from '../users/LoadingScreen';
 
 import { 
   FaChalkboardTeacher, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSave

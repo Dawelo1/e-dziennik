@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from './authUtils';
+import { getAuthHeaders } from '../authUtils';
 import { 
   FaBullhorn, 
   FaUserSlash, 

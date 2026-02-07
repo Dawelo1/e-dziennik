@@ -1,8 +1,8 @@
 // frontend/src/LoadingScreen.jsx
 import React from 'react';
 import './LoadingScreen.css';
-import beeImage from './assets/bee.png'; // Twoja pszczółka
-import bgImage from './assets/bg-main.png';   // Twoje tło
+import beeImage from '../assets/bee.png'; // Twoja pszczółka
+import bgImage from '../assets/bg-main.png';   // Twoje tło
 
 const LoadingScreen = ({ message = "Ładowanie..." }) => {
   return (

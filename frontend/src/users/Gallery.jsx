@@ -5,7 +5,7 @@ import './Gallery.css';
 import ImageGrid from './ImageGrid';
 import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from './authUtils';
+import { getAuthHeaders } from '../authUtils';
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);

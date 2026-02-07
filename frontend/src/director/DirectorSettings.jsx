@@ -3,7 +3,7 @@ import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../cropUtils';
 import './DirectorSettings.css';
-import LoadingScreen from '../LoadingScreen';
+import LoadingScreen from '../users/LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 

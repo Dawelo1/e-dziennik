@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
-import beeLogo from './assets/bee.png';
-import { getToken, removeToken, getAuthHeaders } from './authUtils';
+import beeLogo from '../assets/bee.png';
+import { getToken, removeToken, getAuthHeaders } from '../authUtils';
 
 // Ikony
 import { 

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import './Login.css';
-import bgImage from './assets/bg.png';
-import beeLogo from './assets/bee.png';
+import bgImage from '../assets/bg.png';
+import beeLogo from '../assets/bee.png';
 import { FaLock } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
 

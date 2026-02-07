@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Styl ten sam co reszta panelu
-import LoadingScreen from '../LoadingScreen';
+import LoadingScreen from '../users/LoadingScreen';
 
 import { 
   FaBullhorn, FaPlus, FaEdit, FaTrash, FaSearch, 

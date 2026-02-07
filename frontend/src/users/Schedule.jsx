@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Schedule.css';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from './authUtils';
+import { getAuthHeaders } from '../authUtils';
 import { 
   FaCalendarDay, 
   FaChevronLeft, 

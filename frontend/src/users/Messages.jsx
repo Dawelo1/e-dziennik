@@ -4,7 +4,7 @@ import axios from 'axios';
 import './Messages.css';
 import { FaPaperPlane, FaUserTie, FaEnvelope, FaArrowDown } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from './authUtils';
+import { getAuthHeaders } from '../authUtils';
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);

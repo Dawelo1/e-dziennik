@@ -4,10 +4,10 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import './Login.css';
 import LoadingScreen from './LoadingScreen';
-import bgImage from './assets/bg.png';
-import BeeIcon from './assets/bee-icon.png';
-import padlockIcon from './assets/padlock-icon.png';
-import { setToken } from './authUtils';
+import bgImage from '../assets/bg.png';
+import BeeIcon from '../assets/bee-icon.png';
+import padlockIcon from '../assets/padlock-icon.png';
+import { setToken } from '../authUtils';
 
 const Login = () => {
   const [username, setUsername] = useState('');

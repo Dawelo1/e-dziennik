@@ -5,7 +5,7 @@ import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css';
 
 // --- NOWY IMPORT ---
-import LoadingScreen from '../LoadingScreen'; 
+import LoadingScreen from '../users/LoadingScreen'; 
 
 // Ikony
 import { 

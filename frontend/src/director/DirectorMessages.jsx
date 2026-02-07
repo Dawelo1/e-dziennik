@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorMessages.css'; 
-import LoadingScreen from '../LoadingScreen';
+import LoadingScreen from '../users/LoadingScreen';
 
 import { 
   FaEnvelope, FaSearch, FaPaperPlane, FaUserPlus, FaArrowDown

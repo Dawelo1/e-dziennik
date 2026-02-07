@@ -2,10 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { getAuthHeaders, removeToken } from './authUtils';
+import { getAuthHeaders, removeToken } from '../authUtils';
 
-import './Layout.css'; // Użyjemy na razie tych samych stylów co u rodzica dla spójności
-import beeLogo from './assets/bee.png';
+import '../users/Layout.css'; // Użyjemy na razie tych samych stylów co u rodzica dla spójności
+import beeLogo from '../assets/bee.png';
 
 // Ikony
 import { 

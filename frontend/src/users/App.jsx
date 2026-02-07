@@ -20,20 +20,20 @@ import Messages from './Messages';
 import Gallery from './Gallery';
 
 // --- NOWE IMPORTY DLA DYREKTORA ---
-import DirectorRoute from './DirectorRoute';
-import DirectorLayout from './DirectorLayout';
-import DirectorDashboard from './director/DirectorDashboard';
-import DirectorUsers from './director/DirectorUsers';
-import DirectorGroups from './director/DirectorGroups';
-import DirectorChildren from './director/DirectorChildren';
-import DirectorPosts from './director/DirectorPosts';
-import DirectorGallery from './director/DirectorGallery';
-import DirectorMessages from './director/DirectorMessages';
-import DirectorAttendance from './director/DirectorAttendance';
-import DirectorSchedule from './director/DirectorSchedule';
-import DirectorMenu from './director/DirectorMenu';
-import DirectorCalendar from './director/DirectorCalendar';
-import DirectorSettings from './director/DirectorSettings';
+import DirectorRoute from '../director/DirectorRoute';
+import DirectorLayout from '../director/DirectorLayout';
+import DirectorDashboard from '../director/DirectorDashboard';
+import DirectorUsers from '../director/DirectorUsers';
+import DirectorGroups from '../director/DirectorGroups';
+import DirectorChildren from '../director/DirectorChildren';
+import DirectorPosts from '../director/DirectorPosts';
+import DirectorGallery from '../director/DirectorGallery';
+import DirectorMessages from '../director/DirectorMessages';
+import DirectorAttendance from '../director/DirectorAttendance';
+import DirectorSchedule from '../director/DirectorSchedule';
+import DirectorMenu from '../director/DirectorMenu';
+import DirectorCalendar from '../director/DirectorCalendar';
+import DirectorSettings from '../director/DirectorSettings';
 
 function App() {
   return (
