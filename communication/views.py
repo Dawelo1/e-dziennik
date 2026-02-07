@@ -76,8 +76,29 @@ class MessageViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def mark_all_read(self, request):
         """
-        Oznacza wszystkie wiadomości skierowane do zalogowanego użytkownika jako przeczytane.
+        Oznacza wiadomości jako przeczytane.
+        - Dla Dyrektora (is_director=True): może oznaczyć wiadomości od konkretnego Rodzica.
+        - Dla Rodzica: oznacza wszystkie wiadomości otrzymane od Dyrekcji.
         """
         user = request.user
-        updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+        sender_id = request.data.get('sender_id') # ID rodzica przesłane z Reacta
+
+        # SCENARIUSZ 1: DYREKTOR
+        if user.is_director:
+            # Jeśli podano sender_id -> oznacz wiadomości tylko od tego rodzica
+            if sender_id:
+                updated = Message.objects.filter(
+                    sender_id=sender_id, # Od tego Rodzica
+                    receiver=user,       # Do MNIE (zalogowanego dyrektora)
+                    is_read=False
+                ).update(is_read=True)
+            # Jeśli nie podano -> oznacz wszystkie (jak wcześniej)
+            else:
+                updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+
+        # SCENARIUSZ 2: RODZIC
+        else:
+            # Rodzic zawsze oznacza wszystkie swoje nieprzeczytane wiadomości
+            updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+
         return Response({'status': 'marked', 'updated_count': updated})

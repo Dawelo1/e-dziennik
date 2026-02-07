@@ -26,5 +26,6 @@ export const removeToken = () => {
 // 4. Gotowy nagłówek do Axios (używany w każdym zapytaniu)
 export const getAuthHeaders = () => {
   const token = getToken();
+  if (!token) return null;
   return { headers: { Authorization: `Token ${token}` } };
 };

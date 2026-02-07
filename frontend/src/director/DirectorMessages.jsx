@@ -1,7 +1,8 @@
 // frontend/src/director/DirectorMessages.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { getAuthHeaders } from '../authUtils';
+import { getAuthHeaders, removeToken } from '../authUtils';
 import './DirectorMessages.css'; 
 import LoadingScreen from '../users/LoadingScreen';
 
@@ -10,6 +11,7 @@ import {
 } from 'react-icons/fa';
 
 const DirectorMessages = () => {
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,30 +24,22 @@ const DirectorMessages = () => {
   const messagesEndRef = useRef(null);
   const isUserAtBottomRef = useRef(true);
 
-  const activeConversationIdRef = useRef(null);
-
-  useEffect(() => {
-    activeConversationIdRef.current = activeConversation ? activeConversation.participantId : null;
-  }, [activeConversation]);
-
   // --- 1. POBIERANIE DANYCH ---
-  const fetchData = async () => {
+  const fetchData = async (myId) => {
     try {
-      const [messagesRes, userRes, allUsersRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/communication/messages/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/manage/?is_parent=true', getAuthHeaders())
+      const authConfig = getAuthHeaders();
+      if (!authConfig) {
+        removeToken();
+        navigate('/');
+        return;
+      }
+      const [messagesRes, allUsersRes] = await Promise.all([
+        axios.get('http://127.0.0.1:8000/api/communication/messages/', authConfig),
+        axios.get('http://127.0.0.1:8000/api/users/manage/?is_parent=true', authConfig)
       ]);
 
-      const myId = userRes.data.id;
-      setCurrentUser(userRes.data);
+      // Przekazujemy 'myId' bezpośrednio, żeby nie polegać na asynchronicznym stanie
       processMessages(messagesRes.data, myId, allUsersRes.data);
-
-      if (activeConversationIdRef.current) {
-         await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {
-            sender_id: activeConversationIdRef.current 
-         }, getAuthHeaders());
-      }
 
     } catch (err) {
       console.error("Błąd pobierania:", err);
@@ -53,104 +47,119 @@ const DirectorMessages = () => {
       setLoading(false);
     }
   };
-
-  // --- 2. POPRAWIONE PRZETWARZANIE WIADOMOŚCI ---
+  
+  // --- 2. PRZETWARZANIE WIADOMOŚCI ---
   const processMessages = (messages, myId, allParentUsers) => {
     const grouped = messages.reduce((acc, msg) => {
-      
-      let parentId = null;
-      let parentName = null;
-
-      // --- LOGIKA IDENTYFIKACJI ROZMÓWCY ---
-
-      // 1. Jeśli wiadomość przyszła DO MNIE (Dyrektora), to nadawcą musi być Rodzic.
-      if (msg.receiver === myId) {
-        parentId = msg.sender;
-        parentName = msg.sender_name;
-      }
-      // 2. Jeśli wiadomość wyszła OD MNIE, to odbiorcą jest Rodzic.
-      else if (msg.sender === myId) {
-        parentId = msg.receiver;
-        parentName = msg.receiver_name;
-      }
-      // 3. Obsługa wspólnej skrzynki (rozmowa Innego Dyrektora z Rodzicem)
-      else {
-        // Sprawdzamy, czy Nadawca jest na liście znanych rodziców
-        const senderIsParent = allParentUsers.find(u => u.id === msg.sender);
-        
-        if (senderIsParent) {
-          // Jeśli nadawca to rodzic -> grupujemy po nim
-          parentId = msg.sender;
-          parentName = msg.sender_name;
-        } else {
-          // Jeśli nadawca to NIE jest znany rodzic, zakładamy, że to Inny Dyrektor.
-          // Wtedy odbiorcą jest Rodzic.
-          parentId = msg.receiver;
-          parentName = msg.receiver_name;
+        const otherId = msg.sender === myId ? msg.receiver : msg.sender;
+        if (otherId === myId) return acc;
+        if (!acc[otherId]) {
+            acc[otherId] = { participantId: otherId, participantName: msg.sender === myId ? msg.receiver_name : msg.sender_name, messages: [] };
         }
-      }
-
-      // Jeśli nadal nie mamy ID, pomijamy (błąd danych)
-      if (!parentId) return acc;
-
-      if (!acc[parentId]) {
-        acc[parentId] = {
-          participantId: parentId,
-          participantName: parentName || 'Nieznany Rodzic',
-          messages: []
-        };
-      }
-      acc[parentId].messages.push(msg);
-      return acc;
+        acc[otherId].messages.push(msg);
+        return acc;
     }, {});
-
-    // Sortowanie wiadomości wewnątrz rozmów
-    for (const key in grouped) {
-      grouped[key].messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-    }
-
-    // Dodanie pustych rozmów dla rodziców z listy, którzy jeszcze nie pisali
-    allParentUsers.forEach(user => {
-      if (!grouped[user.id]) {
-        grouped[user.id] = {
-          participantId: user.id,
-          participantName: `${user.first_name} ${user.last_name}`.trim() || user.username,
-          messages: []
-        };
-      }
-    });
     
-    // Sortowanie listy (od najnowszych)
+    for (const key in grouped) {
+        grouped[key].messages.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+    }
+    
+    allParentUsers.forEach(user => {
+        if (!grouped[user.id] && user.id !== myId) {
+            grouped[user.id] = { participantId: user.id, participantName: `${user.first_name} ${user.last_name}`.trim() || user.username, messages: [] };
+        }
+    });
+
     const convArray = Object.values(grouped).sort((a, b) => {
-      const aMsg = a.messages.length > 0 ? a.messages[a.messages.length - 1] : null;
-      const bMsg = b.messages.length > 0 ? b.messages[b.messages.length - 1] : null;
-      
+      const aMsg = a.messages[a.messages.length - 1];
+      const bMsg = b.messages[b.messages.length - 1];
       if (aMsg && !bMsg) return -1;
-      if (!aMsg && bMsg) return 1;
+      if (!bMsg && aMsg) return 1;
       if (aMsg && bMsg) return new Date(bMsg.created_at) - new Date(aMsg.created_at);
       return a.participantName.localeCompare(b.participantName);
     });
-    
     setConversations(convArray);
 
-    if (activeConversationIdRef.current) {
-      const updatedActiveConv = convArray.find(c => c.participantId === activeConversationIdRef.current);
-      if (updatedActiveConv) {
-        setActiveConversation(updatedActiveConv);
-        if (isUserAtBottomRef.current) {
-             setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-             }, 100);
+    if (activeConversation) {
+        const updatedActiveConv = convArray.find(c => c.participantId === activeConversation.participantId);
+        if (updatedActiveConv && updatedActiveConv.messages.length > activeConversation.messages.length) {
+            setActiveConversation(updatedActiveConv);
+            if (isUserAtBottomRef.current) setTimeout(scrollToBottom, 100);
         }
-      }
     }
   };
-
+  
+  // --- POPRAWIONY START I POLLING ---
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    let intervalId = null;
+
+    const startFetching = async () => {
+      try {
+        const authConfig = getAuthHeaders();
+        if (!authConfig) {
+          removeToken();
+          navigate('/');
+          setLoading(false);
+          return;
+        }
+        // A. Pobierz dane o zalogowanym użytkowniku
+        const userRes = await axios.get('http://127.0.0.1:8000/api/users/me/', authConfig);
+        const user = userRes.data;
+        setCurrentUser(user);
+
+        // B. Uruchom pierwsze pobranie reszty danych, przekazując ID usera
+        await fetchData(user.id);
+        
+        // C. Ustaw interwał, który będzie odświeżał dane (z ID użytkownika)
+        // Sprawdzamy, czy intervalId już nie istnieje, żeby uniknąć duplikatów
+        if (!intervalId) {
+          intervalId = setInterval(() => fetchData(user.id), 3000);
+        }
+
+      } catch(err) {
+        console.error("Błąd inicjalizacji:", err);
+        // Jeśli tu jest błąd, prawdopodobnie token jest zły.
+        // Warto byłoby wylogować usera:
+        // removeToken(); navigate('/');
+        setLoading(false);
+      }
+    };
+    
+    startFetching();
+
+    // D. Sprzątanie (czyści interwał po wyjściu z komponentu)
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, []); // Pusta tablica, uruchamia się tylko raz
+
+  // --- LOGIKA "PRZECZYTANO" PO KLIKNIĘCIU ---
+  useEffect(() => {
+    if (activeConversation) {
+      const hasUnread = activeConversation.messages.some(m => !m.is_read && m.sender === activeConversation.participantId);
+      
+      if (hasUnread) {
+        const authConfig = getAuthHeaders();
+        if (!authConfig) {
+          removeToken();
+          navigate('/');
+          return;
+        }
+        axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {
+          sender_id: activeConversation.participantId 
+        }, authConfig)
+        .then(() => {
+            // Odśwież dane, żeby pogrubienie zniknęło
+            if (currentUser) fetchData(currentUser.id);
+        })
+        .catch(err => console.error("Błąd oznaczania jako przeczytane:", err));
+      }
+      
+      setTimeout(scrollToBottom, 50);
+    }
+  }, [activeConversation]);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   
@@ -166,14 +175,20 @@ const DirectorMessages = () => {
     e.preventDefault();
     if (!newMessage.trim() || !activeConversation) return;
     try {
+      const authConfig = getAuthHeaders();
+      if (!authConfig) {
+        removeToken();
+        navigate('/');
+        return;
+      }
       await axios.post('http://127.0.0.1:8000/api/communication/messages/', {
         receiver: activeConversation.participantId,
         subject: 'Wiadomość od Dyrekcji',
         body: newMessage,
-      }, getAuthHeaders());
+      }, authConfig);
       
       setNewMessage('');
-      await fetchData();
+      await fetchData(currentUser.id);
       setTimeout(scrollToBottom, 100);
     } catch (err) {
       console.error(err);
@@ -190,11 +205,10 @@ const DirectorMessages = () => {
 
   return (
     <div className="director-container">
-      <h2 className="page-title"><FaEnvelope /> Wiadomości Dyrekcji</h2>
+      <h2 className="page-title"><FaEnvelope /> Wiadomości</h2>
 
       <div className="messages-layout-grid">
         
-        {/* LEWA STRONA */}
         <div className="conversations-list-panel">
           <div className="conv-search-bar">
             <FaSearch />
@@ -209,23 +223,23 @@ const DirectorMessages = () => {
           <div className="conv-list">
             {filteredConversations.map(conv => {
               const lastMessage = conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
-              const hasUnread = conv.messages.some(m => !m.is_read && m.sender === conv.participantId);
+              
+              const hasUnread = lastMessage && !lastMessage.is_read && lastMessage.sender !== currentUser?.id;
 
               return (
                 <div 
                   key={conv.participantId}
                   className={`conv-item ${activeConversation?.participantId === conv.participantId ? 'active' : ''} ${hasUnread ? 'unread-conv' : ''}`}
-                  onClick={() => { setActiveConversation(conv); setTimeout(scrollToBottom, 100); }}
+                  onClick={() => setActiveConversation(conv)}
                 >
                   <div className="conv-avatar">{conv.participantName[0].toUpperCase()}</div>
                   <div className="conv-details">
                     <div className="conv-name" style={{ fontWeight: hasUnread ? 'bold' : 'normal' }}>
                         {conv.participantName}
                     </div>
-                    
                     {lastMessage ? (
-                      <div className="conv-last-msg">
-                        {lastMessage.sender !== conv.participantId ? "Ty/Dyr: " : ""}
+                      <div className="conv-last-msg" style={{ fontWeight: hasUnread ? 'bold' : 'normal', color: hasUnread ? '#333' : '#666'}}>
+                        {lastMessage.sender === currentUser.id ? "Ty: " : ""}
                         {lastMessage.body.substring(0, 25)}...
                       </div>
                     ) : (
@@ -272,7 +286,7 @@ const DirectorMessages = () => {
                       )}
 
                       <div className="bubble-wrapper">
-                        {!isIncoming && msg.sender !== currentUser.id && (
+                        {!isIncoming && msg.sender !== currentUser?.id && (
                              <span className="sender-name-small" style={{fontSize: '0.7em', color: '#666', marginBottom: '2px', display:'block'}}>
                                 {msg.sender_name}
                              </span>
