@@ -10,17 +10,26 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
-  const [isDirectorOnline, setIsDirectorOnline] = useState(false);
-  const [loading, setLoading] = useState(true);
   
+  const [isDirectorOnline, setIsDirectorOnline] = useState(false);
+  // --- NOWY STAN: Awatar dyrektora ---
+  const [directorAvatar, setDirectorAvatar] = useState(null);
+  
+  const [loading, setLoading] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   // Refy
   const messagesEndRef = useRef(null);       
   const messagesContainerRef = useRef(null); 
   
-  // Ref do śledzenia pozycji użytkownika
   const isUserAtBottomRef = useRef(true); 
+
+  // --- FUNKCJA POMOCNICZA DO URL ---
+  const getAvatarUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return `http://127.0.0.1:8000${url}`;
+  };
 
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
@@ -32,14 +41,11 @@ const Messages = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // --- OBSŁUGA SCROLLOWANIA ---
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
     
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     
-    // ZMIANA: Zwiększamy próg do 300px.
-    // Przycisk pojawi się dopiero, gdy użytkownik przewinie o 300px w górę od dołu.
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 300;
     
     isUserAtBottomRef.current = isAtBottom;
@@ -63,12 +69,10 @@ const Messages = () => {
         return sorted;
       });
 
+      // --- ZAPISYWANIE DANYCH DYREKTORA ---
       setIsDirectorOnline(statusRes.data.is_online);
+      setDirectorAvatar(statusRes.data.avatar); // Zapisujemy URL avatara
 
-      // --- ZMIANA: Ciągłe oznaczanie jako przeczytane ---
-      // Jeśli jesteśmy na stronie i pobieramy dane, to znaczy, że czytamy.
-      // Wysyłamy sygnał do bazy, żeby zaktualizować 'is_read'.
-      // Dzięki temu, jak wyjdziemy ze strony, Layout nie pobierze "starego nieprzeczytanego".
       await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {}, getAuthHeaders());
 
     } catch (err) {
@@ -78,9 +82,7 @@ const Messages = () => {
     }
   };
 
-  // Start i Polling (Ten useEffect zastępuje poprzedni)
   useEffect(() => {
-    // Pierwsze pobranie
     fetchData().then(() => {
       setTimeout(scrollToBottom, 200);
     });
@@ -130,7 +132,18 @@ const Messages = () => {
         
         <div className="chat-header">
           <div className="director-avatar">
-            <FaUserTie />
+            
+            {/* --- ZMIANA: WYŚWIETLANIE AVATARA --- */}
+            {directorAvatar ? (
+               <img 
+                 src={getAvatarUrl(directorAvatar)} 
+                 alt="Dyrektor" 
+                 style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+               />
+            ) : (
+               <FaUserTie /> // Fallback, jeśli dyrektor nie ma zdjęcia
+            )}
+
             {isDirectorOnline && <span className="avatar-online-dot"></span>}
           </div>
           <div className="header-info">
@@ -161,7 +174,16 @@ const Messages = () => {
                 <div key={msg.id} className={`message-row ${isMyMessage ? 'sent' : 'received'}`}>
                   {!isMyMessage && (
                     <div className="msg-avatar">
-                      {msg.sender_name ? msg.sender_name[0].toUpperCase() : 'D'}
+                      {/* Tutaj też możemy użyć avatara dyrektora, jeśli wiadomość jest od niego */}
+                      {directorAvatar ? (
+                        <img 
+                          src={getAvatarUrl(directorAvatar)} 
+                          alt="D" 
+                          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        msg.sender_name ? msg.sender_name[0].toUpperCase() : 'D'
+                      )}
                     </div>
                   )}
                   <div className="bubble-wrapper">
@@ -179,7 +201,6 @@ const Messages = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* ZMIANA: PRZYCISK PRZENIESIONY TUTAJ (Poza messages-area, ale wewnątrz chat-card) */}
         {showScrollButton && (
           <button 
             className="scroll-bottom-btn" 

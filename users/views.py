@@ -107,17 +107,18 @@ class DirectorStatusView(APIView):
     def get(self, request):
         # 1. Pobierz wszystkich dyrektorów z bazy
         directors = User.objects.filter(is_director=True)
-        
         is_any_online = False
+        director_avatar = None
         
         # 2. Sprawdź cache dla każdego z nich
         for director in directors:
             cache_key = f'director_online_{director.id}'
             if cache.get(cache_key):
-                is_any_online = True
-                break # Wystarczy, że jeden jest online
+                is_any_online = True   
+            if not director_avatar and director.avatar:
+                director_avatar = director.avatar.url
 
-        return Response({'is_online': is_any_online})
+        return Response({'is_online': is_any_online, 'avatar': director_avatar})
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
