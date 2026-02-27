@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorUsers.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css';
@@ -10,7 +10,7 @@ import LoadingScreen from '../users/LoadingScreen';
 // Ikony
 import { 
   FaUsers, FaSearch, FaPlus, FaEdit, FaTrash, 
-  FaUserTie, FaUser, FaKey, FaSave, FaExclamationTriangle, FaTrashAlt
+  FaUserTie, FaUser, FaKey, FaSave, FaExclamationTriangle, FaTrashAlt, FaEye
 } from 'react-icons/fa';
 
 const DirectorUsers = () => {
@@ -33,7 +33,49 @@ const DirectorUsers = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [previewData, setPreviewData] = useState(null);
+  const [previewLoadingUserId, setPreviewLoadingUserId] = useState(null);
+  const [generatingCredentials, setGeneratingCredentials] = useState(false);
+  const [generatingPassword, setGeneratingPassword] = useState(false);
+  const [generatedCredentials, setGeneratedCredentials] = useState(null);
+  const [passwordWasGenerated, setPasswordWasGenerated] = useState(false);
+  const [invalidFields, setInvalidFields] = useState({
+    username: false,
+    first_name: false,
+    last_name: false,
+    email: false,
+    phone_number: false,
+    password: false,
+  });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({
+    username: false,
+    first_name: false,
+    last_name: false,
+    email: false,
+    phone_number: false,
+    password: false,
+  });
+  const [formatFieldErrors, setFormatFieldErrors] = useState({
+    email: false,
+    phone_number: false,
+  });
+  const invalidFieldTimers = useRef({
+    username: null,
+    first_name: null,
+    last_name: null,
+    email: null,
+    phone_number: null,
+    password: null,
+  });
+
+  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value);
+
+  const isValidPhoneNumber = (value) => {
+    const normalized = value.replace(/[\s-]/g, '');
+    return /^(\+48)?\d{9}$/.test(normalized);
+  };
 
   // 1. Pobieranie użytkowników
   const fetchUsers = async () => {
@@ -60,9 +102,61 @@ const DirectorUsers = () => {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
   // 2. Otwieranie Modala
   const openModal = (user = null) => {
     setError('');
+    setActionError('');
+    setGeneratedCredentials(null);
+    setPasswordWasGenerated(false);
+    setInvalidFields({
+      username: false,
+      first_name: false,
+      last_name: false,
+      email: false,
+      phone_number: false,
+      password: false,
+    });
+    setRequiredFieldErrors({
+      username: false,
+      first_name: false,
+      last_name: false,
+      email: false,
+      phone_number: false,
+      password: false,
+    });
+    setFormatFieldErrors({ email: false, phone_number: false });
     if (user) {
       setEditingUser(user);
       setFormData({
@@ -80,15 +174,131 @@ const DirectorUsers = () => {
     setIsModalOpen(true);
   };
 
+  const handleGenerateCredentials = async () => {
+    if (editingUser) return;
+    setError('');
+    setGeneratingCredentials(true);
+
+    try {
+      const res = await axios.get(
+        'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
+        getAuthHeaders()
+      );
+
+      setFormData(prev => ({
+        ...prev,
+        username: res.data?.username || '',
+        password: res.data?.password || '',
+      }));
+      setPasswordWasGenerated(true);
+      clearInvalidField('username');
+      clearInvalidField('password');
+      setRequiredFieldErrors((prev) => ({ ...prev, username: false, password: false }));
+
+      setGeneratedCredentials({
+        username: res.data?.username || '',
+        password: res.data?.password || '',
+      });
+    } catch (err) {
+      setError('Nie udało się wygenerować danych. Spróbuj ponownie.');
+    } finally {
+      setGeneratingCredentials(false);
+    }
+  };
+
+  const handleGeneratePassword = async () => {
+    setError('');
+    setGeneratingPassword(true);
+
+    try {
+      const res = await axios.get(
+        'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
+        getAuthHeaders()
+      );
+
+      const generatedPassword = res.data?.password || '';
+      setFormData((prev) => ({
+        ...prev,
+        password: generatedPassword,
+      }));
+      setPasswordWasGenerated(true);
+      clearInvalidField('password');
+      setRequiredFieldErrors((prev) => ({ ...prev, password: false }));
+    } catch (err) {
+      setError('Nie udało się wygenerować hasła. Spróbuj ponownie.');
+    } finally {
+      setGeneratingPassword(false);
+    }
+  };
+
   // 3. Zapisywanie
   const handleSave = async (e) => {
     e.preventDefault();
     setError('');
+
+    const trimmedUsername = formData.username.trim();
+    const trimmedFirstName = formData.first_name.trim();
+    const trimmedLastName = formData.last_name.trim();
+    const trimmedEmail = formData.email.trim();
+    const trimmedPhoneNumber = formData.phone_number.trim();
+    const trimmedPassword = formData.password.trim();
+
+    const missingUsername = !trimmedUsername;
+    const missingFirstName = !trimmedFirstName;
+    const missingLastName = !trimmedLastName;
+    const missingEmail = !trimmedEmail;
+    const missingPhoneNumber = !trimmedPhoneNumber;
+    const missingPassword = !editingUser && !trimmedPassword;
+
+    const invalidEmail = !missingEmail && !isValidEmail(trimmedEmail);
+    const invalidPhoneNumber = !missingPhoneNumber && !isValidPhoneNumber(trimmedPhoneNumber);
+
+    setRequiredFieldErrors({
+      username: missingUsername,
+      first_name: missingFirstName,
+      last_name: missingLastName,
+      email: missingEmail,
+      phone_number: missingPhoneNumber,
+      password: missingPassword,
+    });
+
+    setFormatFieldErrors({
+      email: invalidEmail,
+      phone_number: invalidPhoneNumber,
+    });
+
+    if (missingUsername) triggerInvalidField('username');
+    if (missingFirstName) triggerInvalidField('first_name');
+    if (missingLastName) triggerInvalidField('last_name');
+    if (missingEmail || invalidEmail) triggerInvalidField('email');
+    if (missingPhoneNumber || invalidPhoneNumber) triggerInvalidField('phone_number');
+    if (missingPassword) triggerInvalidField('password');
+
+    if (
+      missingUsername ||
+      missingFirstName ||
+      missingLastName ||
+      missingEmail ||
+      missingPhoneNumber ||
+      missingPassword ||
+      invalidEmail ||
+      invalidPhoneNumber
+    ) {
+      return;
+    }
+
     // Włączamy loading na czas zapisu - pojawi się pszczółka
     setLoading(true);
 
     const payload = {
       ...formData,
+      username: trimmedUsername,
+      first_name: trimmedFirstName,
+      last_name: trimmedLastName,
+      email: trimmedEmail,
+      phone_number: trimmedPhoneNumber,
+      password: trimmedPassword,
+      password_generated: passwordWasGenerated && !!trimmedPassword,
       is_director: false,
       is_parent: true
     };
@@ -127,6 +337,7 @@ const DirectorUsers = () => {
   // 4. Usuwanie
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
     
     setLoading(true); // Pszczółka podczas usuwania
     try {
@@ -134,8 +345,29 @@ const DirectorUsers = () => {
       setDeleteTarget(null);
       fetchUsers();
     } catch (err) {
-      alert("Nie udało się usunąć użytkownika.");
+      setActionError('Nie udało się usunąć użytkownika. Spróbuj ponownie później.');
       setLoading(false);
+    }
+  };
+
+  const handlePreviewPassword = async (user) => {
+    setActionError('');
+    setPreviewLoadingUserId(user.id);
+
+    try {
+      const res = await axios.get(
+        `http://127.0.0.1:8000/api/users/manage/${user.id}/password-preview/`,
+        getAuthHeaders()
+      );
+
+      setPreviewData({
+        username: res.data?.username || user.username,
+        password: res.data?.password || '',
+      });
+    } catch (err) {
+      setActionError('Podgląd hasła nie jest dostępny dla tego konta.');
+    } finally {
+      setPreviewLoadingUserId(null);
     }
   };
 
@@ -218,7 +450,15 @@ const DirectorUsers = () => {
                     <button className="action-icon-btn edit" onClick={() => openModal(user)} title="Edytuj">
                       <FaEdit />
                     </button>
-                    <button className="action-icon-btn delete" onClick={() => setDeleteTarget(user)} title="Usuń">
+                    <button
+                      className="action-icon-btn preview"
+                      onClick={() => handlePreviewPassword(user)}
+                      title={user.can_preview_password ? 'Podejrzyj hasło' : 'Podgląd hasła niedostępny'}
+                      disabled={!user.can_preview_password || previewLoadingUserId === user.id}
+                    >
+                      <FaEye />
+                    </button>
+                    <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(user); }} title="Usuń">
                       <FaTrash />
                     </button>
                   </td>
@@ -236,51 +476,174 @@ const DirectorUsers = () => {
             
             {error && <div className="form-error">{error}</div>}
 
-            <form onSubmit={handleSave} className="modal-form-grid">
+            <form onSubmit={handleSave} className="modal-form-grid" noValidate>
+              {!editingUser && (
+                <div className="full-width generated-credentials-actions">
+                  <button
+                    type="button"
+                    className="modal-btn confirm success"
+                    onClick={handleGenerateCredentials}
+                    disabled={generatingCredentials}
+                  >
+                    <FaKey /> {generatingCredentials ? 'Generowanie...' : 'Wygeneruj login i hasło'}
+                  </button>
+                </div>
+              )}
+
+              {!editingUser && generatedCredentials && (
+                <div className="full-width generated-credentials-info">
+                  Wygenerowano: login <strong>{generatedCredentials.username}</strong>, hasło <strong>{generatedCredentials.password}</strong>
+                </div>
+              )}
               
               <div className="form-group">
-                <label>Login *</label>
+                <label>Login <span className="required-asterisk">*</span></label>
                 <input 
-                  type="text" required
+                  type="text"
                   placeholder="Login użytkownika"
                   value={formData.username}
-                  onChange={e => setFormData({...formData, username: e.target.value})}
+                  onChange={e => {
+                    setFormData({...formData, username: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('username');
+                      setRequiredFieldErrors((prev) => ({ ...prev, username: false }));
+                    }
+                  }}
                   disabled={!!editingUser}
+                  className={invalidFields.username ? 'invalid-bounce' : ''}
                 />
+                {requiredFieldErrors.username && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Imię</label>
-                <input type="text" placeholder="Imię" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})}/>
+                <label>Imię <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Imię"
+                  value={formData.first_name}
+                  onChange={e => {
+                    setFormData({...formData, first_name: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('first_name');
+                      setRequiredFieldErrors((prev) => ({ ...prev, first_name: false }));
+                    }
+                  }}
+                  className={invalidFields.first_name ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.first_name && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Nazwisko</label>
-                <input type="text" placeholder="Nazwisko" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})}/>
+                <label>Nazwisko <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Nazwisko"
+                  value={formData.last_name}
+                  onChange={e => {
+                    setFormData({...formData, last_name: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('last_name');
+                      setRequiredFieldErrors((prev) => ({ ...prev, last_name: false }));
+                    }
+                  }}
+                  className={invalidFields.last_name ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.last_name && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group">
-                <label>E-mail</label>
-                <input type="email" placeholder="Adres e-mail" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}/>
+                <label>E-mail <span className="required-asterisk">*</span></label>
+                <input
+                  type="email"
+                  placeholder="Adres e-mail"
+                  value={formData.email}
+                  onChange={e => {
+                    setFormData({...formData, email: e.target.value});
+                    const trimmedValue = e.target.value.trim();
+                    if (trimmedValue) {
+                      clearInvalidField('email');
+                      setRequiredFieldErrors((prev) => ({ ...prev, email: false }));
+                      setFormatFieldErrors((prev) => ({ ...prev, email: false }));
+                    }
+                  }}
+                  className={invalidFields.email ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.email && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+                {!requiredFieldErrors.email && formatFieldErrors.email && (
+                  <div className="field-required-message">Podaj poprawny adres e-mail (np. nazwa@domena.pl).</div>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Telefon</label>
-                <input type="text" placeholder="Numer telefonu" value={formData.phone_number} onChange={e => setFormData({...formData, phone_number: e.target.value})}/>
+                <label>Telefon <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Numer telefonu"
+                  value={formData.phone_number}
+                  onChange={e => {
+                    setFormData({...formData, phone_number: e.target.value});
+                    const trimmedValue = e.target.value.trim();
+                    if (trimmedValue) {
+                      clearInvalidField('phone_number');
+                      setRequiredFieldErrors((prev) => ({ ...prev, phone_number: false }));
+                      setFormatFieldErrors((prev) => ({ ...prev, phone_number: false }));
+                    }
+                  }}
+                  className={invalidFields.phone_number ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.phone_number && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+                {!requiredFieldErrors.phone_number && formatFieldErrors.phone_number && (
+                  <div className="field-required-message">Podaj poprawny numer telefonu (np. 123456789 lub +48 123 456 789).</div>
+                )}
               </div>
 
               <div className="form-group full-width">
-                <label>Hasło {editingUser && <span style={{fontWeight:400, color:'#999'}}>(Zostaw puste, aby nie zmieniać)</span>}</label>
-                <div className="password-input-wrapper">
-                  <FaKey className="field-icon"/>
-                  <input 
-                    type="password" 
-                    placeholder={editingUser ? "••••••••" : "Wpisz hasło..."}
-                    value={formData.password}
-                    onChange={e => setFormData({...formData, password: e.target.value})}
-                    required={!editingUser} 
-                  />
+                <label>
+                  Hasło {!editingUser && <span className="required-asterisk">*</span>}
+                  {editingUser && <span style={{fontWeight:400, color:'#999'}}> (Zostaw puste, aby nie zmieniać)</span>}
+                </label>
+                <div className="password-row">
+                  <div className="password-input-wrapper">
+                    <FaKey className="field-icon"/>
+                    <input 
+                      type="password" 
+                      placeholder={editingUser ? "••••••••" : "Wpisz hasło..."}
+                      value={formData.password}
+                      onChange={e => {
+                        setFormData({...formData, password: e.target.value});
+                        setPasswordWasGenerated(false);
+                        if (e.target.value.trim()) {
+                          clearInvalidField('password');
+                          setRequiredFieldErrors((prev) => ({ ...prev, password: false }));
+                        }
+                      }}
+                      className={invalidFields.password ? 'invalid-bounce' : ''}
+                    />
+                  </div>
+                  {editingUser && (
+                    <button
+                      type="button"
+                      className="modal-btn confirm success password-generate-btn-inline"
+                      onClick={handleGeneratePassword}
+                      disabled={generatingPassword}
+                    >
+                      <FaKey /> {generatingPassword ? 'Generowanie...' : 'Wygeneruj hasło'}
+                    </button>
+                  )}
                 </div>
+                {requiredFieldErrors.password && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="modal-actions full-width">
@@ -289,6 +652,26 @@ const DirectorUsers = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {previewData && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content preview-password-modal-content">
+            <div className="warning-icon"><FaEye /></div>
+            <h3>Podgląd hasła</h3>
+            <p>
+              Konto <strong>{previewData.username}</strong> ma aktualnie hasło:
+            </p>
+            <div className="generated-credentials-info preview-password-value">
+              <strong>{previewData.password}</strong>
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn confirm success" onClick={() => setPreviewData(null)}>
+                Zamknij
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -303,8 +686,9 @@ const DirectorUsers = () => {
               {` "${deleteTarget.first_name || ''} ${deleteTarget.last_name || ''}"`.trim()}
               ? Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

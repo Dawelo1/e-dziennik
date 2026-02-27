@@ -38,6 +38,7 @@ const DirectorPosts = () => {
   const [existingImageUrl, setExistingImageUrl] = useState(null);
   const [removeExistingImage, setRemoveExistingImage] = useState(false);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null); // Post wybrany do usunięcia
   const [invalidFields, setInvalidFields] = useState({ title: false, content: false });
   const [requiredFieldErrors, setRequiredFieldErrors] = useState({ title: false, content: false });
@@ -70,6 +71,7 @@ const DirectorPosts = () => {
   // 2. OTWIERANIE MODALA
   const openModal = (post = null) => {
     setError('');
+    setActionError('');
     setInvalidFields({ title: false, content: false });
     setRequiredFieldErrors({ title: false, content: false });
     if (post) {
@@ -219,13 +221,14 @@ const DirectorPosts = () => {
   // 4. USUWANIE
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
     setLoading(true);
     try {
       await axios.delete(`http://127.0.0.1:8000/api/newsfeed/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Nie udało się usunąć posta. Spróbuj ponownie później.");
+      setActionError('Nie udało się usunąć ogłoszenia. Spróbuj ponownie później.');
       setLoading(false);
     }
   };
@@ -246,8 +249,9 @@ const DirectorPosts = () => {
   };
 
   const handleDownloadPostImage = async (post) => {
+    setActionError('');
     if (!post.image) {
-      alert('To ogłoszenie nie ma zdjęcia do pobrania.');
+      setActionError('To ogłoszenie nie ma zdjęcia do pobrania.');
       return;
     }
 
@@ -369,6 +373,8 @@ const DirectorPosts = () => {
         />
       </div>
 
+      {actionError && <div className="form-error">{actionError}</div>}
+
       <div className="table-card">
         <table className="custom-table">
           <thead>
@@ -439,7 +445,7 @@ const DirectorPosts = () => {
                   >
                     <FaDownload/>
                   </button>
-                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(post)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(post); }}><FaTrash/></button>
                 </td>
               </tr>
             )})}
@@ -569,8 +575,9 @@ const DirectorPosts = () => {
               Czy na pewno chcesz trwale usunąć ogłoszenie
               {deleteTarget.title ? ` "${deleteTarget.title}"` : ''}? Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

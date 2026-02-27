@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorGroups.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Używamy tych samych stylów (tabela, buttony) dla spójności
@@ -11,6 +11,23 @@ import {
 } from 'react-icons/fa';
 
 const DirectorGroups = () => {
+  const parseTeachersInfo = (value = '') => {
+    const parts = value
+      .split(/[\n,;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    return [parts[0] || '', parts[1] || '', parts[2] || ''];
+  };
+
+  const formatTeachersInfoForDisplay = (value = '') => {
+    return value
+      .split(/[\n,;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .join(' | ');
+  };
+
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,10 +37,14 @@ const DirectorGroups = () => {
   const [editingGroup, setEditingGroup] = useState(null); 
 
   // Formularz
-  const initialForm = { name: '', teachers_info: '' };
+  const initialForm = { name: '', teacher_1: '', teacher_2: '', teacher_3: '' };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [invalidFields, setInvalidFields] = useState({ name: false, teacher_1: false });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({ name: false, teacher_1: false });
+  const invalidFieldTimers = useRef({ name: null, teacher_1: null });
 
   // 1. Pobieranie grup
   const fetchGroups = async () => {
@@ -44,20 +65,58 @@ const DirectorGroups = () => {
     fetchGroups();
   }, []);
 
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
   // Filtrowanie lokalne (bo grup jest mało, nie trzeba pytać API przy każdej literce)
   const filteredGroups = groups.filter(g => 
     g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    g.teachers_info.toLowerCase().includes(searchQuery.toLowerCase())
+    (g.teachers_info || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // 2. Otwieranie Modala
   const openModal = (group = null) => {
     setError('');
+    setActionError('');
+    setInvalidFields({ name: false, teacher_1: false });
+    setRequiredFieldErrors({ name: false, teacher_1: false });
     if (group) {
+      const [teacher1, teacher2, teacher3] = parseTeachersInfo(group.teachers_info);
       setEditingGroup(group);
       setFormData({
         name: group.name,
-        teachers_info: group.teachers_info
+        teacher_1: teacher1,
+        teacher_2: teacher2,
+        teacher_3: teacher3
       });
     } else {
       setEditingGroup(null);
@@ -69,22 +128,42 @@ const DirectorGroups = () => {
   // 3. Zapisywanie
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const trimmedName = formData.name.trim();
+    const trimmedTeacher1 = formData.teacher_1.trim();
+    const missingName = !trimmedName;
+    const missingTeacher1 = !trimmedTeacher1;
+    setRequiredFieldErrors({ name: missingName, teacher_1: missingTeacher1 });
+    if (missingName) {
+      triggerInvalidField('name');
+    }
+    if (missingTeacher1) triggerInvalidField('teacher_1');
+    if (missingName || missingTeacher1) return;
+
     setError('');
     setLoading(true); // Pszczółka podczas zapisu
+
+    const payload = {
+      name: trimmedName,
+      teachers_info: [trimmedTeacher1, formData.teacher_2, formData.teacher_3]
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .join(', ')
+    };
 
     try {
       if (editingGroup) {
         // UPDATE
         await axios.patch(
           `http://127.0.0.1:8000/api/groups/${editingGroup.id}/`, 
-          formData, 
+          payload, 
           getAuthHeaders()
         );
       } else {
         // CREATE
         await axios.post(
           'http://127.0.0.1:8000/api/groups/', 
-          formData, 
+          payload, 
           getAuthHeaders()
         );
       }
@@ -92,7 +171,18 @@ const DirectorGroups = () => {
       await fetchGroups(); // Odśwież listę
     } catch (err) {
       console.error(err);
-      setError('Wystąpił błąd podczas zapisu.');
+
+      const apiErrors = err?.response?.data;
+      if (apiErrors?.name?.[0]) {
+        setError(`Nazwa grupy: ${apiErrors.name[0]}`);
+      } else if (apiErrors?.teachers_info?.[0]) {
+        setError(`Nauczyciele / Wychowawcy: ${apiErrors.teachers_info[0]}`);
+      } else if (typeof apiErrors?.detail === 'string') {
+        setError(apiErrors.detail);
+      } else {
+        setError('Wystąpił błąd podczas zapisu.');
+      }
+
       setLoading(false);
     }
   };
@@ -100,6 +190,7 @@ const DirectorGroups = () => {
   // 4. Usuwanie
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
 
     setLoading(true);
     try {
@@ -107,7 +198,7 @@ const DirectorGroups = () => {
       setDeleteTarget(null);
       await fetchGroups();
     } catch (err) {
-      alert("Nie udało się usunąć grupy (może są do niej przypisane dzieci?).");
+      setActionError('Nie udało się usunąć grupy (może są do niej przypisane dzieci?).');
       setLoading(false);
     }
   };
@@ -170,14 +261,14 @@ const DirectorGroups = () => {
                   <td>
                     <div style={{display: 'flex', alignItems: 'center', gap: '8px', color: '#666'}}>
                       <FaChalkboardTeacher style={{color: '#f2c94c'}}/>
-                      {group.teachers_info}
+                      {formatTeachersInfoForDisplay(group.teachers_info)}
                     </div>
                   </td>
                   <td className="actions-cell">
                     <button className="action-icon-btn edit" onClick={() => openModal(group)} title="Edytuj">
                       <FaEdit />
                     </button>
-                    <button className="action-icon-btn delete" onClick={() => setDeleteTarget(group)} title="Usuń">
+                    <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(group); }} title="Usuń">
                       <FaTrash />
                     </button>
                   </td>
@@ -196,26 +287,65 @@ const DirectorGroups = () => {
             
             {error && <div className="form-error">{error}</div>}
 
-            <form onSubmit={handleSave} className="modal-form-grid">
+            <form onSubmit={handleSave} className="modal-form-grid" noValidate>
               
               <div className="form-group full-width">
-                <label>Nazwa Grupy *</label>
+                <label>Nazwa Grupy <span className="required-asterisk">*</span></label>
                 <input 
-                  type="text" required
+                  type="text"
                   placeholder="np. Pszczółki"
                   value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  onChange={e => {
+                    setFormData({...formData, name: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('name');
+                      setRequiredFieldErrors((prev) => ({ ...prev, name: false }));
+                    }
+                  }}
+                  className={invalidFields.name ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.name && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+              </div>
+
+              <div className="form-group full-width">
+                <label>Nauczyciel 1 <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Wpisz imię i nazwisko nauczyciela..."
+                  value={formData.teacher_1}
+                  onChange={e => {
+                    setFormData({...formData, teacher_1: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('teacher_1');
+                      setRequiredFieldErrors((prev) => ({ ...prev, teacher_1: false }));
+                    }
+                  }}
+                  className={invalidFields.teacher_1 ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.teacher_1 && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+              </div>
+
+              <div className="form-group full-width">
+                <label>Nauczyciel 2</label>
+                <input
+                  type="text"
+                  placeholder="Wpisz imię i nazwisko nauczyciela..."
+                  value={formData.teacher_2}
+                  onChange={e => setFormData({...formData, teacher_2: e.target.value})}
                 />
               </div>
 
               <div className="form-group full-width">
-                <label>Nauczyciele / Wychowawcy</label>
-                <textarea 
-                  className="medical-textarea" // Używamy stylu textarea z Settings/Users
-                  style={{height: '100px'}}
-                  placeholder="Wpisz imiona i nazwiska nauczycieli..."
-                  value={formData.teachers_info}
-                  onChange={e => setFormData({...formData, teachers_info: e.target.value})}
+                <label>Nauczyciel 3</label>
+                <input
+                  type="text"
+                  placeholder="Wpisz imię i nazwisko nauczyciela..."
+                  value={formData.teacher_3}
+                  onChange={e => setFormData({...formData, teacher_3: e.target.value})}
                 />
               </div>
 
@@ -239,8 +369,9 @@ const DirectorGroups = () => {
               {` "${deleteTarget.name}"`}
               ? Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

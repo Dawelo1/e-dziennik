@@ -18,6 +18,10 @@ const Settings = () => {
 
   const [formData, setFormData] = useState({ new_email: '', new_phone: '' });
   const [passwordData, setPasswordData] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [passwordErrors, setPasswordErrors] = useState({ old_password: '', new_password: '', confirm_password: '' });
+  const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
+  const [contactErrors, setContactErrors] = useState({ email: '', phone: '' });
+  const [contactMessage, setContactMessage] = useState({ type: '', text: '' });
   const [children, setChildren] = useState([]);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
@@ -139,37 +143,99 @@ const Settings = () => {
     return `${'*'.repeat(phone.length - 3)}${phone.slice(-3)}`;
   };
 
-  const handleUpdateData = async (type) => { /* ... bez zmian ... */
-    setLoading(true); setMessage({ type: '', text: '' });
-    let payload = {};
-    if (type === 'email' && formData.new_email) payload.email = formData.new_email;
-    if (type === 'phone' && formData.new_phone) payload.phone_number = formData.new_phone;
+  const isValidEmail = (emailValue) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
 
-    if (Object.keys(payload).length === 0) {
-      setMessage({ type: 'error', text: 'Wpisz nową wartość przed zapisaniem.' }); setLoading(false); return;
-    }
-
-    try {
-      await axios.patch('http://127.0.0.1:8000/api/users/me/', payload, getAuthHeaders());
-      setMessage({ type: 'success', text: 'Dane zostały zaktualizowane pomyślnie.' });
-      fetchUserData(); setFormData(prev => ({ ...prev, new_email: '', new_phone: '' }));
-    } catch (err) { setMessage({ type: 'error', text: 'Błąd aktualizacji.' }); } finally { setLoading(false); }
+  const isValidPhone = (phoneValue) => {
+    const normalizedPhone = phoneValue.replace(/[\s\-()]/g, '');
+    return /^\+?\d{9,15}$/.test(normalizedPhone);
   };
 
-  const handlePasswordChange = async () => { /* ... bez zmian ... */ 
-    /* (Skopiuj logikę z poprzedniego pliku lub zostaw jeśli wiesz o co chodzi) */
-    /* Dla pewności wklejam skrót: */
-    if (!passwordData.old_password || !passwordData.new_password) { setMessage({ type: 'error', text: 'Wypełnij pola.' }); return; }
-    if (passwordData.new_password !== passwordData.confirm_password) { setMessage({ type: 'error', text: 'Hasła różne.' }); return; }
+  const handleContactUpdate = async (type) => {
+    setMessage({ type: '', text: '' });
+    setPasswordMessage({ type: '', text: '' });
+    setPasswordErrors({ old_password: '', new_password: '', confirm_password: '' });
+
+    const nextContactErrors = { email: '', phone: '' };
+    let payload = {};
+
+    if (type === 'email') {
+      const emailValue = formData.new_email.trim();
+      if (!emailValue) {
+        nextContactErrors.email = 'Podaj nowy adres email.';
+      } else if (!isValidEmail(emailValue)) {
+        nextContactErrors.email = 'Podaj poprawny adres email.';
+      } else {
+        payload.email = emailValue;
+      }
+    }
+
+    if (type === 'phone') {
+      const phoneValue = formData.new_phone.trim();
+      if (!phoneValue) {
+        nextContactErrors.phone = 'Podaj nowy numer telefonu.';
+      } else if (!isValidPhone(phoneValue)) {
+        nextContactErrors.phone = 'Podaj poprawny numer telefonu (9-15 cyfr).';
+      } else {
+        payload.phone_number = phoneValue;
+      }
+    }
+
+    setContactErrors(nextContactErrors);
+    setContactMessage({ type: '', text: '' });
+
+    if (Object.values(nextContactErrors).some(Boolean)) {
+      setContactMessage({ type: 'error', text: 'Popraw zaznaczone pola formularza.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.patch('http://127.0.0.1:8000/api/users/me/', payload, getAuthHeaders());
+      setContactMessage({ type: 'success', text: 'Dane kontaktowe zostały zapisane.' });
+      fetchUserData();
+      setFormData((prev) => ({ ...prev, new_email: type === 'email' ? '' : prev.new_email, new_phone: type === 'phone' ? '' : prev.new_phone }));
+    } catch (err) { setContactMessage({ type: 'error', text: 'Nie udało się zapisać danych kontaktowych.' }); } finally { setLoading(false); }
+  };
+
+  const handlePasswordChange = async () => {
+    setMessage({ type: '', text: '' });
+    setPasswordMessage({ type: '', text: '' });
+
+    const nextErrors = { old_password: '', new_password: '', confirm_password: '' };
+
+    if (!passwordData.old_password.trim()) nextErrors.old_password = 'Podaj obecne hasło.';
+    if (!passwordData.new_password.trim()) nextErrors.new_password = 'Podaj nowe hasło.';
+    if (!passwordData.confirm_password.trim()) nextErrors.confirm_password = 'Potwierdź nowe hasło.';
+
+    if (
+      passwordData.new_password.trim() &&
+      passwordData.confirm_password.trim() &&
+      passwordData.new_password !== passwordData.confirm_password
+    ) {
+      nextErrors.confirm_password = 'Hasła nie są takie same.';
+    }
+
+    setPasswordErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      setPasswordMessage({ type: 'error', text: 'Popraw zaznaczone pola formularza.' });
+      return;
+    }
+
     setLoading(true);
     try {
       await axios.put('http://127.0.0.1:8000/api/users/change-password/', passwordData, getAuthHeaders());
-      setMessage({ type: 'success', text: 'Hasło zmienione.' });
+      setPasswordMessage({ type: 'success', text: 'Hasło zostało zmienione.' });
       setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
-    } catch(e) { setMessage({ type: 'error', text: 'Błąd hasła.' }); } finally { setLoading(false); }
+      setPasswordErrors({ old_password: '', new_password: '', confirm_password: '' });
+    } catch(e) { setPasswordMessage({ type: 'error', text: 'Nie udało się zmienić hasła. Sprawdź obecne hasło i spróbuj ponownie.' }); } finally { setLoading(false); }
   };
   
   const handleMedicalUpdate = async (childId, val) => {
+    setPasswordMessage({ type: '', text: '' });
+    setPasswordErrors({ old_password: '', new_password: '', confirm_password: '' });
+    setContactMessage({ type: '', text: '' });
+    setContactErrors({ email: '', phone: '' });
     setLoading(true);
     try {
         await axios.patch(`http://127.0.0.1:8000/api/children/${childId}/`, { medical_info: val }, getAuthHeaders());
@@ -232,10 +298,53 @@ const Settings = () => {
           {/* HASŁO */}
           <div className="settings-wide-card">
             <div className="card-title">Zmień Hasło</div>
+            {passwordMessage.text && <div className={`settings-alert ${passwordMessage.type}`}>{passwordMessage.text}</div>}
             <div className="inputs-grid">
-              <div className="input-box"><FaLock className="field-icon" /><input type="password" placeholder="Obecne Hasło" value={passwordData.old_password} onChange={(e) => setPasswordData({...passwordData, old_password: e.target.value})} /></div>
-              <div className="input-box"><FaLock className="field-icon" /><input type="password" placeholder="Nowe Hasło" value={passwordData.new_password} onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})} /></div>
-              <div className="input-box"><FaCheck className="field-icon" /><input type="password" placeholder="Potwierdź" value={passwordData.confirm_password} onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})} /></div>
+              <div className="input-box">
+                <FaLock className="field-icon" />
+                <input
+                  type="password"
+                  className={passwordErrors.old_password ? 'input-invalid' : ''}
+                  placeholder="Obecne Hasło"
+                  value={passwordData.old_password}
+                  onChange={(e) => {
+                    setPasswordData({ ...passwordData, old_password: e.target.value });
+                    setPasswordErrors((prev) => ({ ...prev, old_password: '' }));
+                  }}
+                />
+                {passwordErrors.old_password && <div className="field-required-message">{passwordErrors.old_password}</div>}
+              </div>
+
+              <div className="input-box">
+                <FaLock className="field-icon" />
+                <input
+                  type="password"
+                  className={passwordErrors.new_password ? 'input-invalid' : ''}
+                  placeholder="Nowe Hasło"
+                  value={passwordData.new_password}
+                  onChange={(e) => {
+                    setPasswordData({ ...passwordData, new_password: e.target.value });
+                    setPasswordErrors((prev) => ({ ...prev, new_password: '' }));
+                  }}
+                />
+                {passwordErrors.new_password && <div className="field-required-message">{passwordErrors.new_password}</div>}
+              </div>
+
+              <div className="input-box">
+                <FaCheck className="field-icon" />
+                <input
+                  type="password"
+                  className={passwordErrors.confirm_password ? 'input-invalid' : ''}
+                  placeholder="Potwierdź"
+                  value={passwordData.confirm_password}
+                  onChange={(e) => {
+                    setPasswordData({ ...passwordData, confirm_password: e.target.value });
+                    setPasswordErrors((prev) => ({ ...prev, confirm_password: '' }));
+                  }}
+                />
+                {passwordErrors.confirm_password && <div className="field-required-message">{passwordErrors.confirm_password}</div>}
+              </div>
+
               <div className="button-container-right"><button className="honey-btn" onClick={handlePasswordChange}>Zmień</button></div>
             </div>
           </div>
@@ -243,20 +352,45 @@ const Settings = () => {
           {/* DANE KONTAKTOWE */}
           <div className="settings-wide-card">
              <div className="card-title">Dane Kontaktowe</div>
+             {contactMessage.text && <div className={`settings-alert ${contactMessage.type}`}>{contactMessage.text}</div>}
              <div className="inputs-grid-2col">
                  <div className="input-box read-only"><FaEnvelope className="field-icon"/><input value={currentData.email} disabled/></div>
-                 <div className="input-box"><FaEnvelope className="field-icon"/><input placeholder="Nowy Email" value={formData.new_email} onChange={e => setFormData({...formData, new_email: e.target.value})}/></div>
+                 <div className="input-box">
+                  <FaEnvelope className="field-icon"/>
+                  <input
+                    className={contactErrors.email ? 'input-invalid' : ''}
+                    placeholder="Nowy Email"
+                    value={formData.new_email}
+                    onChange={(e) => {
+                      setFormData({ ...formData, new_email: e.target.value });
+                      setContactErrors((prev) => ({ ...prev, email: '' }));
+                    }}
+                  />
+                  {contactErrors.email && <div className="field-required-message">{contactErrors.email}</div>}
+                </div>
              </div>
              <div className="button-container-right">
-                <button className="honey-btn" onClick={() => handleUpdateData('email')}>Zapisz Email</button>
+                <button className="honey-btn" onClick={() => handleContactUpdate('email')}>Zapisz Email</button>
              </div>
              <div className="spacer-20" style={{height: '30px'}}></div>
              <div className="inputs-grid-2col">
                  <div className="input-box read-only"><FaPhoneAlt className="field-icon"/><input value={getMaskedPhone(currentData.phone_number)} disabled/></div>
-                 <div className="input-box"><FaPhoneAlt className="field-icon"/><input placeholder="Nowy Telefon" value={formData.new_phone} onChange={e => setFormData({...formData, new_phone: e.target.value})}/></div>
+                 <div className="input-box">
+                  <FaPhoneAlt className="field-icon"/>
+                  <input
+                    className={contactErrors.phone ? 'input-invalid' : ''}
+                    placeholder="Nowy Telefon"
+                    value={formData.new_phone}
+                    onChange={(e) => {
+                      setFormData({ ...formData, new_phone: e.target.value });
+                      setContactErrors((prev) => ({ ...prev, phone: '' }));
+                    }}
+                  />
+                  {contactErrors.phone && <div className="field-required-message">{contactErrors.phone}</div>}
+                </div>
              </div>
              <div className="button-container-right">
-                <button className="honey-btn" onClick={() => handleUpdateData('phone')}>Zapisz Telefon</button>
+                <button className="honey-btn" onClick={() => handleContactUpdate('phone')}>Zapisz Telefon</button>
              </div>
           </div>
         </div>

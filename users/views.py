@@ -1,6 +1,7 @@
 from rest_framework import status, generics, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
@@ -9,6 +10,7 @@ from django.contrib.auth.models import update_last_login
 from users.models import User
 from .permissions import IsDirector
 from .serializers import UserManagementSerializer
+from .utils import generate_unique_username, generate_secure_password
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from .serializers import ChangePasswordSerializer, UserSerializer
@@ -38,6 +40,8 @@ class ChangePasswordView(generics.UpdateAPIView):
             
             # 2. Ustaw nowe hasło
             self.object.set_password(serializer.data.get("new_password"))
+            self.object.director_password_preview = None
+            self.object.director_password_preview_active = False
             self.object.save()
             
             # 3. Utrzymaj sesję (żeby nie wylogowało po zmianie)
@@ -144,3 +148,26 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     # Dodajemy wyszukiwanie i filtrowanie
     filter_backends = [filters.SearchFilter]
     search_fields = ['username', 'email', 'first_name', 'last_name', 'phone_number']
+
+    @action(detail=False, methods=['get'], url_path='generate-credentials')
+    def generate_credentials(self, request):
+        return Response({
+            'username': generate_unique_username(),
+            'password': generate_secure_password(),
+        })
+
+    @action(detail=True, methods=['get'], url_path='password-preview')
+    def password_preview(self, request, pk=None):
+        user = self.get_object()
+
+        if not user.director_password_preview_active or not user.director_password_preview:
+            return Response(
+                {'detail': 'Podgląd hasła nie jest dostępny dla tego konta.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response({
+            'id': user.id,
+            'username': user.username,
+            'password': user.director_password_preview,
+        }, status=status.HTTP_200_OK)

@@ -94,7 +94,7 @@
 .field-icon {
   position: absolute;
   left: 15px;
-  top: 50%;
+  top: 23px;
   transform: translateY(-50%);
   color: #bbb;
   font-size: 16px;
@@ -156,12 +156,13 @@
 
 /* --- Alerty --- */
 .settings-alert {
-  padding: 15px;
+  padding: 14px 16px;
   border-radius: 12px;
   margin-bottom: 25px;
   text-align: center;
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.4;
 }
 
 .settings-alert.success {
@@ -174,6 +175,18 @@
   background-color: #ffebee;
   color: #c62828;
   border: 1px solid #ffcdd2;
+}
+
+.input-box input.input-invalid {
+  border-color: #d32f2f;
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.15);
+}
+
+.field-required-message {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #d32f2f;
+  font-weight: 600;
 }
 
 .settings-grid {

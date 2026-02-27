@@ -18,6 +18,7 @@ const DirectorCalendar = () => {
   const [editingClosure, setEditingClosure] = useState(null);
   const [formData, setFormData] = useState({ date: '', reason: '' });
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [invalidFields, setInvalidFields] = useState({ date: false });
   const [requiredFieldErrors, setRequiredFieldErrors] = useState({ date: false });
@@ -67,6 +68,7 @@ const DirectorCalendar = () => {
 
   const openModal = (closure = null) => {
     setError('');
+    setActionError('');
     setInvalidFields({ date: false });
     setRequiredFieldErrors({ date: false });
     if (closure) {
@@ -106,13 +108,14 @@ const DirectorCalendar = () => {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
     setLoading(true);
     try {
       await axios.delete(`http://127.0.0.1:8000/api/calendar/closures/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Błąd usuwania.");
+      setActionError('Nie udało się usunąć dnia wolnego. Spróbuj ponownie później.');
       setLoading(false);
     }
   };
@@ -150,7 +153,7 @@ const DirectorCalendar = () => {
                 <td>{closure.reason}</td>
                 <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(closure)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(closure)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(closure); }}><FaTrash/></button>
                 </td>
               </tr>
             ))}
@@ -216,8 +219,9 @@ const DirectorCalendar = () => {
               {` "${new Date(deleteTarget.date).toLocaleDateString('pl-PL')}"`}
               ? Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorChildren.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Używamy stylów z Users dla spójności
@@ -10,6 +10,7 @@ import {
   FaChild, FaSearch, FaPlus, FaEdit, FaTrash, 
   FaLayerGroup, FaUserFriends, FaSave, FaTimes, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
+import { GiFox, GiRabbit, GiBearFace, GiLadybug, GiRat } from 'react-icons/gi';
 
 const DirectorChildren = () => {
   const [children, setChildren] = useState([]);
@@ -18,6 +19,9 @@ const DirectorChildren = () => {
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [parentSearchQuery, setParentSearchQuery] = useState('');
+  const [sortField, setSortField] = useState('group');
+  const [sortDirection, setSortDirection] = useState('asc');
   
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,7 +39,33 @@ const DirectorChildren = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [parentLimitError, setParentLimitError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [invalidFields, setInvalidFields] = useState({
+    first_name: false,
+    last_name: false,
+    date_of_birth: false,
+    meal_rate: false,
+    group: false,
+    parents: false
+  });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({
+    first_name: false,
+    last_name: false,
+    date_of_birth: false,
+    meal_rate: false,
+    group: false,
+    parents: false
+  });
+  const invalidFieldTimers = useRef({
+    first_name: null,
+    last_name: null,
+    date_of_birth: null,
+    meal_rate: null,
+    group: null,
+    parents: null
+  });
 
   // 1. POBIERANIE DANYCH (Dzieci, Grupy, Rodzice)
   const fetchData = async () => {
@@ -70,9 +100,34 @@ const DirectorChildren = () => {
     c.last_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredParents = parents.filter((parent) => {
+    const query = parentSearchQuery.trim().toLowerCase();
+    const fullName = `${parent.first_name || ''} ${parent.last_name || ''}`.toLowerCase();
+    return fullName.includes(query);
+  });
+
   // 2. OTWIERANIE MODALA
   const openModal = (child = null) => {
     setError('');
+    setActionError('');
+    setParentLimitError('');
+    setParentSearchQuery('');
+    setInvalidFields({
+      first_name: false,
+      last_name: false,
+      date_of_birth: false,
+      meal_rate: false,
+      group: false,
+      parents: false
+    });
+    setRequiredFieldErrors({
+      first_name: false,
+      last_name: false,
+      date_of_birth: false,
+      meal_rate: false,
+      group: false,
+      parents: false
+    });
     if (child) {
       setEditingChild(child);
       setFormData({
@@ -91,19 +146,56 @@ const DirectorChildren = () => {
     setIsModalOpen(true);
   };
 
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
   // Obsługa Multiselecta dla Rodziców
   const handleParentToggle = (parentId) => {
     setFormData(prev => {
       const currentParents = prev.parents || [];
       if (currentParents.includes(parentId)) {
+        setParentLimitError('');
         // Usuń
         return { ...prev, parents: currentParents.filter(id => id !== parentId) };
       } else {
         // Dodaj (Max 2)
         if (currentParents.length >= 2) {
-          alert("Maksymalnie 2 rodziców.");
+          setParentLimitError('Możesz przypisać maksymalnie 2 rodziców.');
+          triggerInvalidField('parents');
           return prev;
         }
+        setParentLimitError('');
+        clearInvalidField('parents');
+        setRequiredFieldErrors((prevErrors) => ({ ...prevErrors, parents: false }));
         return { ...prev, parents: [...currentParents, parentId] };
       }
     });
@@ -112,6 +204,32 @@ const DirectorChildren = () => {
   // 3. ZAPISYWANIE
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const missingFirstName = !formData.first_name.trim();
+    const missingLastName = !formData.last_name.trim();
+    const missingDateOfBirth = !formData.date_of_birth;
+    const missingMealRate = !String(formData.meal_rate).trim();
+    const missingGroup = !formData.group;
+    const missingParents = !formData.parents || formData.parents.length === 0;
+
+    setRequiredFieldErrors({
+      first_name: missingFirstName,
+      last_name: missingLastName,
+      date_of_birth: missingDateOfBirth,
+      meal_rate: missingMealRate,
+      group: missingGroup,
+      parents: missingParents
+    });
+
+    if (missingFirstName) triggerInvalidField('first_name');
+    if (missingLastName) triggerInvalidField('last_name');
+    if (missingDateOfBirth) triggerInvalidField('date_of_birth');
+    if (missingMealRate) triggerInvalidField('meal_rate');
+    if (missingGroup) triggerInvalidField('group');
+    if (missingParents) triggerInvalidField('parents');
+
+    if (missingFirstName || missingLastName || missingDateOfBirth || missingMealRate || missingGroup || missingParents) return;
+
     setLoading(true);
 
     try {
@@ -132,13 +250,14 @@ const DirectorChildren = () => {
   // 4. USUWANIE
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
     setLoading(true);
     try {
       await axios.delete(`http://127.0.0.1:8000/api/children/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Błąd usuwania.");
+      setActionError('Nie udało się usunąć kartoteki dziecka. Spróbuj ponownie później.');
       setLoading(false);
     }
   };
@@ -148,6 +267,70 @@ const DirectorChildren = () => {
     const g = groups.find(x => x.id === id);
     return g ? g.name : '-';
   };
+
+  const normalizeGroupName = (groupName) => {
+    return (groupName || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  };
+
+  const getGroupIcon = (groupName) => {
+    const normalizedGroupName = normalizeGroupName(groupName);
+
+    if (normalizedGroupName.includes('lis')) return <GiFox />;
+    if (normalizedGroupName.includes('zaj')) return <GiRabbit />;
+    if (normalizedGroupName.includes('mis')) return <GiBearFace />;
+    if (normalizedGroupName.includes('robac')) return <GiLadybug />;
+    if (normalizedGroupName.includes('mysz')) return <GiRat />;
+
+    return <FaLayerGroup />;
+  };
+
+  const getGroupBadgeClass = (groupName) => {
+    const normalizedGroupName = normalizeGroupName(groupName);
+
+    if (normalizedGroupName.includes('lis')) return 'group-liski';
+    if (normalizedGroupName.includes('zaj')) return 'group-zajaczki';
+    if (normalizedGroupName.includes('mis')) return 'group-misie';
+    if (normalizedGroupName.includes('robac')) return 'group-robaczki';
+    if (normalizedGroupName.includes('mysz')) return 'group-myszki';
+
+    return 'group-default';
+  };
+
+  const handleSortChange = (field) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortField(field);
+    setSortDirection('asc');
+  };
+
+  const getSortArrow = (field) => {
+    if (sortField !== field) return '↓';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  };
+
+  const sortedChildren = [...filteredChildren].sort((a, b) => {
+    if (sortField === 'group') {
+      const groupA = getGroupName(a.group);
+      const groupB = getGroupName(b.group);
+      const byGroup = groupA.localeCompare(groupB, 'pl', { sensitivity: 'base' });
+
+      if (byGroup !== 0) {
+        return sortDirection === 'asc' ? byGroup : -byGroup;
+      }
+
+      const byLastName = (a.last_name || '').localeCompare(b.last_name || '', 'pl', { sensitivity: 'base' });
+      if (byLastName !== 0) return byLastName;
+      return (a.first_name || '').localeCompare(b.first_name || '', 'pl', { sensitivity: 'base' });
+    }
+
+    return 0;
+  });
 
   if (loading && children.length === 0) return <LoadingScreen message="Wczytywanie dzieci..." />;
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
@@ -179,13 +362,26 @@ const DirectorChildren = () => {
           <thead>
             <tr>
               <th>Dziecko</th>
-              <th>Grupa</th>
+              <th>
+                <button
+                  type="button"
+                  className="sortable-header-btn"
+                  onClick={() => handleSortChange('group')}
+                >
+                  Grupa <span className="sort-arrow">{getSortArrow('group')}</span>
+                </button>
+              </th>
               <th>Rodzice / Opiekunowie</th>
+              <th>Informacje medyczne</th>
               <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
-            {filteredChildren.map(child => (
+            {sortedChildren.map(child => {
+              const groupName = getGroupName(child.group);
+              const groupBadgeClass = getGroupBadgeClass(groupName);
+
+              return (
               <tr key={child.id}>
                 <td>
                   <div className="user-cell">
@@ -199,8 +395,9 @@ const DirectorChildren = () => {
                   </div>
                 </td>
                 <td>
-                  <span className="role-badge" style={{background: '#e3f2fd', color: '#1565c0'}}>
-                    <FaLayerGroup/> {getGroupName(child.group)}
+                  <span className={`role-badge ${groupBadgeClass}`}>
+                    {getGroupIcon(groupName)}
+                    {groupName}
                   </span>
                 </td>
                 <td>
@@ -215,12 +412,17 @@ const DirectorChildren = () => {
                     })}
                   </div>
                 </td>
+                <td>
+                  <div style={{fontSize: 12, color: '#666', maxWidth: '260px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                    {child.medical_info?.trim() ? child.medical_info : '-'}
+                  </div>
+                </td>
                 <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(child)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(child)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(child); }}><FaTrash/></button>
                 </td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
@@ -232,63 +434,148 @@ const DirectorChildren = () => {
             <h3>{editingChild ? 'Edytuj Dziecko' : 'Dodaj Dziecko'}</h3>
             {error && <div className="form-error">{error}</div>}
 
-            <form onSubmit={handleSave} className="modal-form-grid">
+            <form onSubmit={handleSave} className="modal-form-grid" noValidate>
               
               <div className="form-group">
-                <label>Imię</label>
-                <input type="text" required value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})}/>
+                <label>Imię <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  value={formData.first_name}
+                  onChange={e => {
+                    setFormData({...formData, first_name: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('first_name');
+                      setRequiredFieldErrors((prev) => ({ ...prev, first_name: false }));
+                    }
+                  }}
+                  className={invalidFields.first_name ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.first_name && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
               <div className="form-group">
-                <label>Nazwisko</label>
-                <input type="text" required value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})}/>
+                <label>Nazwisko <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  value={formData.last_name}
+                  onChange={e => {
+                    setFormData({...formData, last_name: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('last_name');
+                      setRequiredFieldErrors((prev) => ({ ...prev, last_name: false }));
+                    }
+                  }}
+                  className={invalidFields.last_name ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.last_name && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Data urodzenia</label>
-                <input type="date" required value={formData.date_of_birth} onChange={e => setFormData({...formData, date_of_birth: e.target.value})}/>
+                <label>Data urodzenia <span className="required-asterisk">*</span></label>
+                <input
+                  type="date"
+                  value={formData.date_of_birth}
+                  onChange={e => {
+                    setFormData({...formData, date_of_birth: e.target.value});
+                    if (e.target.value) {
+                      clearInvalidField('date_of_birth');
+                      setRequiredFieldErrors((prev) => ({ ...prev, date_of_birth: false }));
+                    }
+                  }}
+                  className={invalidFields.date_of_birth ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.date_of_birth && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Stawka żywieniowa (zł)</label>
+                <label>Stawka żywieniowa (zł) <span className="required-asterisk">*</span></label>
                 <input 
                   type="number" 
                   step="0.01" 
-                  required 
                   value={formData.meal_rate} 
-                  onChange={e => setFormData({...formData, meal_rate: e.target.value})}
+                  onChange={e => {
+                    setFormData({...formData, meal_rate: e.target.value});
+                    if (String(e.target.value).trim()) {
+                      clearInvalidField('meal_rate');
+                      setRequiredFieldErrors((prev) => ({ ...prev, meal_rate: false }));
+                    }
+                  }}
+                  className={invalidFields.meal_rate ? 'invalid-bounce' : ''}
                 />
+                {requiredFieldErrors.meal_rate && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group">
-                <label>Grupa</label>
-                <select required value={formData.group} onChange={e => setFormData({...formData, group: parseInt(e.target.value)})}>
+                <label>Grupa <span className="required-asterisk">*</span></label>
+                <select
+                  value={formData.group}
+                  onChange={e => {
+                    const nextGroupValue = e.target.value ? parseInt(e.target.value, 10) : '';
+                    setFormData({...formData, group: nextGroupValue});
+                    if (nextGroupValue) {
+                      clearInvalidField('group');
+                      setRequiredFieldErrors((prev) => ({ ...prev, group: false }));
+                    }
+                  }}
+                  className={invalidFields.group ? 'invalid-bounce' : ''}
+                >
                   <option value="">-- Wybierz grupę --</option>
                   {groups.map(g => (
                     <option key={g.id} value={g.id}>{g.name}</option>
                   ))}
                 </select>
+                {requiredFieldErrors.group && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               {/* LISTA WYBORU RODZICÓW */}
               <div className="form-group full-width">
-                <label>Przypisz Rodziców (Max 2)</label>
-                <div style={{maxHeight: '150px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '8px', padding: '10px'}}>
-                  {parents.map(p => (
-                    <div key={p.id} style={{padding: '5px', borderBottom:'1px solid #f9f9f9', display:'flex', alignItems:'center'}}>
+                <label>Przypisz Rodziców (Max 2) <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Szukaj po imieniu i nazwisku..."
+                  value={parentSearchQuery}
+                  onChange={(e) => setParentSearchQuery(e.target.value)}
+                  style={{ marginBottom: '10px' }}
+                />
+                <div className={`checkbox-list parent-checkbox-list ${invalidFields.parents ? 'invalid-bounce' : ''}`}>
+                  {filteredParents.map(p => (
+                    <div key={p.id} className="checkbox-item">
                       <input 
+                        id={`parent-${p.id}`}
                         type="checkbox" 
                         checked={formData.parents.includes(p.id)}
                         onChange={() => handleParentToggle(p.id)}
-                        style={{width: 'auto', marginRight: '10px'}}
                       />
-                      <span>{p.first_name} {p.last_name} (@{p.username})</span>
+                      <label htmlFor={`parent-${p.id}`} className="parent-checkbox-label">
+                        {p.first_name} {p.last_name} (@{p.username})
+                      </label>
                     </div>
                   ))}
+                  {filteredParents.length === 0 && (
+                    <div className="checkbox-item" style={{ color: '#777' }}>
+                      Brak rodziców pasujących do wyszukiwania.
+                    </div>
+                  )}
                 </div>
+                {parentLimitError && (
+                  <div className="field-required-message">{parentLimitError}</div>
+                )}
+                {!parentLimitError && requiredFieldErrors.parents && (
+                  <div className="field-required-message">Wybierz co najmniej jednego rodzica.</div>
+                )}
               </div>
 
               <div className="form-group full-width">
-                <label>Info Medyczne</label>
+                <label>Informacje Medyczne</label>
                 <textarea 
                    className="medical-textarea" 
                    style={{height: '80px'}}
@@ -317,8 +604,9 @@ const DirectorChildren = () => {
               {` "${deleteTarget.first_name} ${deleteTarget.last_name}"`}
               ? Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

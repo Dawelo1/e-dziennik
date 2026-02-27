@@ -23,6 +23,7 @@ const DirectorAttendance = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ child: '', date: '' });
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [invalidFields, setInvalidFields] = useState({ child: false, date: false });
   const [requiredFieldErrors, setRequiredFieldErrors] = useState({ child: false, date: false });
@@ -107,6 +108,7 @@ const DirectorAttendance = () => {
   // 3. Otwieranie Modala
   const openModal = () => {
     setError('');
+    setActionError('');
     setInvalidFields({ child: false, date: false });
     setRequiredFieldErrors({ child: false, date: false });
     setFormData({ child: '', date: new Date().toISOString().split('T')[0] }); // Domyślnie dziś
@@ -143,13 +145,14 @@ const DirectorAttendance = () => {
   // 5. Usuwanie
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
     setLoading(true);
     try {
       await axios.delete(`http://127.0.0.1:8000/api/attendance/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Nie udało się usunąć wpisu nieobecności. Spróbuj ponownie później.");
+      setActionError('Nie udało się usunąć wpisu nieobecności. Spróbuj ponownie później.');
       setLoading(false);
     }
   };
@@ -224,7 +227,7 @@ const DirectorAttendance = () => {
                 <td>{new Date(absence.date).toLocaleDateString('pl-PL')}</td>
                 <td>{new Date(absence.created_at).toLocaleString('pl-PL')}</td>
                 <td className="actions-cell">
-                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(absence)} title="Usuń">
+                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(absence); }} title="Usuń">
                     <FaTrash />
                   </button>
                 </td>
@@ -306,8 +309,9 @@ const DirectorAttendance = () => {
               {` "${getChildName(deleteTarget.child)}"`}?
               Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

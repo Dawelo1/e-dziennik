@@ -191,7 +191,7 @@ const DirectorLayout = () => {
 
             <li style={{ marginTop: 'auto' }}>
               <NavLink to="/director/settings" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaCog /></span> Ustawienia
+                <span className="menu-icon"><FaCog /></span> Ustawienia Konta
               </NavLink>
             </li>
 

@@ -29,6 +29,7 @@ const DirectorGallery = () => {
   const [imagesToDelete, setImagesToDelete] = useState([]);
   
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const fileInputRef = useRef(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -64,6 +65,7 @@ const DirectorGallery = () => {
 
   const openModal = (album = null) => {
     setError('');
+    setActionError('');
     setNewImages([]);
     setExistingImages([]);
     setImagesToDelete([]);
@@ -174,8 +176,9 @@ const DirectorGallery = () => {
   };
 
   const handleDownloadAlbum = async (album) => {
+    setActionError('');
     if (!album?.images?.length) {
-      alert('Ten album nie zawiera zdjęć do pobrania.');
+      setActionError('Ten album nie zawiera zdjęć do pobrania.');
       return;
     }
 
@@ -273,13 +276,14 @@ const DirectorGallery = () => {
   
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
     setLoading(true);
     try {
       await axios.delete(`http://127.0.0.1:8000/api/gallery/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Błąd usuwania.");
+      setActionError('Nie udało się usunąć albumu. Spróbuj ponownie później.');
       setLoading(false);
     }
   };
@@ -318,6 +322,8 @@ const DirectorGallery = () => {
         <FaSearch className="search-icon"/>
         <input type="text" placeholder="Szukaj po tytule..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
       </div>
+
+      {actionError && <div className="form-error">{actionError}</div>}
 
       <div className="table-card">
         <table className="custom-table">
@@ -377,7 +383,7 @@ const DirectorGallery = () => {
                     <td className="actions-cell">
                       <button className="action-icon-btn edit" onClick={() => openModal(album)}><FaEdit/></button>
                       <button className="action-icon-btn download" onClick={() => handleDownloadAlbum(album)}><FaDownload/></button>
-                      <button className="action-icon-btn delete" onClick={() => setDeleteTarget(album)}><FaTrash/></button>
+                      <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(album); }}><FaTrash/></button>
                     </td>
                   </tr>
                 ))
@@ -521,8 +527,9 @@ const DirectorGallery = () => {
               {` "${deleteTarget.title}"`}
               ? Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

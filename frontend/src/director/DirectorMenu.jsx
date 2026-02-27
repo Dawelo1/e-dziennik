@@ -28,6 +28,7 @@ const DirectorMenu = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [pastDateConfirmOpen, setPastDateConfirmOpen] = useState(false);
   const [invalidFields, setInvalidFields] = useState({ date: false });
@@ -97,6 +98,7 @@ const DirectorMenu = () => {
 
   const openModal = (menu = null) => {
     setError('');
+    setActionError('');
     setInvalidFields({ date: false });
     setRequiredFieldErrors({ date: false });
     if (menu) {
@@ -198,13 +200,14 @@ const DirectorMenu = () => {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setActionError('');
     setLoading(true);
     try {
       await axios.delete(`http://127.0.0.1:8000/api/menu/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Błąd usuwania.");
+      setActionError('Nie udało się usunąć jadłospisu. Spróbuj ponownie później.');
       setLoading(false);
     }
   };
@@ -223,10 +226,11 @@ const DirectorMenu = () => {
   const mealPartText = (label, value) => `${label}: ${value || '-'}`;
 
   const handlePrintWeek = (week) => {
+    setActionError('');
     const printWindow = window.open('', '_blank', 'width=960,height=720');
 
     if (!printWindow) {
-      alert('Nie udało się otworzyć okna wydruku. Sprawdź blokadę wyskakujących okien.');
+      setActionError('Nie udało się otworzyć okna wydruku. Sprawdź blokadę wyskakujących okien.');
       return;
     }
 
@@ -325,6 +329,8 @@ const DirectorMenu = () => {
         </button>
       </div>
 
+      {actionError && <div className="form-error">{actionError}</div>}
+
       {/* FILTRY */}
       <div className="filter-bar">
         <div className="date-filter-container" style={{width: 'auto'}}>
@@ -388,7 +394,7 @@ const DirectorMenu = () => {
                     <td>{menu.fruit_break || '-'}</td>
                     <td className="actions-cell">
                       <button className="action-icon-btn edit" onClick={() => openModal(menu)}><FaEdit/></button>
-                      <button className="action-icon-btn delete" onClick={() => setDeleteTarget(menu)}><FaTrash/></button>
+                      <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(menu); }}><FaTrash/></button>
                     </td>
                   </tr>
                 ))}
@@ -474,8 +480,9 @@ const DirectorMenu = () => {
               {` "${formatDateWithDots(deleteTarget.date)}"`}
               ? Tej operacji nie można cofnąć.
             </p>
+            {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

@@ -22,6 +22,18 @@ class User(AbstractUser):
 
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name="Zdjęcie profilowe")
 
+    director_password_preview = models.CharField(
+        max_length=128,
+        blank=True,
+        null=True,
+        verbose_name="Podgląd hasła dla dyrektora"
+    )
+
+    director_password_preview_active = models.BooleanField(
+        default=False,
+        verbose_name="Podgląd hasła aktywny"
+    )
+
     class Meta:
         verbose_name = "Użytkownik"
         verbose_name_plural = "Użytkownicy"

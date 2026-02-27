@@ -308,6 +308,7 @@
 }
 .action-icon-btn:hover { transform: scale(1.2); }
 .action-icon-btn.edit:hover { color: #2196f3; }
+.action-icon-btn.preview:hover { color: #f2c94c; }
 .action-icon-btn.download:hover { color: #4a90e2; }
 .action-icon-btn.delete:hover { color: #e57373; }
 
@@ -320,6 +321,14 @@
 .action-icon-btn:disabled:hover {
   transform: none;
   color: #c8c8c8;
+}
+
+.action-icon-btn.preview:disabled {
+  opacity: 0.45;
+}
+
+.action-icon-btn.preview:disabled svg {
+  color: #bdbdbd;
 }
 
 .post-image-delete-btn {
@@ -433,7 +442,8 @@
 
 .form-group input.invalid-bounce,
 .form-group select.invalid-bounce,
-.form-group textarea.invalid-bounce {
+.form-group textarea.invalid-bounce,
+.form-group .checkbox-list.invalid-bounce {
   border-color: #d32f2f;
   box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.18);
   animation: invalidFieldJump 0.6s ease;
@@ -459,18 +469,81 @@
   .modal-form-grid {
     grid-template-columns: 1fr;
   }
+
+  .password-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .password-generate-btn-inline {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .password-input-wrapper {
   position: relative;
   width: 100%;
+  flex: 1;
 }
+
 .password-input-wrapper input { padding-left: 35px; width: 100%; }
 .password-input-wrapper .field-icon { left: 10px; }
+
+.password-generate-btn-inline {
+  white-space: nowrap;
+  padding: 10px 14px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
 
 .form-error {
   color: #d32f2f; background-color: #ffebee; padding: 10px;
   border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 13px;
+}
+
+.generated-credentials-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.generated-credentials-actions .modal-btn {
+  min-width: 240px;
+  justify-content: center;
+}
+
+.generated-credentials-actions .modal-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.generated-credentials-actions .modal-btn:disabled:hover {
+  transform: none;
+}
+
+.generated-credentials-info {
+  background: #fff8e1;
+  border: 1px solid #f2c94c;
+  color: #7a6200;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.preview-password-modal-content {
+  max-width: 460px;
+}
+
+.preview-password-value {
+  margin-bottom: 20px;
+  word-break: break-all;
 }
 
 .delete-modal-content {
@@ -654,6 +727,16 @@
 
 .form-group.full-width .checkbox-list .checkbox-item {
   padding: 4px 2px;
+}
+
+.form-group.full-width .checkbox-list.parent-checkbox-list {
+  max-height: 150px;
+  overflow-y: auto;
+  display: block;
+}
+
+.parent-checkbox-label {
+  color: #000;
 }
 
 /* W pliku DirectorUsers.css */

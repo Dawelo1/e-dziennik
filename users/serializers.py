@@ -60,6 +60,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserManagementSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
+    can_preview_password = serializers.SerializerMethodField()
+    password_generated = serializers.BooleanField(write_only=True, required=False, default=False)
 
     def get_avatar_url(self, obj):
         if not obj.avatar:
@@ -68,21 +70,33 @@ class UserManagementSerializer(serializers.ModelSerializer):
         avatar_url = obj.avatar.url
         return request.build_absolute_uri(avatar_url) if request else avatar_url
 
+    def get_can_preview_password(self, obj):
+        return bool(obj.director_password_preview_active and obj.director_password_preview)
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_director', 'is_parent', 'avatar', 'avatar_url', 'password', 'last_login']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_director', 'is_parent', 'avatar', 'avatar_url', 'password', 'password_generated', 'can_preview_password', 'last_login']
         read_only_fields = ['last_login']
         extra_kwargs = {'password': {'write_only': True, 'required': False}} # Hasło write-only
 
     def create(self, validated_data):
         # Wyciągamy hasło, żeby je zahaszować
         password = validated_data.pop('password', None)
+        password_generated = validated_data.pop('password_generated', False)
         user = User(**validated_data)
         
         if password:
             user.set_password(password)
+            if password_generated:
+                user.director_password_preview = password
+                user.director_password_preview_active = True
+            else:
+                user.director_password_preview = None
+                user.director_password_preview_active = False
         else:
             user.set_unusable_password() # Jeśli nie podano hasła
+            user.director_password_preview = None
+            user.director_password_preview_active = False
             
         user.save()
         return user
@@ -90,11 +104,18 @@ class UserManagementSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # Przy edycji też musimy uważać na hasło
         password = validated_data.pop('password', None)
+        password_generated = validated_data.pop('password_generated', False)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
             
         if password:
             instance.set_password(password)
+            if password_generated:
+                instance.director_password_preview = password
+                instance.director_password_preview_active = True
+            else:
+                instance.director_password_preview = None
+                instance.director_password_preview_active = False
             
         instance.save()
         return instance
