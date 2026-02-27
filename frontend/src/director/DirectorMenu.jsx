@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorMenu.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Wspólne style
@@ -7,7 +7,7 @@ import LoadingScreen from '../users/LoadingScreen';
 import { formatDateWithDots } from '../dateUtils';
 
 import { 
-  FaUtensils, FaPlus, FaEdit, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt
+  FaUtensils, FaPlus, FaEdit, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt, FaPrint
 } from 'react-icons/fa';
 
 const DirectorMenu = () => {
@@ -15,13 +15,13 @@ const DirectorMenu = () => {
   const [loading, setLoading] = useState(true);
   
   // Filtr
-  const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+  const [filterDate, setFilterDate] = useState('');
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMenu, setEditingMenu] = useState(null);
   const initialForm = {
-    date: new Date().toISOString().split('T')[0],
+    date: '',
     breakfast_soup: '', breakfast_main_course: '', breakfast_beverage: '', breakfast_fruit: '',
     lunch_soup: '', lunch_main_course: '', lunch_beverage: '', lunch_fruit: '',
     fruit_break: '', allergens: ''
@@ -29,6 +29,12 @@ const DirectorMenu = () => {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [pastDateConfirmOpen, setPastDateConfirmOpen] = useState(false);
+  const [invalidFields, setInvalidFields] = useState({ date: false });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({ date: false });
+  const invalidFieldTimers = useRef({ date: null });
+  const todayDate = new Date().toISOString().split('T')[0];
+  const isPastDateForNewMenu = !editingMenu && formData.date && formData.date < todayDate;
 
   const fetchData = async () => {
     try {
@@ -41,9 +47,58 @@ const DirectorMenu = () => {
   useEffect(() => { fetchData(); }, []);
 
   const filteredMenus = menus.filter(menu => filterDate ? menu.date === filterDate : true);
+  const sortedFilteredMenus = [...filteredMenus].sort(
+    (a, b) => new Date(`${b.date}T00:00:00`) - new Date(`${a.date}T00:00:00`)
+  );
+
+  const getWeekMeta = (dateString) => {
+    const date = new Date(`${dateString}T00:00:00`);
+    const dayFromMonday = (date.getDay() + 6) % 7;
+
+    const monday = new Date(date);
+    monday.setDate(date.getDate() - dayFromMonday);
+
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+
+    const toIso = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const mondayIso = toIso(monday);
+    const fridayIso = toIso(friday);
+
+    return {
+      key: mondayIso,
+      label: `Tydzień: ${formatDateWithDots(mondayIso)} - ${formatDateWithDots(fridayIso)}`
+    };
+  };
+
+  const menusByWeeks = sortedFilteredMenus.reduce((acc, menu) => {
+    const weekMeta = getWeekMeta(menu.date);
+    const existingWeek = acc.find((week) => week.key === weekMeta.key);
+
+    if (existingWeek) {
+      existingWeek.items.push(menu);
+      return acc;
+    }
+
+    acc.push({
+      key: weekMeta.key,
+      label: weekMeta.label,
+      items: [menu]
+    });
+
+    return acc;
+  }, []);
 
   const openModal = (menu = null) => {
     setError('');
+    setInvalidFields({ date: false });
+    setRequiredFieldErrors({ date: false });
     if (menu) {
       setEditingMenu(menu);
       setFormData({
@@ -66,8 +121,39 @@ const DirectorMenu = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
+  const saveMenu = async () => {
     setLoading(true);
     try {
       if (editingMenu) {
@@ -83,6 +169,33 @@ const DirectorMenu = () => {
     }
   };
 
+  const handleSave = async (e) => {
+    e.preventDefault();
+
+    const missingDate = !formData.date;
+
+    setRequiredFieldErrors({
+      date: missingDate
+    });
+
+    if (missingDate) {
+      triggerInvalidField('date');
+      return;
+    }
+
+    if (isPastDateForNewMenu) {
+      setPastDateConfirmOpen(true);
+      return;
+    }
+
+    await saveMenu();
+  };
+
+  const handlePastDateConfirm = async () => {
+    setPastDateConfirmOpen(false);
+    await saveMenu();
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setLoading(true);
@@ -94,6 +207,107 @@ const DirectorMenu = () => {
       alert("Błąd usuwania.");
       setLoading(false);
     }
+  };
+
+  const escapeHtml = (value = '') => String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+  const mealPart = (label, value) => (
+    <div><strong>{label}:</strong> {value || '-'}</div>
+  );
+
+  const mealPartText = (label, value) => `${label}: ${value || '-'}`;
+
+  const handlePrintWeek = (week) => {
+    const printWindow = window.open('', '_blank', 'width=960,height=720');
+
+    if (!printWindow) {
+      alert('Nie udało się otworzyć okna wydruku. Sprawdź blokadę wyskakujących okien.');
+      return;
+    }
+
+    const printableItems = [...week.items].sort(
+      (a, b) => new Date(`${a.date}T00:00:00`) - new Date(`${b.date}T00:00:00`)
+    );
+
+    const rowsHtml = printableItems.map((menu) => {
+      const dateLabel = new Date(`${menu.date}T00:00:00`).toLocaleDateString('pl-PL', {
+        weekday: 'long'
+      });
+
+      const breakfastText = [
+        mealPartText('Zupa', menu.breakfast_soup),
+        mealPartText('Drugie danie', menu.breakfast_main_course),
+        mealPartText('Napój', menu.breakfast_beverage),
+        mealPartText('Owoc / Dodatek', menu.breakfast_fruit)
+      ].join('\n');
+
+      const lunchText = [
+        mealPartText('Zupa', menu.lunch_soup),
+        mealPartText('Drugie danie', menu.lunch_main_course),
+        mealPartText('Napój', menu.lunch_beverage),
+        mealPartText('Owoc / Deser', menu.lunch_fruit)
+      ].join('\n');
+
+      return `
+        <tr>
+          <td>${escapeHtml(dateLabel)}</td>
+          <td>${escapeHtml(breakfastText).replaceAll('\n', '<br/>')}</td>
+          <td>${escapeHtml(lunchText).replaceAll('\n', '<br/>')}</td>
+          <td>${escapeHtml(menu.fruit_break || '-')}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+      <!doctype html>
+      <html lang="pl">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Plan tygodniowy jadłospisu</title>
+          <style>
+            @page { size: A4 landscape; margin: 12mm; }
+            body { font-family: Arial, sans-serif; margin: 24px; color: #222; }
+            h1 { margin: 0 0 6px 0; font-size: 22px; }
+            h2 { margin: 0 0 20px 0; font-size: 16px; color: #555; font-weight: 600; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; }
+            th { background: #f3edff; color: #5d4b8a; text-transform: uppercase; font-size: 12px; }
+            tr:nth-child(even) td { background: #fafafa; }
+          </style>
+        </head>
+        <body>
+          <h1>Jadłospis tygodniowy</h1>
+          <h2>${escapeHtml(week.label)}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Śniadanie</th>
+                <th>Obiad</th>
+                <th>Podwieczorek</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   if (loading && menus.length === 0) return <LoadingScreen message="Wczytywanie jadłospisów..." />;
@@ -126,9 +340,6 @@ const DirectorMenu = () => {
             </button>
           )}
         </div>
-        <button className="honey-btn" style={{padding: '10px 20px'}} onClick={() => setFilterDate('')}>
-          Pokaż Wszystkie
-        </button>
       </div>
 
       <div className="table-card">
@@ -138,20 +349,50 @@ const DirectorMenu = () => {
               <th>Data</th>
               <th>Śniadanie</th>
               <th>Obiad</th>
+              <th>Podwieczorek</th>
               <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
-            {filteredMenus.map(menu => (
-              <tr key={menu.id}>
-                <td style={{fontWeight: 700}}>{new Date(menu.date).toLocaleDateString('pl-PL', {weekday:'long', day:'numeric', month:'long'})}</td>
-                <td>{menu.breakfast_main_course || '-'}</td>
-                <td>{menu.lunch_main_course || '-'}</td>
-                <td className="actions-cell">
-                  <button className="action-icon-btn edit" onClick={() => openModal(menu)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(menu)}><FaTrash/></button>
-                </td>
-              </tr>
+            {menusByWeeks.map((week) => (
+              <React.Fragment key={week.key}>
+                <tr className="menu-week-row">
+                  <td colSpan={5} className="menu-week-cell">
+                    <div className="menu-week-header">
+                      <span>{week.label}</span>
+                      <button
+                        type="button"
+                        className="menu-week-print-btn"
+                        onClick={() => handlePrintWeek(week)}
+                      >
+                        <FaPrint /> Drukuj tydzień
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {week.items.map(menu => (
+                  <tr key={menu.id}>
+                    <td style={{fontWeight: 700}}>{new Date(menu.date).toLocaleDateString('pl-PL', {weekday:'long', day:'numeric', month:'long'})}</td>
+                    <td>
+                      {mealPart('Zupa', menu.breakfast_soup)}
+                      {mealPart('Drugie danie', menu.breakfast_main_course)}
+                      {mealPart('Napój', menu.breakfast_beverage)}
+                      {mealPart('Owoc / Dodatek', menu.breakfast_fruit)}
+                    </td>
+                    <td>
+                      {mealPart('Zupa', menu.lunch_soup)}
+                      {mealPart('Drugie danie', menu.lunch_main_course)}
+                      {mealPart('Napój', menu.lunch_beverage)}
+                      {mealPart('Owoc / Deser', menu.lunch_fruit)}
+                    </td>
+                    <td>{menu.fruit_break || '-'}</td>
+                    <td className="actions-cell">
+                      <button className="action-icon-btn edit" onClick={() => openModal(menu)}><FaEdit/></button>
+                      <button className="action-icon-btn delete" onClick={() => setDeleteTarget(menu)}><FaTrash/></button>
+                    </td>
+                  </tr>
+                ))}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
@@ -164,17 +405,36 @@ const DirectorMenu = () => {
             <h3>{editingMenu ? `Edytuj Jadłospis na ${formatDateWithDots(formData.date)}` : 'Nowy Jadłospis'}</h3>
             {error && <div className="form-error">{error}</div>}
 
-            <form onSubmit={handleSave}>
+            <form onSubmit={handleSave} noValidate>
               <div className="form-group" style={{marginBottom: 20}}>
-                <label>Data *</label>
-                <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} disabled={!!editingMenu} />
+                <label>Data <span className="required-asterisk">*</span></label>
+                <input
+                  type="date"
+                  required
+                  value={formData.date}
+                  onChange={e => {
+                    setFormData({...formData, date: e.target.value});
+                    if (e.target.value) {
+                      clearInvalidField('date');
+                      setRequiredFieldErrors((prev) => ({ ...prev, date: false }));
+                    }
+                  }}
+                  disabled={!!editingMenu}
+                  className={invalidFields.date ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.date && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+                {isPastDateForNewMenu && (
+                  <div className="field-required-message">Uwaga: wybrana data jest wcześniejsza niż dzisiaj.</div>
+                )}
               </div>
 
               <div className="modal-form-grid">
                 {/* Śniadanie */}
                 <fieldset className="form-fieldset">
                   <legend>Śniadanie</legend>
-                  <div className="form-group"><input type="text" placeholder="Zupa / Mleczna" value={formData.breakfast_soup} onChange={e => setFormData({...formData, breakfast_soup: e.target.value})} /></div>
+                  <div className="form-group"><input type="text" placeholder="Zupa mleczna" value={formData.breakfast_soup} onChange={e => setFormData({...formData, breakfast_soup: e.target.value})} /></div>
                   <div className="form-group"><input type="text" placeholder="Drugie danie / Kanapki" value={formData.breakfast_main_course} onChange={e => setFormData({...formData, breakfast_main_course: e.target.value})} /></div>
                   <div className="form-group"><input type="text" placeholder="Napój" value={formData.breakfast_beverage} onChange={e => setFormData({...formData, breakfast_beverage: e.target.value})} /></div>
                   <div className="form-group"><input type="text" placeholder="Owoc / Dodatek" value={formData.breakfast_fruit} onChange={e => setFormData({...formData, breakfast_fruit: e.target.value})} /></div>
@@ -217,6 +477,23 @@ const DirectorMenu = () => {
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pastDateConfirmOpen && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Dodać jadłospis z wcześniejszą datą?</h3>
+            <p>
+              Wybrana data ({formatDateWithDots(formData.date)}) jest wcześniejsza niż dzisiaj.
+              Czy na pewno chcesz zapisać jadłospis?
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setPastDateConfirmOpen(false)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handlePastDateConfirm}><FaSave /> Zapisz mimo to</button>
             </div>
           </div>
         </div>

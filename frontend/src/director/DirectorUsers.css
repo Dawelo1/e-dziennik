@@ -180,6 +180,45 @@
 .custom-table tr:last-child td { border-bottom: none; }
 .custom-table tr:hover { background-color: #fafafa; }
 
+.custom-table tr.menu-week-row:hover {
+  background-color: #f3edff;
+}
+
+.menu-week-cell {
+  background-color: #f3edff;
+  color: #5d4b8a;
+  font-weight: 700;
+  border-top: 1px solid #ddd0fb;
+  border-bottom: 1px solid #ddd0fb;
+}
+
+.menu-week-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.menu-week-print-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d4c2fb;
+  background-color: #ffffff;
+  color: #5d4b8a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.menu-week-print-btn:hover {
+  background-color: #ede4ff;
+  transform: translateY(-1px);
+}
+
 /* Komórka Użytkownika */
 .user-cell { display: flex; align-items: center; gap: 12px; }
 
