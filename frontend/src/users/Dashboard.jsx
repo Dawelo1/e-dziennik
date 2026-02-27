@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
@@ -23,6 +23,11 @@ import { formatDateWithDots } from '../dateUtils';
 
 
 const Dashboard = () => {
+  const POSTS_REFRESH_MS = 60 * 1000;
+  const EVENTS_PAYMENTS_REFRESH_MS = 5 * 60 * 1000;
+  const PROFILE_REFRESH_MS = 15 * 60 * 1000;
+  const POLL_TICK_MS = 30 * 1000;
+
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -31,6 +36,12 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [commentInputs, setCommentInputs] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
+  const isFetchingRef = useRef(false);
+  const lastFetchRef = useRef({
+    posts: 0,
+    eventsPayments: 0,
+    profile: 0,
+  });
 
   const navigate = useNavigate();
 
@@ -40,42 +51,90 @@ const Dashboard = () => {
     return `http://127.0.0.1:8000${url}`;
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async ({ force = false } = {}) => {
+    const now = Date.now();
+    const shouldFetchPosts = force || (now - lastFetchRef.current.posts >= POSTS_REFRESH_MS);
+    const shouldFetchEventsPayments = force || (now - lastFetchRef.current.eventsPayments >= EVENTS_PAYMENTS_REFRESH_MS);
+    const shouldFetchProfile = force || (now - lastFetchRef.current.profile >= PROFILE_REFRESH_MS);
+
+    if (!shouldFetchPosts && !shouldFetchEventsPayments && !shouldFetchProfile) {
+      setLoading(false);
+      return;
+    }
+
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
       const [postsRes, eventsRes, paymentsRes, userRes, directorStatusRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders())
+        shouldFetchPosts ? axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchEventsPayments ? axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchEventsPayments ? axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchProfile ? axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchProfile ? axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders()) : Promise.resolve(null)
       ]);
 
-      setPosts(postsRes.data.map(post => ({
-        ...post,
-        comments: (Array.isArray(post.comments) ? post.comments : []).map(comment => ({
-          ...comment,
-          likes_count: comment.likes_count ?? 0,
-          is_liked_by_user: Boolean(comment.is_liked_by_user),
-        })),
-        likes_count: post.likes_count ?? 0,
-        is_liked_by_user: Boolean(post.is_liked_by_user),
-      })));
-      setEvents(eventsRes.data);
-      setPayments(paymentsRes.data);
-      setCurrentUser(userRes.data); 
-      setDirectorAvatar(directorStatusRes.data.avatar);
+      if (postsRes) {
+        setPosts(postsRes.data.map(post => ({
+          ...post,
+          comments: (Array.isArray(post.comments) ? post.comments : []).map(comment => ({
+            ...comment,
+            likes_count: comment.likes_count ?? 0,
+            is_liked_by_user: Boolean(comment.is_liked_by_user),
+          })),
+          likes_count: post.likes_count ?? 0,
+          is_liked_by_user: Boolean(post.is_liked_by_user),
+        })));
+        lastFetchRef.current.posts = Date.now();
+      }
+
+      if (eventsRes && paymentsRes) {
+        setEvents(eventsRes.data);
+        setPayments(paymentsRes.data);
+        lastFetchRef.current.eventsPayments = Date.now();
+      }
+
+      if (userRes && directorStatusRes) {
+        setCurrentUser(userRes.data);
+        setDirectorAvatar(directorStatusRes.data.avatar);
+        lastFetchRef.current.profile = Date.now();
+      }
     } catch (err) {
       console.error("Błąd pobierania danych:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-    const intervalId = setInterval(fetchData, 5000); 
-    return () => clearInterval(intervalId);
-  }, []);
+    const fetchWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData({ force: true });
+      }
+    };
+
+    const handleWindowFocus = () => {
+      fetchData({ force: true });
+    };
+
+    fetchData({ force: true });
+    const intervalId = setInterval(fetchWhenVisible, POLL_TICK_MS);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [fetchData]);
 
   const getWidgetItems = () => {
     const now = new Date();

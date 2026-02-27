@@ -36,10 +36,14 @@ const Layout = () => {
       });
 
     // 2. Funkcja pobierająca licznik powiadomień
-    const fetchUnread = () => {
+    const fetchUnread = (force = false) => {
       // Jeśli użytkownik jest na stronie wiadomości, nie pobieraj licznika (zakładamy 0)
       if (location.pathname === '/messages') {
         setUnreadCount(0);
+        return;
+      }
+
+      if (!force && document.visibilityState !== 'visible') {
         return;
       }
 
@@ -48,10 +52,26 @@ const Layout = () => {
         .catch(err => console.error("Błąd licznika:", err));
     };
 
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 5000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUnread(true);
+      }
+    };
 
-    return () => clearInterval(interval);
+    const handleWindowFocus = () => {
+      fetchUnread(true);
+    };
+
+    fetchUnread(true);
+    const interval = setInterval(() => fetchUnread(false), 30000);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, [navigate, location.pathname]);
 
   // --- FUNKCJA NAPRAWIAJĄCA URL AVATARA ---
