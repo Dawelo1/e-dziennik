@@ -146,6 +146,37 @@ class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast
         
         serializer = PostCommentSerializer(comment)
         return Response(serializer.data, status=status.HTTP_201_CREATED)    
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        instance.title = request.data.get('title', instance.title)
+        instance.content = request.data.get('content', instance.content)
+
+        target_group_id = request.data.get('target_group')
+        if target_group_id:
+            instance.target_group_id = target_group_id
+        else:
+            instance.target_group = None
+
+        new_image = request.FILES.get('image')
+        if new_image:
+            if instance.image:
+                instance.image.delete(save=False)
+            instance.image = new_image
+
+        delete_image_value = str(request.data.get('delete_image', '')).strip().lower()
+        delete_image = delete_image_value in ['1', 'true', 'yes', 'on']
+
+        if delete_image and not new_image:
+            if instance.image:
+                instance.image.delete(save=False)
+            instance.image = None
+
+        instance.save()
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
       
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer

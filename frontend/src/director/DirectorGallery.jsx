@@ -8,7 +8,7 @@ import LoadingScreen from '../users/LoadingScreen';
 
 import { 
   FaImages, FaPlus, FaEdit, FaTrash, FaSearch, 
-  FaLayerGroup, FaBullhorn, FaSave, FaUpload, FaTimes, FaExclamationTriangle, FaTrashAlt
+  FaLayerGroup, FaBullhorn, FaSave, FaUpload, FaExclamationTriangle, FaTrashAlt, FaDownload, FaChevronLeft, FaChevronRight, FaTimes
 } from 'react-icons/fa';
 
 const DirectorGallery = () => {
@@ -31,6 +31,12 @@ const DirectorGallery = () => {
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewImages, setPreviewImages] = useState([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [invalidFields, setInvalidFields] = useState({ title: false, images: false });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({ title: false, images: false });
+  const invalidFieldTimers = useRef({ title: null, images: null });
 
   // --- POPRAWIONE POBIERANIE DANYCH ---
   const fetchData = async () => {
@@ -61,6 +67,8 @@ const DirectorGallery = () => {
     setNewImages([]);
     setExistingImages([]);
     setImagesToDelete([]);
+    setInvalidFields({ title: false, images: false });
+    setRequiredFieldErrors({ title: false, images: false });
     
     if (album) {
       setEditingAlbum(album);
@@ -77,9 +85,45 @@ const DirectorGallery = () => {
     setIsModalOpen(true);
   };
 
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
   const handleFiles = (files) => {
     const fileList = Array.from(files);
     setNewImages(prev => [...prev, ...fileList]);
+    if (fileList.length > 0) {
+      clearInvalidField('images');
+      setRequiredFieldErrors((prev) => ({ ...prev, images: false }));
+    }
   };
   const handleDrop = (e) => {
     e.preventDefault();
@@ -93,8 +137,110 @@ const DirectorGallery = () => {
     setImagesToDelete(prev => [...prev, id]);
   };
 
+  const downloadFromUrl = (url, fileName) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadFromBlob = (blob, fileName) => {
+    const blobUrl = URL.createObjectURL(blob);
+    downloadFromUrl(blobUrl, fileName);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  };
+
+  const downloadExistingImage = async (img, index, albumTitle = null) => {
+    const safeTitle = albumTitle?.trim() || formData.title?.trim() || editingAlbum?.title?.trim() || 'album';
+    const cleanTitle = safeTitle.toLowerCase().replace(/\s+/g, '-');
+    const extension = img.image.split('.').pop()?.split('?')[0] || 'jpg';
+    const fileName = `${cleanTitle}-${index + 1}.${extension}`;
+
+    try {
+      const response = await axios.get(img.image, {
+        ...getAuthHeaders(),
+        responseType: 'blob'
+      });
+      downloadFromBlob(response.data, fileName);
+    } catch (err) {
+      downloadFromUrl(img.image, fileName);
+    }
+  };
+
+  const downloadNewImage = (file) => {
+    downloadFromBlob(file, file.name || 'zdjecie.jpg');
+  };
+
+  const handleDownloadAlbum = async (album) => {
+    if (!album?.images?.length) {
+      alert('Ten album nie zawiera zdjęć do pobrania.');
+      return;
+    }
+
+    for (let i = 0; i < album.images.length; i += 1) {
+      await downloadExistingImage(album.images[i], i, album.title);
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    }
+  };
+
+  const openAlbumPreview = (images, startIndex = 0) => {
+    if (!images?.length) return;
+    setPreviewImages(images);
+    setPreviewIndex(startIndex);
+    setIsPreviewOpen(true);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeAlbumPreview = () => {
+    setIsPreviewOpen(false);
+    document.body.style.overflow = 'auto';
+  };
+
+  const nextPreviewImage = (e) => {
+    e.stopPropagation();
+    setPreviewIndex((prev) => (prev + 1) % previewImages.length);
+  };
+
+  const prevPreviewImage = (e) => {
+    e.stopPropagation();
+    setPreviewIndex((prev) => (prev + previewImages.length - 1) % previewImages.length);
+  };
+
+  useEffect(() => {
+    const handlePreviewKeyDown = (e) => {
+      if (!isPreviewOpen) return;
+      if (e.key === 'Escape') closeAlbumPreview();
+      if (e.key === 'ArrowRight') nextPreviewImage(e);
+      if (e.key === 'ArrowLeft') prevPreviewImage(e);
+    };
+
+    if (isPreviewOpen) {
+      window.addEventListener('keydown', handlePreviewKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handlePreviewKeyDown);
+      document.body.style.overflow = 'auto';
+    };
+  }, [isPreviewOpen, previewImages.length]);
+
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const missingTitle = !formData.title.trim();
+    const missingImages = existingImages.length === 0 && newImages.length === 0;
+
+    setRequiredFieldErrors({
+      title: missingTitle,
+      images: missingImages
+    });
+
+    if (missingTitle) triggerInvalidField('title');
+    if (missingImages) triggerInvalidField('images');
+    if (missingTitle || missingImages) return;
+
     setLoading(true);
 
     const dataToSend = new FormData();
@@ -143,6 +289,18 @@ const DirectorGallery = () => {
     return groups.find(g => g.id === id)?.name || '-';
   };
 
+  const getAlbumDate = (album) => {
+    if (album.formatted_date) {
+      return album.formatted_date.replace(/-/g, '.');
+    }
+    if (!album.created_at) return '-';
+
+    const parsedDate = new Date(album.created_at);
+    if (Number.isNaN(parsedDate.getTime())) return '-';
+
+    return parsedDate.toLocaleDateString('pl-PL').replace(/\//g, '.');
+  };
+
   // --- WIDOK ---
   if (loading) {
      return <LoadingScreen message="Wczytywanie galerii..." />;
@@ -167,13 +325,14 @@ const DirectorGallery = () => {
             <tr>
               <th>Album</th>
               <th>Zdjęcia (Podgląd)</th>
+              <th>Data dodania</th>
               <th>Widoczność</th>
               <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
             {filteredAlbums.length === 0 ? (
-                <tr><td colSpan="4" className="text-center">Brak albumów w galerii.</td></tr>
+                <tr><td colSpan="5" className="text-center">Brak albumów w galerii.</td></tr>
             ) : (
                 filteredAlbums.map(album => (
                   <tr key={album.id}>
@@ -185,20 +344,29 @@ const DirectorGallery = () => {
                     </td>
                     <td>
                       <div style={{display: 'flex', gap: 5}}>
-                        {album.images.slice(0, 5).map(img => (
+                        {album.images.slice(0, 5).map((img, index) => (
                           <img 
                             key={img.id}
                             src={img.image}
                             alt="thumb"
                             style={{width: 30, height: 30, borderRadius: 6, objectFit: 'cover'}}
+                            onClick={() => openAlbumPreview(album.images, index)}
+                            className="gallery-preview-thumb"
                           />
                         ))}
                         {album.images.length > 5 && (
-                          <div style={{width: 30, height: 30, background:'#eee', borderRadius:6, display:'flex', justifyContent:'center', alignItems:'center', fontSize:11, fontWeight:700}}>
+                          <div
+                            style={{width: 30, height: 30, background:'#eee', borderRadius:6, display:'flex', justifyContent:'center', alignItems:'center', fontSize:11, fontWeight:700}}
+                            onClick={() => openAlbumPreview(album.images, 5)}
+                            className="gallery-preview-thumb"
+                          >
                             +{album.images.length - 5}
                           </div>
                         )}
                       </div>
+                    </td>
+                    <td>
+                      <span style={{fontSize: 13, color: '#666'}}>{getAlbumDate(album)}</span>
                     </td>
                     <td>
                       <span className={`role-badge ${album.target_group ? 'director' : 'parent'}`}>
@@ -208,6 +376,7 @@ const DirectorGallery = () => {
                     </td>
                     <td className="actions-cell">
                       <button className="action-icon-btn edit" onClick={() => openModal(album)}><FaEdit/></button>
+                      <button className="action-icon-btn download" onClick={() => handleDownloadAlbum(album)}><FaDownload/></button>
                       <button className="action-icon-btn delete" onClick={() => setDeleteTarget(album)}><FaTrash/></button>
                     </td>
                   </tr>
@@ -223,11 +392,26 @@ const DirectorGallery = () => {
             <h3>{editingAlbum ? 'Edytuj Album' : 'Nowy Album'}</h3>
             {error && <div className="form-error">{error}</div>}
             
-            <form onSubmit={handleSave} className="modal-form-grid">
+            <form onSubmit={handleSave} className="modal-form-grid" noValidate>
               
               <div className="form-group full-width">
-                <label>Tytuł</label>
-                <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                <label>Tytuł <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Wprowadź tytuł albumu..."
+                  value={formData.title}
+                  onChange={e => {
+                    setFormData({...formData, title: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('title');
+                      setRequiredFieldErrors((prev) => ({ ...prev, title: false }));
+                    }
+                  }}
+                  className={invalidFields.title ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.title && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group full-width">
@@ -242,14 +426,15 @@ const DirectorGallery = () => {
 
               <div className="form-group full-width">
                 <label>Opis</label>
-                <textarea className="medical-textarea" style={{height: '100px'}} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                <textarea className="medical-textarea" placeholder="Wprowadź opis albumu..." style={{height: '100px'}} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
               </div>
               
               <div 
-                className="form-group full-width drop-zone"
+                className={`form-group full-width drop-zone ${invalidFields.images ? 'invalid-bounce' : ''}`}
                 onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 onDrop={handleDrop}
               >
+                <label>Zdjęcia <span className="required-asterisk">*</span></label>
                 <input 
                   type="file" multiple
                   ref={fileInputRef} 
@@ -260,10 +445,25 @@ const DirectorGallery = () => {
                 
                 <div className="thumbnails-container">
                   {/* Istniejące zdjęcia */}
-                  {existingImages.map(img => (
+                  {existingImages.map((img, index) => (
                     <div key={img.id} className="thumbnail">
                       <img src={img.image} alt="Istniejące"/>
-                      <button type="button" className="thumb-delete" onClick={() => removeExistingImage(img.id)}><FaTimes/></button>
+                      <button
+                        type="button"
+                        className="thumb-download"
+                        aria-label="Pobierz zdjęcie"
+                        onClick={() => downloadExistingImage(img, index)}
+                      >
+                        <FaDownload className="thumb-download-icon" />
+                      </button>
+                      <button
+                        type="button"
+                        className="thumb-delete"
+                        aria-label="Usuń zdjęcie"
+                        onClick={() => removeExistingImage(img.id)}
+                      >
+                        <FaTrashAlt className="thumb-delete-icon" />
+                      </button>
                     </div>
                   ))}
                   
@@ -271,7 +471,22 @@ const DirectorGallery = () => {
                   {newImages.map((file, index) => (
                     <div key={index} className="thumbnail">
                       <img src={URL.createObjectURL(file)} alt="Nowe"/>
-                      <button type="button" className="thumb-delete" onClick={() => removeNewImage(index)}><FaTimes/></button>
+                      <button
+                        type="button"
+                        className="thumb-download"
+                        aria-label="Pobierz zdjęcie"
+                        onClick={() => downloadNewImage(file)}
+                      >
+                        <FaDownload className="thumb-download-icon" />
+                      </button>
+                      <button
+                        type="button"
+                        className="thumb-delete"
+                        aria-label="Usuń zdjęcie"
+                        onClick={() => removeNewImage(index)}
+                      >
+                        <FaTrashAlt className="thumb-delete-icon" />
+                      </button>
                     </div>
                   ))}
                   
@@ -280,6 +495,9 @@ const DirectorGallery = () => {
                     <span>Dodaj/Upuść</span>
                   </div>
                 </div>
+                {requiredFieldErrors.images && (
+                  <div className="field-required-message">Dodaj co najmniej jedno zdjęcie.</div>
+                )}
 
               </div>
 
@@ -308,6 +526,36 @@ const DirectorGallery = () => {
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {isPreviewOpen && previewImages.length > 0 && (
+        <div className="gallery-lightbox-overlay" onClick={closeAlbumPreview}>
+          <button type="button" className="gallery-lightbox-close-btn" onClick={closeAlbumPreview}>
+            <FaTimes />
+          </button>
+
+          {previewImages.length > 1 && (
+            <button type="button" className="gallery-lightbox-nav-btn prev" onClick={prevPreviewImage}>
+              <FaChevronLeft />
+            </button>
+          )}
+
+          <div className="gallery-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={previewImages[previewIndex].image}
+              alt={`Podgląd zdjęcia ${previewIndex + 1}`}
+            />
+            <div className="gallery-lightbox-counter">
+              {previewIndex + 1} / {previewImages.length}
+            </div>
+          </div>
+
+          {previewImages.length > 1 && (
+            <button type="button" className="gallery-lightbox-nav-btn next" onClick={nextPreviewImage}>
+              <FaChevronRight />
+            </button>
+          )}
         </div>
       )}
     </div>

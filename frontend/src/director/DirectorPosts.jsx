@@ -8,7 +8,7 @@ import { formatDateWithDots } from '../dateUtils';
 
 import { 
   FaBullhorn, FaPlus, FaEdit, FaTrash, FaSearch, 
-  FaImage, FaLayerGroup, FaSave, FaExclamationTriangle, FaTrashAlt 
+  FaImage, FaLayerGroup, FaSave, FaExclamationTriangle, FaTrashAlt, FaDownload 
 } from 'react-icons/fa';
 import { GiFox, GiRabbit, GiBearFace, GiLadybug, GiRat } from 'react-icons/gi';
 
@@ -35,6 +35,8 @@ const DirectorPosts = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [previewImage, setPreviewImage] = useState(null); // Podgląd zdjęcia
+  const [existingImageUrl, setExistingImageUrl] = useState(null);
+  const [removeExistingImage, setRemoveExistingImage] = useState(false);
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null); // Post wybrany do usunięcia
   const [invalidFields, setInvalidFields] = useState({ title: false, content: false });
@@ -78,10 +80,14 @@ const DirectorPosts = () => {
         target_group: post.target_group || '', // null w API to '' w formularzu
         image: null // Resetujemy plik przy edycji (chyba że user wybierze nowy)
       });
+      setExistingImageUrl(post.image || null);
+      setRemoveExistingImage(false);
       setPreviewImage(post.image); // Pokaż aktualne zdjęcie
     } else {
       setEditingPost(null);
       setFormData(initialForm);
+      setExistingImageUrl(null);
+      setRemoveExistingImage(false);
       setPreviewImage(null);
     }
     setIsModalOpen(true);
@@ -124,7 +130,27 @@ const DirectorPosts = () => {
     const file = e.target.files[0];
     if (file) {
       setFormData({ ...formData, image: file });
+      setRemoveExistingImage(false);
       setPreviewImage(URL.createObjectURL(file)); // Lokalny podgląd
+    }
+  };
+
+  const handleRemovePostImage = (e) => {
+    e.stopPropagation();
+
+    if (formData.image) {
+      setFormData((prev) => ({ ...prev, image: null }));
+      if (existingImageUrl && !removeExistingImage) {
+        setPreviewImage(existingImageUrl);
+      } else {
+        setPreviewImage(null);
+      }
+      return;
+    }
+
+    if (existingImageUrl) {
+      setRemoveExistingImage(true);
+      setPreviewImage(null);
     }
   };
 
@@ -159,6 +185,10 @@ const DirectorPosts = () => {
 
     if (formData.image) {
       dataToSend.append('image', formData.image);
+    }
+
+    if (editingPost && removeExistingImage && !formData.image) {
+      dataToSend.append('delete_image', '1');
     }
 
     try {
@@ -197,6 +227,42 @@ const DirectorPosts = () => {
     } catch (err) {
       alert("Nie udało się usunąć posta. Spróbuj ponownie później.");
       setLoading(false);
+    }
+  };
+
+  const downloadFromUrl = (url, fileName) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadFromBlob = (blob, fileName) => {
+    const blobUrl = URL.createObjectURL(blob);
+    downloadFromUrl(blobUrl, fileName);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  };
+
+  const handleDownloadPostImage = async (post) => {
+    if (!post.image) {
+      alert('To ogłoszenie nie ma zdjęcia do pobrania.');
+      return;
+    }
+
+    const cleanTitle = (post.title || 'ogloszenie').toLowerCase().replace(/\s+/g, '-');
+    const extension = post.image.split('.').pop()?.split('?')[0] || 'jpg';
+    const fileName = `${cleanTitle}.${extension}`;
+
+    try {
+      const response = await axios.get(post.image, {
+        ...getAuthHeaders(),
+        responseType: 'blob'
+      });
+      downloadFromBlob(response.data, fileName);
+    } catch (err) {
+      downloadFromUrl(post.image, fileName);
     }
   };
 
@@ -365,6 +431,14 @@ const DirectorPosts = () => {
                 <td style={{fontSize: 13, color: '#888'}}>{formatDateWithDots(post.formatted_date)}</td>
                 <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(post)}><FaEdit/></button>
+                  <button
+                    className="action-icon-btn download"
+                    onClick={() => handleDownloadPostImage(post)}
+                    disabled={!post.image}
+                    aria-label={post.image ? 'Pobierz zdjęcie' : 'Brak zdjęcia do pobrania'}
+                  >
+                    <FaDownload/>
+                  </button>
                   <button className="action-icon-btn delete" onClick={() => setDeleteTarget(post)}><FaTrash/></button>
                 </td>
               </tr>
@@ -442,11 +516,23 @@ const DirectorPosts = () => {
               <div className="form-group full-width">
                 <label>Zdjęcie (Opcjonalne)</label>
                 <div 
-                    style={{border: '2px dashed #ddd', padding: 20, textAlign: 'center', cursor: 'pointer', borderRadius: 10}}
+                    style={{border: '2px dashed #ddd', padding: 20, textAlign: 'center', cursor: 'pointer', borderRadius: 10, position: 'relative'}}
                     onClick={() => fileInputRef.current.click()}
                 >
                     {previewImage ? (
-                        <img src={previewImage} alt="Preview" style={{maxHeight: 150, maxWidth: '100%', borderRadius: 10}} />
+                        <>
+                          <div className="post-image-preview-wrapper">
+                            <img src={previewImage} alt="Preview" style={{maxHeight: 150, maxWidth: '100%', borderRadius: 10}} />
+                            <button
+                              type="button"
+                              onClick={handleRemovePostImage}
+                              aria-label="Usuń zdjęcie"
+                              className="post-image-delete-btn"
+                            >
+                              <FaTrashAlt className="post-image-delete-icon" />
+                            </button>
+                          </div>
+                        </>
                     ) : (
                         <div style={{color: '#999'}}>
                             <FaImage size={30} style={{marginBottom: 10}} /><br/>
