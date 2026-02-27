@@ -1,5 +1,35 @@
 /* frontend/src/director/DirectorDashboard.css */
 
+.director-container {
+  --sb-track-color: transparent;
+  --sb-thumb-color: #ecb11d;
+  --sb-size: 10px;
+}
+
+.director-container::-webkit-scrollbar {
+  width: var(--sb-size);
+  height: var(--sb-size);
+}
+
+.director-container::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 999px;
+  margin: 14px 8px 14px 2px;
+}
+
+.director-container::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .director-container {
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  }
+}
+
 .settings-main-title {
   color: #333;
   font-size: 24px;

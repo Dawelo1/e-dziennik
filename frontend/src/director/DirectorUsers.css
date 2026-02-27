@@ -55,8 +55,41 @@
   background-color: #ffffff;
 }
 
+.director-container {
+  --sb-track-color: transparent;
+  --sb-thumb-color: #ecb11d;
+  --sb-size: 10px;
+}
+
+.director-container::-webkit-scrollbar {
+  width: var(--sb-size);
+  height: var(--sb-size);
+}
+
+.director-container::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 999px;
+  margin: 14px 8px 14px 2px;
+}
+
+.director-container::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .director-container {
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  }
+}
+
 /* TABELA */
 .table-card {
+  --sb-track-color: transparent;
+  --sb-thumb-color: #ecb11d;
+  --sb-size: 10px;
   background: white;
   border-radius: 20px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
@@ -64,6 +97,30 @@
   width: 80%;
   margin-left: auto;
   margin-right: auto;
+}
+
+.table-card::-webkit-scrollbar {
+  width: var(--sb-size);
+  height: var(--sb-size);
+}
+
+.table-card::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 999px;
+  margin: 12px 8px 12px 2px;
+}
+
+.table-card::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .table-card {
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  }
 }
 
 .custom-table {
