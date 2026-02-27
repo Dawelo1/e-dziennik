@@ -12,6 +12,7 @@ import {
 const DirectorAttendance = () => {
   const [absences, setAbsences] = useState([]);
   const [children, setChildren] = useState([]); // Do listy w modalu
+  const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(true);
   const dateInputRef = useRef(null);
   
@@ -32,13 +33,15 @@ const DirectorAttendance = () => {
   // 1. Pobieranie danych
   const fetchData = async () => {
     try {
-      const [absencesRes, childrenRes] = await Promise.all([
+      const [absencesRes, childrenRes, closuresRes] = await Promise.all([
         axios.get('http://127.0.0.1:8000/api/attendance/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()) // Pobieramy dzieci
+        axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()), // Pobieramy dzieci
+        axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders())
       ]);
       // Sortujemy od najnowszych
       setAbsences(absencesRes.data.sort((a,b) => new Date(b.date) - new Date(a.date)));
       setChildren(childrenRes.data);
+      setClosures(closuresRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -105,6 +108,26 @@ const DirectorAttendance = () => {
     }
   };
 
+  const getDayOffReason = (dateString) => {
+    if (!dateString) return null;
+
+    const selectedDate = new Date(`${dateString}T00:00:00`);
+    const dayOfWeek = selectedDate.getDay();
+
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return 'To dzień wolny od zajęć (weekend).';
+    }
+
+    const closure = closures.find((item) => item.date === dateString);
+    if (closure) {
+      return closure.reason
+        ? `To dzień wolny od zajęć: "${closure.reason}".`
+        : 'To dzień wolny od zajęć.';
+    }
+
+    return null;
+  };
+
   // 3. Otwieranie Modala
   const openModal = () => {
     setError('');
@@ -118,6 +141,7 @@ const DirectorAttendance = () => {
   // 4. Zapisywanie
   const handleSave = async (e) => {
     e.preventDefault();
+    setError('');
 
     const missingChild = !String(formData.child).trim();
     const missingDate = !String(formData.date).trim();
@@ -131,13 +155,27 @@ const DirectorAttendance = () => {
     if (missingDate) triggerInvalidField('date');
     if (missingChild || missingDate) return;
 
+    const dayOffReason = getDayOffReason(formData.date);
+    if (dayOffReason) {
+      triggerInvalidField('date');
+      setError(`Nie można dodać nieobecności. ${dayOffReason}`);
+      return;
+    }
+
     setLoading(true);
     try {
       await axios.post('http://127.0.0.1:8000/api/attendance/', formData, getAuthHeaders());
       setIsModalOpen(false);
       await fetchData();
     } catch (err) {
-      setError("Błąd zapisu. Być może ta nieobecność jest już zgłoszona.");
+      const apiError = err?.response?.data;
+      const errorMessage =
+        apiError?.date?.[0] ||
+        apiError?.non_field_errors?.[0] ||
+        apiError?.detail ||
+        (typeof apiError === 'string' ? apiError : null);
+
+      setError(errorMessage || "Błąd zapisu. Być może ta nieobecność jest już zgłoszona.");
       setLoading(false);
     }
   };

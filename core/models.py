@@ -175,6 +175,10 @@ class FacilityClosure(models.Model):
         verbose_name_plural = "Dni wolne od zajęć"
         ordering = ['date']
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        Attendance.objects.filter(date=self.date).delete()
+
     def __str__(self):
         return f"{self.date} - {self.reason}"
 

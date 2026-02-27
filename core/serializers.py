@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.utils import timezone
-from django.utils import timezone
 from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group
 from drf_writable_nested import WritableNestedModelSerializer
 
@@ -40,13 +39,23 @@ class AttendanceSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # Pobieramy użytkownika, który wysyła żądanie
         request = self.context.get("request")
+        target_date = data.get('date')
+
+        if not target_date:
+            return data
+
+        # Dla wszystkich ról: nie można zgłaszać nieobecności na dzień wolny
+        if target_date.weekday() >= 5:
+            raise serializers.ValidationError({'date': "Nie można dodać nieobecności w weekend."})
+
+        if FacilityClosure.objects.filter(date=target_date).exists():
+            raise serializers.ValidationError({'date': "Nie można dodać nieobecności w dzień wolny od zajęć."})
         
         # --- ZMIANA: Jeśli to Dyrektor, OMIŃ WSZYSTKIE WALIDACJE CZASOWE ---
         if request and request.user.is_director:
             return data # Zezwól na wszystko
 
         # --- Logika dla Rodzica (bez zmian) ---
-        target_date = data['date']
         now = timezone.now()
         today = now.date()
 
@@ -54,7 +63,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Nie można zgłaszać nieobecności wstecz.")
 
         if target_date == today:
-            if now.getHours() >= 7:
+            if now.hour >= 7:
                 raise serializers.ValidationError("Na dzisiaj można zgłaszać nieobecność tylko do godziny 7:00.")
 
         return data

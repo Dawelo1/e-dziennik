@@ -20,6 +20,7 @@ const DirectorCalendar = () => {
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [closureImpactTarget, setClosureImpactTarget] = useState(null);
   const [invalidFields, setInvalidFields] = useState({ date: false });
   const [requiredFieldErrors, setRequiredFieldErrors] = useState({ date: false });
   const invalidFieldTimers = useRef({ date: null });
@@ -69,6 +70,7 @@ const DirectorCalendar = () => {
   const openModal = (closure = null) => {
     setError('');
     setActionError('');
+    setClosureImpactTarget(null);
     setInvalidFields({ date: false });
     setRequiredFieldErrors({ date: false });
     if (closure) {
@@ -81,16 +83,7 @@ const DirectorCalendar = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-
-    const missingDate = !formData.date.trim();
-    setRequiredFieldErrors({ date: missingDate });
-    if (missingDate) {
-      triggerInvalidField('date');
-      return;
-    }
-
+  const saveClosure = async () => {
     setLoading(true);
     try {
       if (editingClosure) {
@@ -99,11 +92,50 @@ const DirectorCalendar = () => {
         await axios.post('http://127.0.0.1:8000/api/calendar/closures/', formData, getAuthHeaders());
       }
       setIsModalOpen(false);
+      setClosureImpactTarget(null);
       await fetchData();
     } catch (err) {
       setError("Błąd zapisu. Sprawdź, czy ta data nie jest już dodana.");
       setLoading(false);
     }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const missingDate = !formData.date.trim();
+    setRequiredFieldErrors({ date: missingDate });
+    if (missingDate) {
+      triggerInvalidField('date');
+      return;
+    }
+
+    try {
+      if (!editingClosure) {
+        const attendanceRes = await axios.get('http://127.0.0.1:8000/api/attendance/', getAuthHeaders());
+        const absencesForSelectedDate = attendanceRes.data.filter(
+          (entry) => entry.date === formData.date
+        ).length;
+
+        if (absencesForSelectedDate > 0) {
+          setClosureImpactTarget({
+            date: formData.date,
+            absencesCount: absencesForSelectedDate
+          });
+          return;
+        }
+      }
+
+      await saveClosure();
+    } catch (err) {
+      setError("Błąd zapisu. Sprawdź, czy ta data nie jest już dodana.");
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmClosureImpact = async () => {
+    await saveClosure();
   };
 
   const handleDelete = async () => {
@@ -223,6 +255,24 @@ const DirectorCalendar = () => {
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {closureImpactTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Dodać dzień wolny?</h3>
+            <p>
+              Dla dnia {` "${new Date(closureImpactTarget.date).toLocaleDateString('pl-PL')}" `}
+              istnieje {closureImpactTarget.absencesCount} zgłoszeń nieobecności.
+              Dodanie dnia wolnego usunie te zgłoszenia.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setClosureImpactTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleConfirmClosureImpact}><FaSave /> Dodaj mimo to</button>
             </div>
           </div>
         </div>
