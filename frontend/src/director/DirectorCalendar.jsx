@@ -6,7 +6,7 @@ import './DirectorUsers.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 
-  FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaSave
+  FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorCalendar = () => {
@@ -18,6 +18,7 @@ const DirectorCalendar = () => {
   const [editingClosure, setEditingClosure] = useState(null);
   const [formData, setFormData] = useState({ date: '', reason: '' });
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -58,11 +59,12 @@ const DirectorCalendar = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Usunąć ten dzień wolny?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/calendar/closures/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/calendar/closures/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchData();
     } catch (err) {
       alert("Błąd usuwania.");
@@ -91,7 +93,7 @@ const DirectorCalendar = () => {
             <tr>
               <th>Data</th>
               <th>Powód / Nazwa święta</th>
-              <th className="text-right">Akcje</th>
+              <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -99,9 +101,9 @@ const DirectorCalendar = () => {
               <tr key={closure.id}>
                 <td style={{fontWeight: 700}}>{new Date(closure.date).toLocaleDateString('pl-PL', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}</td>
                 <td>{closure.reason}</td>
-                <td className="text-right">
+                <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(closure)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => handleDelete(closure.id)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(closure)}><FaTrash/></button>
                 </td>
               </tr>
             ))}
@@ -133,6 +135,24 @@ const DirectorCalendar = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć dzień wolny?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć dzień wolny
+              {` "${new Date(deleteTarget.date).toLocaleDateString('pl-PL')}"`}
+              ? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}

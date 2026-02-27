@@ -8,7 +8,7 @@ import LoadingScreen from '../users/LoadingScreen';
 
 import { 
   FaImages, FaPlus, FaEdit, FaTrash, FaSearch, 
-  FaLayerGroup, FaBullhorn, FaSave, FaUpload, FaTimes
+  FaLayerGroup, FaBullhorn, FaSave, FaUpload, FaTimes, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorGallery = () => {
@@ -30,6 +30,7 @@ const DirectorGallery = () => {
   
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // --- POPRAWIONE POBIERANIE DANYCH ---
   const fetchData = async () => {
@@ -124,11 +125,12 @@ const DirectorGallery = () => {
     }
   };
   
-  const handleDelete = async (id) => {
-    if (!window.confirm("Usunąć ten album?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/gallery/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/gallery/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchData();
     } catch (err) {
       alert("Błąd usuwania.");
@@ -166,7 +168,7 @@ const DirectorGallery = () => {
               <th>Album</th>
               <th>Zdjęcia (Podgląd)</th>
               <th>Widoczność</th>
-              <th className="text-right">Akcje</th>
+              <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -204,9 +206,9 @@ const DirectorGallery = () => {
                         {getGroupName(album.target_group)}
                       </span>
                     </td>
-                    <td className="text-right">
+                    <td className="actions-cell">
                       <button className="action-icon-btn edit" onClick={() => openModal(album)}><FaEdit/></button>
-                      <button className="action-icon-btn delete" onClick={() => handleDelete(album.id)}><FaTrash/></button>
+                      <button className="action-icon-btn delete" onClick={() => setDeleteTarget(album)}><FaTrash/></button>
                     </td>
                   </tr>
                 ))
@@ -287,6 +289,24 @@ const DirectorGallery = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć album?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć album
+              {` "${deleteTarget.title}"`}
+              ? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}

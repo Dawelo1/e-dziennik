@@ -8,7 +8,7 @@ import { formatDateWithDots } from '../dateUtils';
 
 import { 
   FaChild, FaSearch, FaPlus, FaEdit, FaTrash, 
-  FaLayerGroup, FaUserFriends, FaSave, FaTimes
+  FaLayerGroup, FaUserFriends, FaSave, FaTimes, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorChildren = () => {
@@ -35,6 +35,7 @@ const DirectorChildren = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // 1. POBIERANIE DANYCH (Dzieci, Grupy, Rodzice)
   const fetchData = async () => {
@@ -129,11 +130,12 @@ const DirectorChildren = () => {
   };
 
   // 4. USUWANIE
-  const handleDelete = async (id) => {
-    if (!window.confirm("Usunąć kartotekę dziecka?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/children/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/children/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchData();
     } catch (err) {
       alert("Błąd usuwania.");
@@ -179,7 +181,7 @@ const DirectorChildren = () => {
               <th>Dziecko</th>
               <th>Grupa</th>
               <th>Rodzice / Opiekunowie</th>
-              <th className="text-right">Akcje</th>
+              <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -213,9 +215,9 @@ const DirectorChildren = () => {
                     })}
                   </div>
                 </td>
-                <td className="text-right">
+                <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(child)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => handleDelete(child.id)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(child)}><FaTrash/></button>
                 </td>
               </tr>
             ))}
@@ -301,6 +303,24 @@ const DirectorChildren = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć kartotekę dziecka?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć kartotekę dziecka
+              {` "${deleteTarget.first_name} ${deleteTarget.last_name}"`}
+              ? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}

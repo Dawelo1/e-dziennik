@@ -7,7 +7,7 @@ import LoadingScreen from '../users/LoadingScreen';
 import { formatDateWithDots } from '../dateUtils';
 
 import { 
-  FaUtensils, FaPlus, FaEdit, FaTrash, FaSave, FaCalendarAlt
+  FaUtensils, FaPlus, FaEdit, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorMenu = () => {
@@ -28,6 +28,7 @@ const DirectorMenu = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -82,11 +83,12 @@ const DirectorMenu = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Usunąć ten jadłospis?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/menu/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/menu/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchData();
     } catch (err) {
       alert("Błąd usuwania.");
@@ -136,7 +138,7 @@ const DirectorMenu = () => {
               <th>Data</th>
               <th>Śniadanie</th>
               <th>Obiad</th>
-              <th className="text-right">Akcje</th>
+              <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -145,9 +147,9 @@ const DirectorMenu = () => {
                 <td style={{fontWeight: 700}}>{new Date(menu.date).toLocaleDateString('pl-PL', {weekday:'long', day:'numeric', month:'long'})}</td>
                 <td>{menu.breakfast_main_course || '-'}</td>
                 <td>{menu.lunch_main_course || '-'}</td>
-                <td className="text-right">
+                <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(menu)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => handleDelete(menu.id)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(menu)}><FaTrash/></button>
                 </td>
               </tr>
             ))}
@@ -198,6 +200,24 @@ const DirectorMenu = () => {
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć jadłospis?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć jadłospis z dnia
+              {` "${formatDateWithDots(deleteTarget.date)}"`}
+              ? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}

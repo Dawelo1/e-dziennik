@@ -212,7 +212,7 @@ const DirectorAttendance = () => {
               <th>Dziecko</th>
               <th>Data nieobecności</th>
               <th>Data zgłoszenia</th>
-              <th className="text-right">Akcje</th>
+              <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -223,7 +223,7 @@ const DirectorAttendance = () => {
                 </td>
                 <td>{new Date(absence.date).toLocaleDateString('pl-PL')}</td>
                 <td>{new Date(absence.created_at).toLocaleString('pl-PL')}</td>
-                <td className="text-right">
+                <td className="actions-cell">
                   <button className="action-icon-btn delete" onClick={() => setDeleteTarget(absence)} title="Usuń">
                     <FaTrash />
                   </button>

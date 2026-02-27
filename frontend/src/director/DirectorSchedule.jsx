@@ -6,7 +6,7 @@ import './DirectorUsers.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 
-  FaChalkboardTeacher, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSave
+  FaChalkboardTeacher, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSave, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorSchedule = () => {
@@ -24,6 +24,7 @@ const DirectorSchedule = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // 1. POBIERANIE DANYCH
   const fetchData = async () => {
@@ -91,11 +92,12 @@ const DirectorSchedule = () => {
   };
 
   // 4. USUWANIE
-  const handleDelete = async (id) => {
-    if (!window.confirm("Usunąć te zajęcia z harmonogramu?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/calendar/activities/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/calendar/activities/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchData();
     } catch (err) {
       alert("Błąd usuwania.");
@@ -124,7 +126,7 @@ const DirectorSchedule = () => {
               <th>Zajęcia</th>
               <th>Data i Godzina</th>
               <th>Dla Grup</th>
-              <th className="text-right">Akcje</th>
+              <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -151,9 +153,9 @@ const DirectorSchedule = () => {
                     )}
                   </div>
                 </td>
-                <td className="text-right">
+                <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(activity)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => handleDelete(activity.id)}><FaTrash/></button>
+                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(activity)}><FaTrash/></button>
                 </td>
               </tr>
             ))}
@@ -200,6 +202,24 @@ const DirectorSchedule = () => {
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć zajęcia?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć zajęcia
+              {` "${deleteTarget.title}"`}
+              ? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}

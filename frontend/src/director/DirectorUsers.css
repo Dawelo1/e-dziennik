@@ -194,6 +194,17 @@
   white-space: nowrap;
 }
 
+.actions-cell .action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.actions-cell .action-icon-btn + .action-icon-btn {
+  margin-left: 2px;
+}
+
 .action-icon-btn {
   background: none; border: none; cursor: pointer; padding: 8px;
   font-size: 16px; transition: transform 0.2s;
@@ -303,6 +314,35 @@
   color: #d32f2f; background-color: #ffebee; padding: 10px;
   border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 13px;
 }
+
+.delete-modal-content {
+  background: white; padding: 30px; border-radius: 20px;
+  width: 90%; max-width: 400px; text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.warning-icon {
+  font-size: 40px; color: #e57373; margin-bottom: 15px;
+}
+
+.delete-modal-content h3 { margin: 0; color: #333; margin-bottom: 10px; }
+.delete-modal-content p { color: #666; margin-bottom: 25px; line-height: 1.5; font-size: 15px; }
+
+.modal-actions { display: flex; justify-content: center; gap: 15px; }
+
+.modal-btn {
+  padding: 10px 20px; border: none; border-radius: 25px;
+  font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: transform 0.1s; font-size: 14px;
+}
+
+.modal-btn:hover { transform: translateY(-2px); }
+.modal-btn:active { transform: translateY(0); }
+.modal-btn:focus { outline: none; }
+
+.modal-btn.cancel { background-color: #f0f0f0; color: #333; }
+.modal-btn.confirm.success { background-color: #f2c94c; color: #fff; }
+.modal-btn.confirm.danger { background-color: #e0245e; color: #fff; }
 /* W pliku DirectorUsers.css lub nowym DirectorAttendance.css */
 
 .filter-bar {

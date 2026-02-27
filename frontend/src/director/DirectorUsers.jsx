@@ -10,7 +10,7 @@ import LoadingScreen from '../users/LoadingScreen';
 // Ikony
 import { 
   FaUsers, FaSearch, FaPlus, FaEdit, FaTrash, 
-  FaUserTie, FaUser, FaKey, FaSave 
+  FaUserTie, FaUser, FaKey, FaSave, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorUsers = () => {
@@ -33,6 +33,7 @@ const DirectorUsers = () => {
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // 1. Pobieranie użytkowników
   const fetchUsers = async () => {
@@ -124,12 +125,13 @@ const DirectorUsers = () => {
   };
 
   // 4. Usuwanie
-  const handleDelete = async (id) => {
-    if (!window.confirm("Czy na pewno chcesz usunąć tego użytkownika? To operacja nieodwracalna.")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     
     setLoading(true); // Pszczółka podczas usuwania
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/users/manage/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/users/manage/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       fetchUsers();
     } catch (err) {
       alert("Nie udało się usunąć użytkownika.");
@@ -181,7 +183,7 @@ const DirectorUsers = () => {
               <th>Imię i Nazwisko</th>
               <th>Kontakt</th>
               <th>Rola</th>
-              <th className="text-right">Akcje</th>
+              <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -212,11 +214,11 @@ const DirectorUsers = () => {
                       <span className="role-badge parent"><FaUser/> Rodzic</span>
                     )}
                   </td>
-                  <td className="text-right">
+                  <td className="actions-cell">
                     <button className="action-icon-btn edit" onClick={() => openModal(user)} title="Edytuj">
                       <FaEdit />
                     </button>
-                    <button className="action-icon-btn delete" onClick={() => handleDelete(user.id)} title="Usuń">
+                    <button className="action-icon-btn delete" onClick={() => setDeleteTarget(user)} title="Usuń">
                       <FaTrash />
                     </button>
                   </td>
@@ -287,6 +289,24 @@ const DirectorUsers = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć użytkownika?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć użytkownika
+              {` "${deleteTarget.first_name || ''} ${deleteTarget.last_name || ''}"`.trim()}
+              ? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}

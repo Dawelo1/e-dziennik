@@ -7,7 +7,7 @@ import LoadingScreen from '../users/LoadingScreen';
 
 // Ikony
 import { 
-  FaLayerGroup, FaSearch, FaPlus, FaEdit, FaTrash, FaChalkboardTeacher, FaSave
+  FaLayerGroup, FaSearch, FaPlus, FaEdit, FaTrash, FaChalkboardTeacher, FaSave, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorGroups = () => {
@@ -23,6 +23,7 @@ const DirectorGroups = () => {
   const initialForm = { name: '', teachers_info: '' };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // 1. Pobieranie grup
   const fetchGroups = async () => {
@@ -97,12 +98,13 @@ const DirectorGroups = () => {
   };
 
   // 4. Usuwanie
-  const handleDelete = async (id) => {
-    if (!window.confirm("Czy na pewno chcesz usunąć tę grupę?")) return;
-    
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/groups/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/groups/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchGroups();
     } catch (err) {
       alert("Nie udało się usunąć grupy (może są do niej przypisane dzieci?).");
@@ -151,7 +153,7 @@ const DirectorGroups = () => {
             <tr>
               <th style={{width: '30%'}}>Nazwa Grupy</th>
               <th>Nauczyciele / Opis</th>
-              <th className="text-right" style={{width: '100px'}}>Akcje</th>
+              <th className="actions-header" style={{width: '100px'}}>Akcje</th>
             </tr>
           </thead>
           <tbody>
@@ -171,11 +173,11 @@ const DirectorGroups = () => {
                       {group.teachers_info}
                     </div>
                   </td>
-                  <td className="text-right">
+                  <td className="actions-cell">
                     <button className="action-icon-btn edit" onClick={() => openModal(group)} title="Edytuj">
                       <FaEdit />
                     </button>
-                    <button className="action-icon-btn delete" onClick={() => handleDelete(group.id)} title="Usuń">
+                    <button className="action-icon-btn delete" onClick={() => setDeleteTarget(group)} title="Usuń">
                       <FaTrash />
                     </button>
                   </td>
@@ -223,6 +225,24 @@ const DirectorGroups = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć grupę?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć grupę
+              {` "${deleteTarget.name}"`}
+              ? Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}
