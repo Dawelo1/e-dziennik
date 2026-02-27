@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Gallery.css';
 import ImageGrid from './ImageGrid';
-import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp } from 'react-icons/fa';
+import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp, FaUserTie } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);
+  const [directorAvatar, setDirectorAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const getAvatarUrl = (url) => {
@@ -20,11 +21,15 @@ const Gallery = () => {
   useEffect(() => {
     const fetchAlbums = async () => {
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/gallery/', getAuthHeaders());
+        const [res, directorStatusRes] = await Promise.all([
+          axios.get('http://127.0.0.1:8000/api/gallery/', getAuthHeaders()),
+          axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders())
+        ]);
         
         // Filtrujemy puste albumy
         const galleryPosts = res.data.filter(post => post.images && post.images.length > 0);
         setAlbums(galleryPosts);
+        setDirectorAvatar(directorStatusRes.data.avatar);
       } catch (err) {
         console.error("Błąd pobierania galerii:", err);
       } finally {
@@ -78,9 +83,11 @@ const Gallery = () => {
                 <div className="gallery-avatar">
                   {album.author_avatar ? (
                     <img src={getAvatarUrl(album.author_avatar)} alt="Avatar" />
+                  ) : directorAvatar ? (
+                    <img src={getAvatarUrl(directorAvatar)} alt="Dyrektor" />
                   ) : (
                     <div className="gallery-avatar-placeholder">
-                      {(album.author_name && album.author_name[0]) ? album.author_name[0].toUpperCase() : 'D'}
+                      <FaUserTie />
                     </div>
                   )}
                 </div>

@@ -9,6 +9,7 @@ import {
   FaUserSlash, 
   FaCalendarCheck, 
   FaEnvelope,
+  FaUserTie,
   FaThumbsUp,
   FaRegThumbsUp,
   FaPaperPlane,
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [events, setEvents] = useState([]);
   const [payments, setPayments] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [directorAvatar, setDirectorAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [commentInputs, setCommentInputs] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
@@ -38,11 +40,12 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [postsRes, eventsRes, paymentsRes, userRes] = await Promise.all([
+      const [postsRes, eventsRes, paymentsRes, userRes, directorStatusRes] = await Promise.all([
         axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders()),
         axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders()),
         axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
+        axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders()),
+        axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders())
       ]);
 
       setPosts(postsRes.data.map(post => ({
@@ -58,6 +61,7 @@ const Dashboard = () => {
       setEvents(eventsRes.data);
       setPayments(paymentsRes.data);
       setCurrentUser(userRes.data); 
+      setDirectorAvatar(directorStatusRes.data.avatar);
     } catch (err) {
       console.error("Błąd pobierania danych:", err);
     } finally {
@@ -234,7 +238,17 @@ const handleLikeComment = async (postId, commentId) => {
             posts.map((post) => (
               <div key={post.id} className="post-card">
                 <div className="post-header">
-                  <div className="post-avatar">P</div>
+                  <div className="post-avatar">
+                    {directorAvatar ? (
+                      <img 
+                        src={getAvatarUrl(directorAvatar)} 
+                        alt="Dyrektor" 
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <FaUserTie />
+                    )}
+                  </div>
                   <div className="post-author-info">
                     <h4>Dyrektor Przedszkola</h4>
                     <span className="post-date">{post.formatted_date}</span>
