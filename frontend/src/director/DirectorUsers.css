@@ -263,6 +263,7 @@
 }
 
 .form-group input.invalid-bounce,
+.form-group select.invalid-bounce,
 .form-group textarea.invalid-bounce {
   border-color: #d32f2f;
   box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.18);
@@ -324,6 +325,38 @@
   box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
+.date-picker-trigger {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.date-picker-trigger:hover {
+  background-color: #e8f1ff;
+  transform: scale(1.06);
+}
+
+.date-picker-trigger:hover .search-icon,
+.date-picker-trigger:focus-visible .search-icon {
+  color: #2196f3;
+}
+
+.date-picker-trigger:focus-visible {
+  outline: 2px solid #2196f3;
+  outline-offset: 2px;
+}
+
+.date-picker-trigger:focus,
+.date-picker-trigger:active {
+  outline: none;
+}
+
 .date-filter-container input[type="date"] {
   border: none;
   outline: none;
@@ -331,6 +364,11 @@
   color: #333;
   padding: 15px 0;
   background: transparent;
+  color-scheme: light;
+}
+
+.date-filter-container input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
 }
 
 .clear-date-btn {
@@ -338,10 +376,31 @@
   border: none;
   width: 24px;
   height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   font-size: 16px;
+  line-height: 1;
   color: #888;
   cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.clear-date-btn:hover {
+  background: #fdecef;
+  color: #e0245e;
+  transform: scale(1.08);
+}
+
+.clear-date-btn:active {
+  transform: scale(0.96);
+}
+
+.clear-date-btn:focus-visible {
+  outline: 2px solid #e0245e;
+  outline-offset: 2px;
 }
 
 .checkbox-list {

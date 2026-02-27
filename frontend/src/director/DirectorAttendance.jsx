@@ -1,18 +1,19 @@
 // frontend/src/director/DirectorAttendance.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 
-  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaCalendarAlt
+  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorAttendance = () => {
   const [absences, setAbsences] = useState([]);
   const [children, setChildren] = useState([]); // Do listy w modalu
   const [loading, setLoading] = useState(true);
+  const dateInputRef = useRef(null);
   
   // Filtry
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,6 +23,10 @@ const DirectorAttendance = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ child: '', date: '' });
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [invalidFields, setInvalidFields] = useState({ child: false, date: false });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({ child: false, date: false });
+  const invalidFieldTimers = useRef({ child: null, date: null });
 
   // 1. Pobieranie danych
   const fetchData = async () => {
@@ -42,6 +47,38 @@ const DirectorAttendance = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
   // 2. Logika filtrowania
   const getChildName = (id) => {
     const child = children.find(c => c.id === id);
@@ -55,9 +92,23 @@ const DirectorAttendance = () => {
     return matchesSearch && matchesDate;
   });
 
+  const handleDateIconClick = () => {
+    const input = dateInputRef.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === 'function') {
+      input.showPicker();
+    } else {
+      input.focus();
+      input.click();
+    }
+  };
+
   // 3. Otwieranie Modala
   const openModal = () => {
     setError('');
+    setInvalidFields({ child: false, date: false });
+    setRequiredFieldErrors({ child: false, date: false });
     setFormData({ child: '', date: new Date().toISOString().split('T')[0] }); // Domyślnie dziś
     setIsModalOpen(true);
   };
@@ -65,6 +116,19 @@ const DirectorAttendance = () => {
   // 4. Zapisywanie
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const missingChild = !String(formData.child).trim();
+    const missingDate = !String(formData.date).trim();
+
+    setRequiredFieldErrors({
+      child: missingChild,
+      date: missingDate
+    });
+
+    if (missingChild) triggerInvalidField('child');
+    if (missingDate) triggerInvalidField('date');
+    if (missingChild || missingDate) return;
+
     setLoading(true);
     try {
       await axios.post('http://127.0.0.1:8000/api/attendance/', formData, getAuthHeaders());
@@ -77,14 +141,15 @@ const DirectorAttendance = () => {
   };
 
   // 5. Usuwanie
-  const handleDelete = async (id) => {
-    if (!window.confirm("Usunąć ten wpis nieobecności?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/attendance/${id}/`, getAuthHeaders());
+      await axios.delete(`http://127.0.0.1:8000/api/attendance/${deleteTarget.id}/`, getAuthHeaders());
+      setDeleteTarget(null);
       await fetchData();
     } catch (err) {
-      alert("Błąd usuwania.");
+      alert("Nie udało się usunąć wpisu nieobecności. Spróbuj ponownie później.");
       setLoading(false);
     }
   };
@@ -116,9 +181,18 @@ const DirectorAttendance = () => {
           />
         </div>
         <div className="date-filter-container">
-          <FaCalendarAlt className="search-icon"/>
+          <button
+            type="button"
+            className="date-picker-trigger"
+            onClick={handleDateIconClick}
+            title="Pokaż selektor dat"
+            aria-label="Pokaż selektor dat"
+          >
+            <FaCalendarAlt className="search-icon"/>
+          </button>
           <input 
             type="date"
+            ref={dateInputRef}
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
           />
@@ -150,7 +224,7 @@ const DirectorAttendance = () => {
                 <td>{new Date(absence.date).toLocaleDateString('pl-PL')}</td>
                 <td>{new Date(absence.created_at).toLocaleString('pl-PL')}</td>
                 <td className="text-right">
-                  <button className="action-icon-btn delete" onClick={() => handleDelete(absence.id)} title="Usuń">
+                  <button className="action-icon-btn delete" onClick={() => setDeleteTarget(absence)} title="Usuń">
                     <FaTrash />
                   </button>
                 </td>
@@ -166,21 +240,50 @@ const DirectorAttendance = () => {
           <div className="modal-content">
             <h3>Dodaj Nieobecność</h3>
             {error && <div className="form-error">{error}</div>}
-            <form onSubmit={handleSave} className="modal-form-grid">
+            <form onSubmit={handleSave} className="modal-form-grid" noValidate>
               
               <div className="form-group full-width">
-                <label>Dziecko</label>
-                <select required value={formData.child} onChange={e => setFormData({...formData, child: e.target.value})}>
+                <label>Dziecko <span className="required-asterisk">*</span></label>
+                <select
+                  value={formData.child}
+                  onChange={e => {
+                    const nextValue = e.target.value;
+                    setFormData({...formData, child: nextValue});
+                    if (String(nextValue).trim()) {
+                      clearInvalidField('child');
+                      setRequiredFieldErrors((prev) => ({ ...prev, child: false }));
+                    }
+                  }}
+                  className={invalidFields.child ? 'invalid-bounce' : ''}
+                >
                   <option value="">-- Wybierz dziecko --</option>
                   {children.map(c => (
                     <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
                   ))}
                 </select>
+                {requiredFieldErrors.child && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group full-width">
-                <label>Data nieobecności</label>
-                <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})}/>
+                <label>Data nieobecności <span className="required-asterisk">*</span></label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={e => {
+                    const nextValue = e.target.value;
+                    setFormData({...formData, date: nextValue});
+                    if (String(nextValue).trim()) {
+                      clearInvalidField('date');
+                      setRequiredFieldErrors((prev) => ({ ...prev, date: false }));
+                    }
+                  }}
+                  className={invalidFields.date ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.date && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="modal-actions full-width">
@@ -189,6 +292,24 @@ const DirectorAttendance = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Usunąć wpis nieobecności?</h3>
+            <p>
+              Czy na pewno chcesz trwale usunąć wpis nieobecności dla dziecka
+              {` "${getChildName(deleteTarget.child)}"`}?
+              Tej operacji nie można cofnąć.
+            </p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteTarget(null)}>Anuluj</button>
+              <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
           </div>
         </div>
       )}
