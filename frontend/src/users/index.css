@@ -28,6 +28,52 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  --sb-track-color: #ffffff;
+  --sb-thumb-color: #cacaca;
+  --sb-size: 8px;
+}
+
+body::-webkit-scrollbar {
+  width: var(--sb-size)
+}
+
+body::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 6px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 6px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 2px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="date"]:focus-visible::-webkit-calendar-picker-indicator,
+input[type="time"]:focus-visible::-webkit-calendar-picker-indicator {
+  background-color: #e8f1ff;
+  transform: scale(1.06);
+}
+
+input[type="date"]:focus-visible,
+input[type="time"]:focus-visible {
+  outline: 2px solid #2196f3;
+  outline-offset: 2px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  body {
+    scrollbar-color: var(--sb-thumb-color)
+                     var(--sb-track-color);
+  }
 }
 
 h1 {

@@ -302,6 +302,17 @@
   width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; background-color: #fff; color: #242323; box-sizing: border-box;
 }
 
+.form-group input[type="date"],
+.form-group input[type="time"] {
+  color-scheme: light;
+}
+
+.form-group input[type="date"]::-webkit-calendar-picker-indicator,
+.form-group input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  cursor: pointer;
+}
+
 .form-group input::placeholder {
   color: #999;
   opacity: 0.8;
@@ -501,12 +512,35 @@
 }
 
 .checkbox-list {
+  --sb-track-color: #ffffff;
+  --sb-thumb-color: #cacaca;
+  --sb-size: 8px;
   max-height: 150px;
   overflow-y: auto;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 10px;
   background-color: #fafafa;
+}
+
+.checkbox-list::-webkit-scrollbar {
+  width: var(--sb-size);
+}
+
+.checkbox-list::-webkit-scrollbar-track {
+  background: var(--sb-track-color);
+  border-radius: 6px;
+}
+
+.checkbox-list::-webkit-scrollbar-thumb {
+  background: var(--sb-thumb-color);
+  border-radius: 6px;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .checkbox-list {
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
+  }
 }
 
 .checkbox-item {
@@ -518,6 +552,18 @@
 .checkbox-item input[type="checkbox"] {
   width: auto; /* Reset szerokości */
   margin-right: 10px;
+}
+
+.form-group.full-width .checkbox-list {
+  max-height: none;
+  overflow-y: visible;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px 12px;
+}
+
+.form-group.full-width .checkbox-list .checkbox-item {
+  padding: 4px 2px;
 }
 
 /* W pliku DirectorUsers.css */

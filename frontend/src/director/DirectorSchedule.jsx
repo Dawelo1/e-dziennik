@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorSchedule.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Wspólne style
@@ -25,6 +25,9 @@ const DirectorSchedule = () => {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [invalidFields, setInvalidFields] = useState({ title: false, date: false, start_time: false });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({ title: false, date: false, start_time: false });
+  const invalidFieldTimers = useRef({ title: null, date: null, start_time: null });
 
   // 1. POBIERANIE DANYCH
   const fetchData = async () => {
@@ -41,9 +44,43 @@ const DirectorSchedule = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
   // 2. OTWIERANIE MODALA
   const openModal = (activity = null) => {
     setError('');
+    setInvalidFields({ title: false, date: false, start_time: false });
+    setRequiredFieldErrors({ title: false, date: false, start_time: false });
     if (activity) {
       setEditingActivity(activity);
       setFormData({
@@ -76,6 +113,22 @@ const DirectorSchedule = () => {
   // 3. ZAPISYWANIE
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const missingTitle = !formData.title.trim();
+    const missingDate = !formData.date;
+    const missingStartTime = !formData.start_time;
+
+    setRequiredFieldErrors({
+      title: missingTitle,
+      date: missingDate,
+      start_time: missingStartTime
+    });
+
+    if (missingTitle) triggerInvalidField('title');
+    if (missingDate) triggerInvalidField('date');
+    if (missingStartTime) triggerInvalidField('start_time');
+    if (missingTitle || missingDate || missingStartTime) return;
+
     setLoading(true);
     try {
       if (editingActivity) {
@@ -170,14 +223,62 @@ const DirectorSchedule = () => {
             <h3>{editingActivity ? 'Edytuj Zajęcia' : 'Nowe Zajęcia'}</h3>
             {error && <div className="form-error">{error}</div>}
 
-            <form onSubmit={handleSave} className="modal-form-grid">
+            <form onSubmit={handleSave} className="modal-form-grid" noValidate>
               <div className="form-group full-width">
-                <label>Nazwa</label>
-                <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                <label>Nazwa <span className="required-asterisk">*</span></label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={e => {
+                    setFormData({...formData, title: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('title');
+                      setRequiredFieldErrors((prev) => ({ ...prev, title: false }));
+                    }
+                  }}
+                  className={invalidFields.title ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.title && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
               
-              <div className="form-group"><label>Data</label><input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
-              <div className="form-group"><label>Godzina Rozpoczęcia</label><input type="time" required value={formData.start_time} onChange={e => setFormData({...formData, start_time: e.target.value})} /></div>
+              <div className="form-group">
+                <label>Data <span className="required-asterisk">*</span></label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={e => {
+                    setFormData({...formData, date: e.target.value});
+                    if (e.target.value) {
+                      clearInvalidField('date');
+                      setRequiredFieldErrors((prev) => ({ ...prev, date: false }));
+                    }
+                  }}
+                  className={invalidFields.date ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.date && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+              </div>
+              <div className="form-group">
+                <label>Godzina Rozpoczęcia <span className="required-asterisk">*</span></label>
+                <input
+                  type="time"
+                  value={formData.start_time}
+                  onChange={e => {
+                    setFormData({...formData, start_time: e.target.value});
+                    if (e.target.value) {
+                      clearInvalidField('start_time');
+                      setRequiredFieldErrors((prev) => ({ ...prev, start_time: false }));
+                    }
+                  }}
+                  className={invalidFields.start_time ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.start_time && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+              </div>
               <div className="form-group"><label>Godzina Zakończenia (opcjonalnie)</label><input type="time" value={formData.end_time} onChange={e => setFormData({...formData, end_time: e.target.value})} /></div>
               
               <div className="form-group full-width">
