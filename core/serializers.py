@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
+from datetime import time
 from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group
 from drf_writable_nested import WritableNestedModelSerializer
 
@@ -79,12 +80,49 @@ class FacilityClosureSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class SpecialActivitySerializer(serializers.ModelSerializer):
+    end_time = serializers.TimeField(required=False, allow_null=True)
+    groups = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Group.objects.all(),
+        required=False,
+        allow_empty=True,
+    )
     # Wyświetlamy nazwy grup, żeby na froncie było wiadomo dla kogo to jest
     group_names = serializers.StringRelatedField(many=True, source='groups', read_only=True)
 
     class Meta:
         model = SpecialActivity
         fields = ['id', 'title', 'description', 'date', 'start_time', 'end_time', 'groups', 'group_names']
+
+    def to_internal_value(self, data):
+        mutable_data = data.copy()
+        if mutable_data.get('end_time') == '':
+            mutable_data['end_time'] = None
+        return super().to_internal_value(mutable_data)
+
+    def validate(self, attrs):
+        start_time = attrs.get('start_time')
+        end_time = attrs.get('end_time')
+
+        open_time = time(6, 30)
+        close_time = time(17, 30)
+
+        if start_time and (start_time < open_time or start_time > close_time):
+            raise serializers.ValidationError({
+                'start_time': 'Godzina rozpoczęcia musi być w przedziale 06:30–17:30.'
+            })
+
+        if end_time and (end_time < open_time or end_time > close_time):
+            raise serializers.ValidationError({
+                'end_time': 'Godzina zakończenia musi być w przedziale 06:30–17:30.'
+            })
+
+        if start_time and end_time and end_time < start_time:
+            raise serializers.ValidationError({
+                'end_time': 'Godzina zakończenia nie może być wcześniejsza niż godzina rozpoczęcia.'
+            })
+
+        return attrs
 
 class DailyMenuSerializer(serializers.ModelSerializer):
     # Dodajemy dzień tygodnia, żeby frontendowi było łatwiej (np. "Poniedziałek")

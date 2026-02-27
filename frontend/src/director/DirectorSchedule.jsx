@@ -112,9 +112,42 @@ const DirectorSchedule = () => {
     });
   };
 
+  const extractApiErrorMessage = (err) => {
+    const errorData = err?.response?.data;
+
+    if (!errorData) return 'Błąd zapisu.';
+
+    if (typeof errorData === 'string') return errorData;
+
+    const firstKey = Object.keys(errorData)[0];
+    const firstValue = firstKey ? errorData[firstKey] : null;
+
+    if (Array.isArray(firstValue) && firstValue.length > 0) {
+      return firstValue[0];
+    }
+
+    if (typeof firstValue === 'string') {
+      return firstValue;
+    }
+
+    if (Array.isArray(errorData.non_field_errors) && errorData.non_field_errors.length > 0) {
+      return errorData.non_field_errors[0];
+    }
+
+    return 'Błąd zapisu.';
+  };
+
+  const timeToMinutes = (timeValue) => {
+    if (!timeValue) return null;
+    const [hours, minutes] = timeValue.split(':').map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    return (hours * 60) + minutes;
+  };
+
   // 3. ZAPISYWANIE
   const handleSave = async (e) => {
     e.preventDefault();
+    setError('');
 
     const missingTitle = !formData.title.trim();
     const missingDate = !formData.date;
@@ -131,17 +164,49 @@ const DirectorSchedule = () => {
     if (missingStartTime) triggerInvalidField('start_time');
     if (missingTitle || missingDate || missingStartTime) return;
 
+    const openMinutes = 6 * 60 + 30;
+    const closeMinutes = 17 * 60 + 30;
+    const startMinutes = timeToMinutes(formData.start_time);
+    const endMinutes = timeToMinutes(formData.end_time);
+
+    if (startMinutes === null || startMinutes < openMinutes || startMinutes > closeMinutes) {
+      triggerInvalidField('start_time');
+      setError('Godzina rozpoczęcia musi być w przedziale 06:30–17:30.');
+      return;
+    }
+
+    if (formData.end_time) {
+      if (endMinutes === null || endMinutes < openMinutes || endMinutes > closeMinutes) {
+        setError('Godzina zakończenia musi być w przedziale 06:30–17:30.');
+        return;
+      }
+
+      if (endMinutes < startMinutes) {
+        setError('Godzina zakończenia nie może być wcześniejsza niż godzina rozpoczęcia.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
+      const normalizedGroups = (formData.groups && formData.groups.length > 0)
+        ? formData.groups
+        : groups.map((group) => group.id);
+
+      const payload = {
+        ...formData,
+        groups: normalizedGroups,
+      };
+
       if (editingActivity) {
-        await axios.patch(`http://127.0.0.1:8000/api/calendar/activities/${editingActivity.id}/`, formData, getAuthHeaders());
+        await axios.patch(`http://127.0.0.1:8000/api/calendar/activities/${editingActivity.id}/`, payload, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/calendar/activities/', formData, getAuthHeaders());
+        await axios.post('http://127.0.0.1:8000/api/calendar/activities/', payload, getAuthHeaders());
       }
       setIsModalOpen(false);
       await fetchData();
     } catch (err) {
-      setError("Błąd zapisu.");
+      setError(extractApiErrorMessage(err));
       setLoading(false);
     }
   };

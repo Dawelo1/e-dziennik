@@ -127,6 +127,22 @@ const Messages = () => {
     shouldReconnectRef.current = true;
     let reconnectAttempts = 0;
 
+    const closeSocketSafely = (ws) => {
+      if (!ws) return;
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, 'Component unmounted');
+        return;
+      }
+
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.onopen = () => ws.close(1000, 'Component unmounted');
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+      }
+    };
+
     fetchData().then(() => {
       setTimeout(scrollToBottom, 200);
     });
@@ -205,7 +221,7 @@ const Messages = () => {
       };
 
       socket.onerror = () => {
-        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        if (socket.readyState === WebSocket.OPEN) {
           socket.close();
         }
       };
@@ -225,7 +241,7 @@ const Messages = () => {
       shouldReconnectRef.current = false;
       document.removeEventListener('visibilitychange', handleVisibility);
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      if (wsRef.current) wsRef.current.close();
+      closeSocketSafely(wsRef.current);
     };
   }, [currentUser, fetchData, markConversationRead]);
 

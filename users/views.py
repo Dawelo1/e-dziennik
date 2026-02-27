@@ -167,9 +167,10 @@ class NotificationSummaryView(APIView):
         gallery_qs = self._gallery_queryset_for_user(user)
         calendar_qs = FacilityClosure.objects.all()
         payments_qs = self._payments_queryset_for_user(user)
+        schedule_extra_changes = int(cache.get(f'notification_schedule_extra_{user.id}', 0) or 0)
 
         counts = {
-            'schedule': schedule_qs.filter(id__gt=user.last_seen_schedule_activity_id).count(),
+            'schedule': schedule_qs.filter(id__gt=user.last_seen_schedule_activity_id).count() + schedule_extra_changes,
             'gallery': gallery_qs.filter(id__gt=user.last_seen_gallery_item_id).count(),
             'calendar': calendar_qs.filter(id__gt=user.last_seen_calendar_closure_id).count(),
             'payments': payments_qs.filter(id__gt=user.last_seen_payment_id).count(),
@@ -205,6 +206,9 @@ class MarkNotificationSeenView(NotificationSummaryView):
         field_name = self.section_to_field[section]
         setattr(user, field_name, int(latest_id))
         user.save(update_fields=[field_name])
+
+        if section == 'schedule':
+            cache.set(f'notification_schedule_extra_{user.id}', 0, timeout=60 * 60 * 24 * 30)
 
         return Response({'status': 'ok', 'section': section, 'seen_up_to_id': int(latest_id)})
 

@@ -43,6 +43,22 @@ const DirectorLayout = () => {
     let socket = null;
     let reconnectAttempts = 0;
 
+    const closeSocketSafely = (ws) => {
+      if (!ws) return;
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, 'Component unmounted');
+        return;
+      }
+
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.onopen = () => ws.close(1000, 'Component unmounted');
+        ws.onmessage = null;
+        ws.onerror = null;
+        ws.onclose = null;
+      }
+    };
+
     const connect = () => {
       socket = new WebSocket(wsUrl);
 
@@ -78,7 +94,7 @@ const DirectorLayout = () => {
       };
 
       socket.onerror = () => {
-        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        if (socket.readyState === WebSocket.OPEN) {
           socket.close();
         }
       };
@@ -89,7 +105,7 @@ const DirectorLayout = () => {
     return () => {
       shouldReconnect = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (socket) socket.close();
+      closeSocketSafely(socket);
     };
   }, [navigate]);
 

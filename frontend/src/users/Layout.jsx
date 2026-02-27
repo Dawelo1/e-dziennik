@@ -111,7 +111,7 @@ const Layout = () => {
       };
 
       socket.onerror = () => {
-        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        if (socket.readyState === WebSocket.OPEN) {
           socket.close();
         }
       };
@@ -124,7 +124,11 @@ const Layout = () => {
       clearInterval(summaryInterval);
       window.removeEventListener('notifications-updated', onNotificationsUpdated);
       if (reconnectTimer) clearTimeout(reconnectTimer);
-      if (socket) socket.close();
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.close();
+      } else if (socket?.readyState === WebSocket.CONNECTING) {
+        socket.onopen = () => socket.close();
+      }
     };
   }, [navigate, fetchNotificationSummary]);
 

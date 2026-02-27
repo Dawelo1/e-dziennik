@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.core.cache import cache
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from django.db.models import Q
@@ -28,6 +29,13 @@ def broadcast_notification_summary_changed(user_ids=None):
                 'type': 'chat.notification_summary_changed',
             }
         )
+
+
+def increment_schedule_change_notification(user_ids):
+    for user_id in set(user_ids):
+        cache_key = f'notification_schedule_extra_{int(user_id)}'
+        current_value = int(cache.get(cache_key, 0) or 0)
+        cache.set(cache_key, current_value + 1, timeout=60 * 60 * 24 * 30)
 
 class ChildViewSet(viewsets.ModelViewSet):
     serializer_class = ChildSerializer
@@ -270,13 +278,37 @@ class SpecialActivityViewSet(viewsets.ModelViewSet):
         # distinct() jest ważne przy ManyToMany, żeby nie dublować wyników
         return SpecialActivity.objects.filter(groups__in=parent_groups).distinct()
 
+    def _get_activity_notification_target_ids(self, group_ids):
+        normalized_group_ids = set(group_ids)
+        if not normalized_group_ids:
+            normalized_group_ids = set(Group.objects.values_list('id', flat=True))
+
+        parent_ids = User.objects.filter(child__group_id__in=normalized_group_ids).values_list('id', flat=True).distinct()
+        director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
+        return set(parent_ids) | set(director_ids)
+
     def perform_create(self, serializer):
         activity = serializer.save()
 
         group_ids = activity.groups.values_list('id', flat=True)
-        parent_ids = User.objects.filter(child__group_id__in=group_ids).values_list('id', flat=True).distinct()
-        director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
-        target_ids = set(parent_ids) | set(director_ids)
+        target_ids = self._get_activity_notification_target_ids(group_ids)
+        broadcast_notification_summary_changed(target_ids)
+
+    def perform_update(self, serializer):
+        previous_group_ids = serializer.instance.groups.values_list('id', flat=True)
+        activity = serializer.save()
+        updated_group_ids = activity.groups.values_list('id', flat=True)
+
+        all_relevant_group_ids = set(previous_group_ids) | set(updated_group_ids)
+        target_ids = self._get_activity_notification_target_ids(all_relevant_group_ids)
+        increment_schedule_change_notification(target_ids)
+        broadcast_notification_summary_changed(target_ids)
+
+    def perform_destroy(self, instance):
+        group_ids = instance.groups.values_list('id', flat=True)
+        target_ids = self._get_activity_notification_target_ids(group_ids)
+        instance.delete()
+        increment_schedule_change_notification(target_ids)
         broadcast_notification_summary_changed(target_ids)
     
 class DailyMenuViewSet(viewsets.ModelViewSet):
