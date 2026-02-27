@@ -25,6 +25,7 @@ const DirectorMessages = () => {
   const isUserAtBottomRef = useRef(true);
   const activeConversationRef = useRef(null);
   const currentUserRef = useRef(null);
+  const hasExplicitOpenRef = useRef(false);
 
   useEffect(() => {
     activeConversationRef.current = activeConversation;
@@ -33,6 +34,17 @@ const DirectorMessages = () => {
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') {
+        hasExplicitOpenRef.current = false;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const markConversationRead = async (participantId) => {
     const authConfig = getAuthHeaders();
@@ -142,7 +154,9 @@ const DirectorMessages = () => {
         const hasUnread = updatedActiveConv.messages.some(
           m => !m.is_read && m.sender === updatedActiveConv.participantId
         );
-        if (hasUnread) markConversationRead(updatedActiveConv.participantId);
+        if (hasUnread && hasExplicitOpenRef.current) {
+          markConversationRead(updatedActiveConv.participantId);
+        }
       }
     }
   };
@@ -198,7 +212,7 @@ const DirectorMessages = () => {
     if (activeConversation) {
       const hasUnread = activeConversation.messages.some(m => !m.is_read && m.sender === activeConversation.participantId);
       
-      if (hasUnread) {
+      if (hasUnread && hasExplicitOpenRef.current) {
         markConversationRead(activeConversation.participantId);
       }
       
@@ -275,7 +289,10 @@ const DirectorMessages = () => {
                 <div 
                   key={conv.participantId}
                   className={`conv-item ${activeConversation?.participantId === conv.participantId ? 'active' : ''} ${hasUnread ? 'unread-conv' : ''}`}
-                  onClick={() => setActiveConversation(conv)}
+                  onClick={() => {
+                    hasExplicitOpenRef.current = true;
+                    setActiveConversation(conv);
+                  }}
                 >
                   <div className="conv-avatar">{conv.participantName[0].toUpperCase()}</div>
                   <div className="conv-details">

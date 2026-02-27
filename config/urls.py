@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 from django.conf import settings             
 from django.conf.urls.static import static 
 from users.views import CustomAuthToken
@@ -15,6 +16,7 @@ admin.site.site_title = "Pszczółka Maja Admin"
 admin.site.index_title = "Panel Zarządzania"
 
 urlpatterns = [
+    path('', RedirectView.as_view(url='/admin/', permanent=False)),
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
     path('api/communication/', include('communication.urls')),
