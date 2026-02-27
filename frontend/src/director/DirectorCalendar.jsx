@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorCalendar.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Wspólne style
@@ -19,6 +19,9 @@ const DirectorCalendar = () => {
   const [formData, setFormData] = useState({ date: '', reason: '' });
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [invalidFields, setInvalidFields] = useState({ date: false });
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({ date: false });
+  const invalidFieldTimers = useRef({ date: null });
 
   const fetchData = async () => {
     try {
@@ -30,8 +33,42 @@ const DirectorCalendar = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const triggerInvalidField = (fieldName) => {
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+
+    requestAnimationFrame(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: true }));
+    });
+
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+    }
+
+    invalidFieldTimers.current[fieldName] = setTimeout(() => {
+      setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+    }, 650);
+  };
+
+  const clearInvalidField = (fieldName) => {
+    if (invalidFieldTimers.current[fieldName]) {
+      clearTimeout(invalidFieldTimers.current[fieldName]);
+      invalidFieldTimers.current[fieldName] = null;
+    }
+    setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
+  };
+
+  useEffect(() => {
+    return () => {
+      Object.values(invalidFieldTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, []);
+
   const openModal = (closure = null) => {
     setError('');
+    setInvalidFields({ date: false });
+    setRequiredFieldErrors({ date: false });
     if (closure) {
       setEditingClosure(closure);
       setFormData({ date: closure.date, reason: closure.reason });
@@ -44,6 +81,14 @@ const DirectorCalendar = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const missingDate = !formData.date.trim();
+    setRequiredFieldErrors({ date: missingDate });
+    if (missingDate) {
+      triggerInvalidField('date');
+      return;
+    }
+
     setLoading(true);
     try {
       if (editingClosure) {
@@ -119,16 +164,36 @@ const DirectorCalendar = () => {
           <div className="modal-content">
             <h3>{editingClosure ? 'Edytuj Dzień Wolny' : 'Nowy Dzień Wolny'}</h3>
             {error && <div className="form-error">{error}</div>}
-            <form onSubmit={handleSave} className="modal-form-grid" style={{gridTemplateColumns: '1fr'}}>
+            <form onSubmit={handleSave} className="modal-form-grid" style={{gridTemplateColumns: '1fr'}} noValidate>
               
               <div className="form-group full-width">
-                <label>Data *</label>
-                <input type="date" required value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} disabled={!!editingClosure} />
+                <label>Data <span className="required-asterisk">*</span></label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={e => {
+                    setFormData({...formData, date: e.target.value});
+                    if (e.target.value.trim()) {
+                      clearInvalidField('date');
+                      setRequiredFieldErrors((prev) => ({ ...prev, date: false }));
+                    }
+                  }}
+                  disabled={!!editingClosure}
+                  className={invalidFields.date ? 'invalid-bounce' : ''}
+                />
+                {requiredFieldErrors.date && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
               </div>
 
               <div className="form-group full-width">
                 <label>Powód (np. Boże Narodzenie)</label>
-                <input type="text" required value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} />
+                <input
+                  type="text"
+                  value={formData.reason}
+                  onChange={e => setFormData({...formData, reason: e.target.value})}
+                  placeholder="Nazwa wydarzenia..."
+                />
               </div>
 
               <div className="modal-actions full-width">
