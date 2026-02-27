@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Styl ten sam co reszta panelu
 import LoadingScreen from '../users/LoadingScreen';
+import { formatDateWithDots } from '../dateUtils';
 
 import { 
   FaBullhorn, FaPlus, FaEdit, FaTrash, FaSearch, 
@@ -361,7 +362,7 @@ const DirectorPosts = () => {
                     {groupName}
                   </span>
                 </td>
-                <td style={{fontSize: 13, color: '#888'}}>{post.formatted_date}</td>
+                <td style={{fontSize: 13, color: '#888'}}>{formatDateWithDots(post.formatted_date)}</td>
                 <td className="actions-cell">
                   <button className="action-icon-btn edit" onClick={() => openModal(post)}><FaEdit/></button>
                   <button className="action-icon-btn delete" onClick={() => setDeleteTarget(post)}><FaTrash/></button>

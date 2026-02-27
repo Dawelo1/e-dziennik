@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Używamy stylów z Users dla spójności
 import LoadingScreen from '../users/LoadingScreen';
+import { formatDateWithDots } from '../dateUtils';
 
 import { 
   FaChild, FaSearch, FaPlus, FaEdit, FaTrash, 
@@ -191,7 +192,7 @@ const DirectorChildren = () => {
                     </div>
                     <div className="contact-info">
                       <span className="username-text">{child.first_name} {child.last_name}</span>
-                      <span className="sub-text">{child.date_of_birth}</span>
+                      <span className="sub-text">{formatDateWithDots(child.date_of_birth)}</span>
                     </div>
                   </div>
                 </td>

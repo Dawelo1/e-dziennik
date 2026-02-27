@@ -10,6 +10,7 @@ import {
   FaCalendarCheck, 
   FaEnvelope,
   FaUserTie,
+  FaRegClock,
   FaThumbsUp,
   FaRegThumbsUp,
   FaPaperPlane,
@@ -18,6 +19,7 @@ import {
   FaExclamationCircle 
 } 
 from 'react-icons/fa';
+import { formatDateWithDots } from '../dateUtils';
 
 
 const Dashboard = () => {
@@ -92,7 +94,7 @@ const Dashboard = () => {
           title: ev.title,
           subtitle: '',
           dateObj: eventDate,
-          displayDate: `${ev.date} o ${ev.start_time.slice(0,5)}`,
+          displayDate: `${formatDateWithDots(ev.date)} o ${ev.start_time.slice(0,5)}`,
           isOverdue: false
         });
       }
@@ -251,7 +253,7 @@ const handleLikeComment = async (postId, commentId) => {
                   </div>
                   <div className="post-author-info">
                     <h4>Dyrektor Przedszkola</h4>
-                    <span className="post-date">{post.formatted_date}</span>
+                    <span className="post-date"><FaRegClock /> {formatDateWithDots(post.formatted_date)}</span>
                   </div>
                 </div>
 

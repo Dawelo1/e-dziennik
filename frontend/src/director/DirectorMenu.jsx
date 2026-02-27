@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './DirectorUsers.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
+import { formatDateWithDots } from '../dateUtils';
 
 import { 
   FaUtensils, FaPlus, FaEdit, FaTrash, FaSave, FaCalendarAlt
@@ -158,7 +159,7 @@ const DirectorMenu = () => {
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content large" style={{maxWidth: '800px'}}>
-            <h3>{editingMenu ? `Edytuj Jadłospis na ${formData.date}` : 'Nowy Jadłospis'}</h3>
+            <h3>{editingMenu ? `Edytuj Jadłospis na ${formatDateWithDots(formData.date)}` : 'Nowy Jadłospis'}</h3>
             {error && <div className="form-error">{error}</div>}
 
             <form onSubmit={handleSave}>

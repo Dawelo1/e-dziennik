@@ -6,6 +6,7 @@ import ImageGrid from './ImageGrid';
 import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp, FaUserTie } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import { formatDateWithDots } from '../dateUtils';
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);
@@ -94,7 +95,7 @@ const Gallery = () => {
                 <div className="gallery-info">
                   <h4>{album.author_name || 'Dyrektor Przedszkola'}</h4>
                   <span className="gallery-date">
-                    <FaRegClock /> {album.formatted_date}
+                    <FaRegClock /> {formatDateWithDots(album.formatted_date)}
                   </span>
                 </div>
               </div>
