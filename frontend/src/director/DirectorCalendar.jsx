@@ -75,6 +75,8 @@ const DirectorCalendar = () => {
   if (loading && closures.length === 0) return <LoadingScreen message="Wczytywanie kalendarza..." />;
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
 
+  const sortedClosures = [...closures].sort((a, b) => new Date(b.date) - new Date(a.date));
+
   return (
     <div className="director-container">
       
@@ -97,7 +99,7 @@ const DirectorCalendar = () => {
             </tr>
           </thead>
           <tbody>
-            {closures.map(closure => (
+            {sortedClosures.map(closure => (
               <tr key={closure.id}>
                 <td style={{fontWeight: 700}}>{new Date(closure.date).toLocaleDateString('pl-PL', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}</td>
                 <td>{closure.reason}</td>
