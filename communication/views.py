@@ -2,6 +2,8 @@ from rest_framework import viewsets, permissions, serializers, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from .models import Message
 from .serializers import MessageSerializer
 from users.models import User
@@ -48,7 +50,9 @@ class MessageViewSet(viewsets.ModelViewSet):
                 )
 
             # Zapisujemy wiadomość z automatycznie przypisanym odbiorcą
-            serializer.save(sender=sender, receiver=director)
+            message = serializer.save(sender=sender, receiver=director)
+            self._broadcast_new_message(message)
+            self._send_unread_count_update(message.receiver_id)
 
         # B. Wysyła DYREKTOR
         elif sender.is_director:
@@ -56,11 +60,60 @@ class MessageViewSet(viewsets.ModelViewSet):
             if 'receiver' not in serializer.validated_data:
                  raise serializers.ValidationError({"receiver": "Jako Dyrektor musisz wybrać odbiorcę wiadomości."})
             
-            serializer.save(sender=sender)
+            message = serializer.save(sender=sender)
+            self._broadcast_new_message(message)
+            self._send_unread_count_update(message.receiver_id)
         
         # C. Ktoś inny (np. Admin bez roli) nie może pisać
         else:
             raise permissions.PermissionDenied("Nie masz uprawnień do wysyłania wiadomości.")
+
+    def _send_ws_event(self, user_id, event_type, payload):
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            return
+
+        async_to_sync(channel_layer.group_send)(
+            f'user_{user_id}',
+            {
+                'type': event_type,
+                **payload,
+            }
+        )
+
+    def _send_unread_count_update(self, user_id):
+        count = Message.objects.filter(receiver_id=user_id, is_read=False).count()
+        self._send_ws_event(user_id, 'chat.unread_count', {'count': count})
+
+    def _broadcast_new_message(self, message):
+        serializer = MessageSerializer(message, context={'request': self.request})
+        payload = {'message': serializer.data}
+        self._send_ws_event(message.sender_id, 'chat.message', payload)
+        if message.receiver_id != message.sender_id:
+            self._send_ws_event(message.receiver_id, 'chat.message', payload)
+
+    def _mark_messages_read(self, reader_id, participant_id):
+        unread_qs = Message.objects.filter(
+            sender_id=participant_id,
+            receiver_id=reader_id,
+            is_read=False,
+        )
+        read_message_ids = list(unread_qs.values_list('id', flat=True))
+
+        if not read_message_ids:
+            return 0
+
+        unread_qs.update(is_read=True)
+
+        payload = {
+            'reader_id': reader_id,
+            'participant_id': int(participant_id),
+            'read_message_ids': read_message_ids,
+        }
+        self._send_ws_event(reader_id, 'chat.conversation_read', payload)
+        self._send_ws_event(int(participant_id), 'chat.conversation_read', payload)
+        self._send_unread_count_update(reader_id)
+        return len(read_message_ids)
 
     # --- Metody dodatkowe ---
 
@@ -72,6 +125,38 @@ class MessageViewSet(viewsets.ModelViewSet):
         user = request.user
         count = Message.objects.filter(receiver=user, is_read=False).count()
         return Response({'count': count})
+
+    @action(detail=False, methods=['post'])
+    def mark_conversation_read(self, request):
+        """
+        Oznacza wiadomości jako przeczytane tylko w jednej rozmowie.
+        - Dyrektor: wymagany participant_id (ID rodzica).
+        - Rodzic: participant_id opcjonalne; domyślnie rozmowa z dyrektorem.
+        """
+        user = request.user
+        participant_id = request.data.get('participant_id')
+
+        if user.is_director:
+            if not participant_id:
+                return Response(
+                    {'error': 'participant_id jest wymagane dla dyrektora.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            updated = self._mark_messages_read(user.id, participant_id)
+
+            return Response({'status': 'marked', 'updated_count': updated})
+
+        if participant_id:
+            updated = self._mark_messages_read(user.id, participant_id)
+        else:
+            director = User.objects.filter(is_director=True).first()
+            if not director:
+                return Response({'status': 'marked', 'updated_count': 0})
+
+            updated = self._mark_messages_read(user.id, director.id)
+
+        return Response({'status': 'marked', 'updated_count': updated})
 
     @action(detail=False, methods=['post'])
     def mark_all_read(self, request):
@@ -87,18 +172,30 @@ class MessageViewSet(viewsets.ModelViewSet):
         if user.is_director:
             # Jeśli podano sender_id -> oznacz wiadomości tylko od tego rodzica
             if sender_id:
-                updated = Message.objects.filter(
-                    sender_id=sender_id, # Od tego Rodzica
-                    receiver=user,       # Do MNIE (zalogowanego dyrektora)
-                    is_read=False
-                ).update(is_read=True)
+                updated = self._mark_messages_read(user.id, sender_id)
             # Jeśli nie podano -> oznacz wszystkie (jak wcześniej)
             else:
-                updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+                sender_ids = Message.objects.filter(
+                    receiver=user,
+                    is_read=False,
+                ).values_list('sender_id', flat=True).distinct()
+
+                updated = 0
+                for participant in sender_ids:
+                    updated += self._mark_messages_read(user.id, participant)
 
         # SCENARIUSZ 2: RODZIC
         else:
-            # Rodzic zawsze oznacza wszystkie swoje nieprzeczytane wiadomości
-            updated = Message.objects.filter(receiver=user, is_read=False).update(is_read=True)
+            if sender_id:
+                updated = self._mark_messages_read(user.id, sender_id)
+            else:
+                sender_ids = Message.objects.filter(
+                    receiver=user,
+                    is_read=False,
+                ).values_list('sender_id', flat=True).distinct()
+
+                updated = 0
+                for participant in sender_ids:
+                    updated += self._mark_messages_read(user.id, participant)
 
         return Response({'status': 'marked', 'updated_count': updated})

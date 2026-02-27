@@ -35,11 +35,13 @@ DJANGO_REST_PASSWORDRESET_TOKEN_EXPIRY_TIME = 24 # Token ważny przez 24 godziny
 INSTALLED_APPS = [
     #'django.contrib.admin',
     'core.admin_site.CoreAdminConfig', #dodane - uzywamy naszej klasy admina
+    'daphne',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     # biblioteki zewnetrzne
     'corsheaders', #dodane
     'rest_framework', #dodane
@@ -51,6 +53,24 @@ INSTALLED_APPS = [
     'communication', #dodane
      'django_rest_passwordreset', #reset hasła
 ]
+
+ASGI_APPLICATION = 'config.asgi.application'
+
+if os.getenv('REDIS_URL'):
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [os.getenv('REDIS_URL')],
+            },
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

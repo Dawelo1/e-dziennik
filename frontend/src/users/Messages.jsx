@@ -1,10 +1,11 @@
 // frontend/src/Messages.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import './Messages.css';
 import { FaPaperPlane, FaUserTie, FaEnvelope, FaArrowDown } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import { getChatWebSocketUrl } from '../wsUtils';
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
@@ -23,6 +24,23 @@ const Messages = () => {
   const messagesContainerRef = useRef(null); 
   
   const isUserAtBottomRef = useRef(true); 
+  const currentUserRef = useRef(null);
+  const messagesRef = useRef([]);
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const isMarkingReadRef = useRef(false);
+  const shouldReconnectRef = useRef(true);
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const BASE_RECONNECT_DELAY_MS = 1000;
+  const MAX_RECONNECT_DELAY_MS = 30000;
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // --- FUNKCJA POMOCNICZA DO URL ---
   const getAvatarUrl = (url) => {
@@ -52,7 +70,31 @@ const Messages = () => {
     setShowScrollButton(!isAtBottom);
   };
 
-  const fetchData = async () => {
+  const markConversationRead = useCallback(async () => {
+    if (isMarkingReadRef.current) return;
+    const me = currentUserRef.current;
+    if (!me) return;
+
+    const hasUnreadIncoming = messagesRef.current.some(
+      msg => msg.receiver === me.id && msg.sender !== me.id && !msg.is_read
+    );
+
+    if (!hasUnreadIncoming || document.visibilityState !== 'visible') return;
+
+    try {
+      isMarkingReadRef.current = true;
+      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_conversation_read/', {}, getAuthHeaders());
+      setMessages(prev => prev.map(msg => (
+        msg.receiver === me.id && msg.sender !== me.id ? { ...msg, is_read: true } : msg
+      )));
+    } catch (err) {
+      console.error("Błąd oznaczania konwersacji jako przeczytanej:", err);
+    } finally {
+      isMarkingReadRef.current = false;
+    }
+  }, []);
+
+  const fetchData = useCallback(async () => {
     try {
       const [msgRes, statusRes] = await Promise.all([
         axios.get('http://127.0.0.1:8000/api/communication/messages/', getAuthHeaders()),
@@ -73,23 +115,123 @@ const Messages = () => {
       setIsDirectorOnline(statusRes.data.is_online);
       setDirectorAvatar(statusRes.data.avatar); // Zapisujemy URL avatara
 
-      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {}, getAuthHeaders());
-
     } catch (err) {
       console.error("Błąd pobierania:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    if (!currentUser) return;
+    shouldReconnectRef.current = true;
+    let reconnectAttempts = 0;
+
     fetchData().then(() => {
       setTimeout(scrollToBottom, 200);
     });
 
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    const connectWebSocket = () => {
+      const wsUrl = getChatWebSocketUrl();
+      if (!wsUrl) return;
+
+      const socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
+
+      socket.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'new_message' && data.message) {
+            const me = currentUserRef.current;
+            const isIncomingVisible = Boolean(
+              me &&
+              data.message.receiver === me.id &&
+              data.message.sender !== me.id &&
+              document.visibilityState === 'visible'
+            );
+
+            setMessages(prev => {
+              const alreadyExists = prev.some(m => m.id === data.message.id);
+              if (alreadyExists) return prev;
+
+              const next = [...prev, data.message].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+              if (isUserAtBottomRef.current) {
+                setTimeout(scrollToBottom, 100);
+              }
+              return next;
+            });
+
+            if (isIncomingVisible) {
+              setTimeout(() => {
+                markConversationRead();
+              }, 50);
+            }
+          }
+
+          if (data.type === 'conversation_read') {
+            const ids = Array.isArray(data.read_message_ids) ? data.read_message_ids : [];
+            if (!ids.length) return;
+            const idSet = new Set(ids);
+
+            setMessages(prev => prev.map(msg => (
+              idSet.has(msg.id) ? { ...msg, is_read: true } : msg
+            )));
+          }
+        } catch (parseErr) {
+          console.error('Błąd parsowania WS wiadomości:', parseErr);
+        }
+      };
+
+      socket.onclose = () => {
+        if (!shouldReconnectRef.current) return;
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.warn('WebSocket: osiągnięto limit prób reconnect (Messages).');
+          return;
+        }
+
+        const delay = Math.min(
+          BASE_RECONNECT_DELAY_MS * (2 ** reconnectAttempts),
+          MAX_RECONNECT_DELAY_MS
+        );
+        reconnectAttempts += 1;
+
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(connectWebSocket, delay);
+      };
+
+      socket.onerror = () => {
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close();
+        }
+      };
+    };
+
+    connectWebSocket();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        markConversationRead();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      shouldReconnectRef.current = false;
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [currentUser, fetchData, markConversationRead]);
+
+  useEffect(() => {
+    markConversationRead();
+  }, [messages, markConversationRead]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();

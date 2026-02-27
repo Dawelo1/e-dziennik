@@ -18,6 +18,8 @@ System do pełnego zarządzania przedszkolem, obejmujący:
 ### Backend
 - **Django 4.2** - Framework web
 - **Django REST Framework** - API REST
+- **Django Channels** - WebSocket (real-time chat)
+- **Redis (channels-redis)** - Channel layer pod produkcję
 - **SQLite3** - Baza danych
 - **Pillow** - Przetwarzanie obrazów
 - **django-cors-headers** - CORS
@@ -156,6 +158,16 @@ Projekt jest gotowy do wdrożenia na serwerach produkcyjnych. Pamiętaj o:
 3. Konfiguracji `ALLOWED_HOSTS`
 4. Użyciu produkcyjnej bazy danych (np. PostgreSQL)
 5. Setupie serwera statycznych plików
+
+### WebSocket (chat) – produkcja
+
+System wiadomości działa w czasie rzeczywistym przez WebSocket (`/ws/chat/`) i nie używa pollingu.
+
+1. Uruchamiaj aplikację przez ASGI (np. `daphne` / `uvicorn`), nie tylko WSGI.
+2. Ustaw `REDIS_URL`, aby włączyć produkcyjny channel layer (domyślnie bez tej zmiennej działa warstwa in-memory).
+3. Frontend może używać domyślnego URL `ws://127.0.0.1:8000/ws/chat/` albo zmiennej:
+	- `VITE_WS_CHAT_URL=wss://twoja-domena/ws/chat/`
+4. WebSocket autoryzuje użytkownika przez token (`?token=...`) zgodny z obecnym logowaniem DRF TokenAuth.
 
 ## 🤝 Contributing
 

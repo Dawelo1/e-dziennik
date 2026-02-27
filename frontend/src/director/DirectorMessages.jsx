@@ -1,8 +1,9 @@
 // frontend/src/director/DirectorMessages.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getAuthHeaders, removeToken } from '../authUtils';
+import { getChatWebSocketUrl } from '../wsUtils';
 import './DirectorMessages.css'; 
 import LoadingScreen from '../users/LoadingScreen';
 
@@ -19,6 +20,7 @@ const toAbsoluteUrl = (avatarUrl) => {
 };
 
 const getInitial = (name) => (name?.trim()?.[0] || '?').toUpperCase();
+const isSameParticipant = (left, right) => Number(left) === Number(right);
 
 const DirectorMessages = () => {
   const navigate = useNavigate();
@@ -35,7 +37,15 @@ const DirectorMessages = () => {
   const isUserAtBottomRef = useRef(true);
   const activeConversationRef = useRef(null);
   const currentUserRef = useRef(null);
-  const hasExplicitOpenRef = useRef(false);
+  const isMarkingReadRef = useRef(false);
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const shouldReconnectRef = useRef(true);
+  const isFetchingRef = useRef(false);
+  const pendingFetchRef = useRef(false);
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const BASE_RECONNECT_DELAY_MS = 1000;
+  const MAX_RECONNECT_DELAY_MS = 30000;
 
   useEffect(() => {
     activeConversationRef.current = activeConversation;
@@ -45,18 +55,15 @@ const DirectorMessages = () => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible') {
-        hasExplicitOpenRef.current = false;
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  const markActiveConversationRead = useCallback(() => {
+    const active = activeConversationRef.current;
+    if (!active) return;
+    if (document.visibilityState !== 'visible') return;
+    markConversationRead(active.participantId);
   }, []);
 
   const markConversationRead = async (participantId) => {
+    if (isMarkingReadRef.current) return;
     const authConfig = getAuthHeaders();
     if (!authConfig) {
       removeToken();
@@ -64,11 +71,34 @@ const DirectorMessages = () => {
       return;
     }
     try {
-      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_all_read/', {
-        sender_id: participantId
+      isMarkingReadRef.current = true;
+      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_conversation_read/', {
+        participant_id: participantId
       }, authConfig);
+
+      setConversations(prev => prev.map(conv => {
+        if (!isSameParticipant(conv.participantId, participantId)) return conv;
+        return {
+          ...conv,
+          messages: conv.messages.map(msg => (
+            isSameParticipant(msg.sender, participantId) ? { ...msg, is_read: true } : msg
+          )),
+        };
+      }));
+
+      setActiveConversation(prev => {
+        if (!prev || !isSameParticipant(prev.participantId, participantId)) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.map(msg => (
+            isSameParticipant(msg.sender, participantId) ? { ...msg, is_read: true } : msg
+          )),
+        };
+      });
     } catch (err) {
       console.error("Błąd oznaczania jako przeczytane:", err);
+    } finally {
+      isMarkingReadRef.current = false;
     }
   };
 
@@ -77,13 +107,18 @@ const DirectorMessages = () => {
     const lastMsg = conv.messages[conv.messages.length - 1];
     const lastId = lastMsg ? lastMsg.id : 'none';
     const unreadCount = conv.messages.reduce((count, m) => (
-      !m.is_read && m.sender === conv.participantId ? count + 1 : count
+      !m.is_read && isSameParticipant(m.sender, conv.participantId) ? count + 1 : count
     ), 0);
     return `${conv.messages.length}:${lastId}:${unreadCount}`;
   };
 
   // --- 1. POBIERANIE DANYCH ---
-  const fetchData = async (myId) => {
+  const fetchData = useCallback(async (myId) => {
+    if (isFetchingRef.current) {
+      pendingFetchRef.current = true;
+      return;
+    }
+    isFetchingRef.current = true;
     try {
       const authConfig = getAuthHeaders();
       if (!authConfig) {
@@ -102,9 +137,15 @@ const DirectorMessages = () => {
     } catch (err) {
       console.error("Błąd pobierania:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
+
+      if (pendingFetchRef.current) {
+        pendingFetchRef.current = false;
+        fetchData(myId);
+      }
     }
-  };
+  }, [navigate]);
   
   // --- 2. PRZETWARZANIE WIADOMOŚCI ---
   const processMessages = (messages, myId, allParentUsers) => {
@@ -180,9 +221,9 @@ const DirectorMessages = () => {
         }
 
         const hasUnread = updatedActiveConv.messages.some(
-          m => !m.is_read && m.sender === updatedActiveConv.participantId
+          m => !m.is_read && isSameParticipant(m.sender, updatedActiveConv.participantId)
         );
-        if (hasUnread && hasExplicitOpenRef.current) {
+        if (hasUnread && document.visibilityState === 'visible') {
           markConversationRead(updatedActiveConv.participantId);
         }
       }
@@ -191,9 +232,98 @@ const DirectorMessages = () => {
   
   // --- POPRAWIONY START I POLLING ---
   useEffect(() => {
-    let intervalId = null;
+    let mounted = true;
+    shouldReconnectRef.current = true;
+    let reconnectAttempts = 0;
 
-    const startFetching = async () => {
+    const connectWebSocket = (userId) => {
+      const wsUrl = getChatWebSocketUrl();
+      if (!wsUrl) return;
+
+      const socket = new WebSocket(wsUrl);
+      wsRef.current = socket;
+
+      socket.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      socket.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'new_message') {
+            const incoming = data.message;
+            const activeNow = activeConversationRef.current;
+
+            if (
+              incoming &&
+              activeNow &&
+              document.visibilityState === 'visible' &&
+              isSameParticipant(incoming.sender, activeNow.participantId) &&
+              !isSameParticipant(incoming.sender, userId)
+            ) {
+              setTimeout(() => {
+                markConversationRead(activeNow.participantId);
+              }, 50);
+            }
+
+            await fetchData(userId);
+            markActiveConversationRead();
+          }
+
+          if (data.type === 'conversation_read') {
+            const ids = Array.isArray(data.read_message_ids) ? data.read_message_ids : [];
+            if (!ids.length) return;
+            const idSet = new Set(ids);
+
+            setConversations(prev => prev.map(conv => ({
+              ...conv,
+              messages: conv.messages.map(msg => (
+                idSet.has(msg.id) ? { ...msg, is_read: true } : msg
+              )),
+            })));
+
+            setActiveConversation(prev => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                messages: prev.messages.map(msg => (
+                  idSet.has(msg.id) ? { ...msg, is_read: true } : msg
+                )),
+              };
+            });
+
+            markActiveConversationRead();
+          }
+        } catch (parseErr) {
+          console.error('Błąd parsowania WS wiadomości:', parseErr);
+        }
+      };
+
+      socket.onclose = () => {
+        if (!shouldReconnectRef.current) return;
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.warn('WebSocket: osiągnięto limit prób reconnect (DirectorMessages).');
+          return;
+        }
+
+        const delay = Math.min(
+          BASE_RECONNECT_DELAY_MS * (2 ** reconnectAttempts),
+          MAX_RECONNECT_DELAY_MS
+        );
+        reconnectAttempts += 1;
+
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(() => connectWebSocket(userId), delay);
+      };
+
+      socket.onerror = () => {
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close();
+        }
+      };
+    };
+
+    const initialize = async () => {
       try {
         const authConfig = getAuthHeaders();
         if (!authConfig) {
@@ -202,51 +332,53 @@ const DirectorMessages = () => {
           setLoading(false);
           return;
         }
-        // A. Pobierz dane o zalogowanym użytkowniku
+
         const userRes = await axios.get('http://127.0.0.1:8000/api/users/me/', authConfig);
+        if (!mounted) return;
+
         const user = userRes.data;
         setCurrentUser(user);
-
-        // B. Uruchom pierwsze pobranie reszty danych, przekazując ID usera
         await fetchData(user.id);
-        
-        // C. Ustaw interwał, który będzie odświeżał dane (z ID użytkownika)
-        // Sprawdzamy, czy intervalId już nie istnieje, żeby uniknąć duplikatów
-        if (!intervalId) {
-          intervalId = setInterval(() => fetchData(user.id), 3000);
-        }
-
-      } catch(err) {
-        console.error("Błąd inicjalizacji:", err);
-        // Jeśli tu jest błąd, prawdopodobnie token jest zły.
-        // Warto byłoby wylogować usera:
-        // removeToken(); navigate('/');
+        connectWebSocket(user.id);
+      } catch (err) {
+        console.error('Błąd inicjalizacji:', err);
         setLoading(false);
       }
     };
-    
-    startFetching();
 
-    // D. Sprzątanie (czyści interwał po wyjściu z komponentu)
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
+    initialize();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        markActiveConversationRead();
       }
     };
-  }, []); // Pusta tablica, uruchamia się tylko raz
+
+    const handleWindowFocus = () => {
+      markActiveConversationRead();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      mounted = false;
+      shouldReconnectRef.current = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [fetchData, markActiveConversationRead, navigate]);
 
   // --- LOGIKA "PRZECZYTANO" PO KLIKNIĘCIU ---
   useEffect(() => {
     if (activeConversation) {
-      const hasUnread = activeConversation.messages.some(m => !m.is_read && m.sender === activeConversation.participantId);
-      
-      if (hasUnread && hasExplicitOpenRef.current) {
-        markConversationRead(activeConversation.participantId);
-      }
+      markActiveConversationRead();
       
       setTimeout(scrollToBottom, 50);
     }
-  }, [activeConversation]);
+  }, [activeConversation, markActiveConversationRead]);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   
@@ -311,14 +443,17 @@ const DirectorMessages = () => {
             {filteredConversations.map(conv => {
               const lastMessage = conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
               
-              const hasUnread = lastMessage && !lastMessage.is_read && lastMessage.sender !== currentUser?.id;
+              const unreadCount = conv.messages.reduce((count, msg) => {
+                const isIncoming = isSameParticipant(msg.sender, conv.participantId);
+                return (!msg.is_read && isIncoming) ? count + 1 : count;
+              }, 0);
+              const hasUnread = unreadCount > 0;
 
               return (
                 <div 
                   key={conv.participantId}
                   className={`conv-item ${activeConversation?.participantId === conv.participantId ? 'active' : ''} ${hasUnread ? 'unread-conv' : ''}`}
                   onClick={() => {
-                    hasExplicitOpenRef.current = true;
                     setActiveConversation(conv);
                   }}
                 >
@@ -373,7 +508,7 @@ const DirectorMessages = () => {
 
               <div className="messages-area" ref={messagesContainerRef} onScroll={handleScroll}>
                 {activeConversation.messages.map(msg => {
-                  const isIncoming = msg.sender === activeConversation.participantId;
+                  const isIncoming = isSameParticipant(msg.sender, activeConversation.participantId);
                   const senderAvatar = isIncoming
                     ? activeConversation.participantAvatar
                     : toAbsoluteUrl(msg.sender_avatar_url || currentUser?.avatar_url || currentUser?.avatar);

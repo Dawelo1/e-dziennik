@@ -1,10 +1,11 @@
 // frontend/src/Layout.jsx
 import React, { useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
 import beeLogo from '../assets/bee.png';
 import { getToken, removeToken, getAuthHeaders } from '../authUtils';
+import { getChatWebSocketUrl } from '../wsUtils';
 
 // Ikony
 import { 
@@ -13,8 +14,11 @@ import {
 } from 'react-icons/fa';
 
 const Layout = () => {
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const BASE_RECONNECT_DELAY_MS = 1000;
+  const MAX_RECONNECT_DELAY_MS = 30000;
+
   const navigate = useNavigate();
-  const location = useLocation(); 
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -35,44 +39,63 @@ const Layout = () => {
         navigate('/');
       });
 
-    // 2. Funkcja pobierająca licznik powiadomień
-    const fetchUnread = (force = false) => {
-      // Jeśli użytkownik jest na stronie wiadomości, nie pobieraj licznika (zakładamy 0)
-      if (location.pathname === '/messages') {
-        setUnreadCount(0);
-        return;
-      }
+    const wsUrl = getChatWebSocketUrl();
+    if (!wsUrl) return;
 
-      if (!force && document.visibilityState !== 'visible') {
-        return;
-      }
+    let shouldReconnect = true;
+    let reconnectTimer = null;
+    let socket = null;
+    let reconnectAttempts = 0;
 
-      axios.get('http://127.0.0.1:8000/api/communication/messages/unread_count/', config)
-        .then(res => setUnreadCount(res.data.count))
-        .catch(err => console.error("Błąd licznika:", err));
+    const connect = () => {
+      socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'unread_count') {
+            setUnreadCount(Number(data.count) || 0);
+          }
+        } catch (err) {
+          console.error('Błąd parsowania WS (layout):', err);
+        }
+      };
+
+      socket.onclose = () => {
+        if (!shouldReconnect) return;
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.warn('WebSocket: osiągnięto limit prób reconnect (Layout).');
+          return;
+        }
+
+        const delay = Math.min(
+          BASE_RECONNECT_DELAY_MS * (2 ** reconnectAttempts),
+          MAX_RECONNECT_DELAY_MS
+        );
+        reconnectAttempts += 1;
+
+        reconnectTimer = setTimeout(connect, delay);
+      };
+
+      socket.onerror = () => {
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close();
+        }
+      };
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchUnread(true);
-      }
-    };
-
-    const handleWindowFocus = () => {
-      fetchUnread(true);
-    };
-
-    fetchUnread(true);
-    const interval = setInterval(() => fetchUnread(false), 30000);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleWindowFocus);
+    connect();
 
     return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleWindowFocus);
+      shouldReconnect = false;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (socket) socket.close();
     };
-  }, [navigate, location.pathname]);
+  }, [navigate]);
 
   // --- FUNKCJA NAPRAWIAJĄCA URL AVATARA ---
   const getAvatarUrl = (url) => {

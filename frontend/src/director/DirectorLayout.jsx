@@ -1,8 +1,9 @@
 // frontend/src/DirectorLayout.jsx
 import React, { useEffect, useState } from 'react';
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getAuthHeaders, removeToken } from '../authUtils';
+import { getChatWebSocketUrl } from '../wsUtils';
 
 import '../users/Layout.css'; // Używamy stylów Layout (tam jest zdefiniowany .menu-badge)
 import beeLogo from '../assets/bee.png';
@@ -15,8 +16,11 @@ import {
 } from 'react-icons/fa';
 
 const DirectorLayout = () => {
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const BASE_RECONNECT_DELAY_MS = 1000;
+  const MAX_RECONNECT_DELAY_MS = 30000;
+
   const navigate = useNavigate();
-  const location = useLocation(); // Potrzebne do sprawdzania, gdzie jesteśmy
   const [user, setUser] = useState(null);
   
   // --- STAN POWIADOMIEŃ ---
@@ -31,27 +35,63 @@ const DirectorLayout = () => {
         navigate('/');
       });
 
-    // 2. Funkcja pobierająca licznik
-    const fetchUnread = () => {
-      // Jeśli jesteśmy w wiadomościach, resetujemy licznik lokalnie i nie pytamy
-      if (location.pathname === '/director/messages') {
-        setUnreadCount(0);
-        return;
-      }
+    const wsUrl = getChatWebSocketUrl();
+    if (!wsUrl) return;
 
-      axios.get('http://127.0.0.1:8000/api/communication/messages/unread_count/', getAuthHeaders())
-        .then(res => setUnreadCount(res.data.count))
-        .catch(err => console.error("Błąd licznika:", err));
+    let shouldReconnect = true;
+    let reconnectTimer = null;
+    let socket = null;
+    let reconnectAttempts = 0;
+
+    const connect = () => {
+      socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        reconnectAttempts = 0;
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'unread_count') {
+            setUnreadCount(Number(data.count) || 0);
+          }
+        } catch (err) {
+          console.error('Błąd parsowania WS (director layout):', err);
+        }
+      };
+
+      socket.onclose = () => {
+        if (!shouldReconnect) return;
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.warn('WebSocket: osiągnięto limit prób reconnect (DirectorLayout).');
+          return;
+        }
+
+        const delay = Math.min(
+          BASE_RECONNECT_DELAY_MS * (2 ** reconnectAttempts),
+          MAX_RECONNECT_DELAY_MS
+        );
+        reconnectAttempts += 1;
+
+        reconnectTimer = setTimeout(connect, delay);
+      };
+
+      socket.onerror = () => {
+        if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+          socket.close();
+        }
+      };
     };
 
-    // Pobierz raz natychmiast
-    fetchUnread();
-    
-    // Ustaw interwał co 5 sekund
-    const interval = setInterval(fetchUnread, 5000);
+    connect();
 
-    return () => clearInterval(interval);
-  }, [navigate, location.pathname]);
+    return () => {
+      shouldReconnect = false;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (socket) socket.close();
+    };
+  }, [navigate]);
 
   const handleLogout = async () => {
     try {
