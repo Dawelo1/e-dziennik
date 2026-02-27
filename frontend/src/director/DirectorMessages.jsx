@@ -10,6 +10,16 @@ import {
   FaEnvelope, FaSearch, FaPaperPlane, FaUserPlus, FaArrowDown
 } from 'react-icons/fa';
 
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
+const toAbsoluteUrl = (avatarUrl) => {
+  if (!avatarUrl) return null;
+  if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) return avatarUrl;
+  return `${API_BASE_URL}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`;
+};
+
+const getInitial = (name) => (name?.trim()?.[0] || '?').toUpperCase();
+
 const DirectorMessages = () => {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
@@ -101,8 +111,18 @@ const DirectorMessages = () => {
     const grouped = messages.reduce((acc, msg) => {
         const otherId = msg.sender === myId ? msg.receiver : msg.sender;
         if (otherId === myId) return acc;
+      const participantName = msg.sender === myId ? msg.receiver_name : msg.sender_name;
+      const participantAvatarUrl = msg.sender === myId ? msg.receiver_avatar_url : msg.sender_avatar_url;
+
         if (!acc[otherId]) {
-            acc[otherId] = { participantId: otherId, participantName: msg.sender === myId ? msg.receiver_name : msg.sender_name, messages: [] };
+        acc[otherId] = {
+          participantId: otherId,
+          participantName,
+          participantAvatar: toAbsoluteUrl(participantAvatarUrl),
+          messages: []
+        };
+      } else if (!acc[otherId].participantAvatar && participantAvatarUrl) {
+        acc[otherId].participantAvatar = toAbsoluteUrl(participantAvatarUrl);
         }
         acc[otherId].messages.push(msg);
         return acc;
@@ -113,8 +133,16 @@ const DirectorMessages = () => {
     }
     
     allParentUsers.forEach(user => {
+      const parentAvatar = toAbsoluteUrl(user.avatar_url || user.avatar);
         if (!grouped[user.id] && user.id !== myId) {
-            grouped[user.id] = { participantId: user.id, participantName: `${user.first_name} ${user.last_name}`.trim() || user.username, messages: [] };
+        grouped[user.id] = {
+          participantId: user.id,
+          participantName: `${user.first_name} ${user.last_name}`.trim() || user.username,
+          participantAvatar: parentAvatar,
+          messages: []
+        };
+      } else if (grouped[user.id] && !grouped[user.id].participantAvatar && parentAvatar) {
+        grouped[user.id].participantAvatar = parentAvatar;
         }
     });
 
@@ -294,7 +322,13 @@ const DirectorMessages = () => {
                     setActiveConversation(conv);
                   }}
                 >
-                  <div className="conv-avatar">{conv.participantName[0].toUpperCase()}</div>
+                  <div className="conv-avatar">
+                    {conv.participantAvatar ? (
+                      <img src={conv.participantAvatar} alt={conv.participantName} className="avatar-image" />
+                    ) : (
+                      getInitial(conv.participantName)
+                    )}
+                  </div>
                   <div className="conv-details">
                     <div className="conv-name" style={{ fontWeight: hasUnread ? 'bold' : 'normal' }}>
                         {conv.participantName}
@@ -326,7 +360,11 @@ const DirectorMessages = () => {
             <>
               <div className="chat-header">
                 <div className="director-avatar" style={{backgroundColor: '#f2c94c', color: 'white'}}>
-                  {activeConversation.participantName[0].toUpperCase()}
+                  {activeConversation.participantAvatar ? (
+                    <img src={activeConversation.participantAvatar} alt={activeConversation.participantName} className="avatar-image" />
+                  ) : (
+                    getInitial(activeConversation.participantName)
+                  )}
                 </div>
                 <div className="header-info">
                    <h3>{activeConversation.participantName}</h3>
@@ -336,14 +374,30 @@ const DirectorMessages = () => {
               <div className="messages-area" ref={messagesContainerRef} onScroll={handleScroll}>
                 {activeConversation.messages.map(msg => {
                   const isIncoming = msg.sender === activeConversation.participantId;
+                  const senderAvatar = isIncoming
+                    ? activeConversation.participantAvatar
+                    : toAbsoluteUrl(msg.sender_avatar_url || currentUser?.avatar_url || currentUser?.avatar);
+                  const senderLabel = isIncoming ? activeConversation.participantName : msg.sender_name;
                   
                   return (
                     <div key={msg.id} className={`message-row ${!isIncoming ? 'sent' : 'received'}`}>
-                      {isIncoming && <div className="msg-avatar">{activeConversation.participantName[0].toUpperCase()}</div>}
+                      {isIncoming && (
+                        <div className="msg-avatar">
+                          {senderAvatar ? (
+                            <img src={senderAvatar} alt={senderLabel} className="avatar-image" />
+                          ) : (
+                            getInitial(activeConversation.participantName)
+                          )}
+                        </div>
+                      )}
                       
                       {!isIncoming && (
                           <div className="msg-avatar" title={msg.sender_name}>
-                             {msg.sender_name ? msg.sender_name[0].toUpperCase() : 'D'}
+                             {senderAvatar ? (
+                               <img src={senderAvatar} alt={senderLabel} className="avatar-image" />
+                             ) : (
+                               getInitial(msg.sender_name || 'Dyrektor')
+                             )}
                           </div>
                       )}
 

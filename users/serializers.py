@@ -43,16 +43,34 @@ class CustomPasswordResetSerializer(serializers.Serializer):
         return user.email
     
 class UserSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
+    def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        request = self.context.get('request')
+        avatar_url = obj.avatar.url
+        return request.build_absolute_uri(avatar_url) if request else avatar_url
+
     class Meta:
         model = User
         # Zwracamy to, co potrzebne frontendowi do działania
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number', 'avatar']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number', 'avatar', 'avatar_url']
         read_only_fields = ['id', 'username', 'is_director', 'is_parent']
 
 class UserManagementSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
+    def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        request = self.context.get('request')
+        avatar_url = obj.avatar.url
+        return request.build_absolute_uri(avatar_url) if request else avatar_url
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_director', 'is_parent', 'password', 'last_login']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_director', 'is_parent', 'avatar', 'avatar_url', 'password', 'last_login']
         read_only_fields = ['last_login']
         extra_kwargs = {'password': {'write_only': True, 'required': False}} # Hasło write-only
 
