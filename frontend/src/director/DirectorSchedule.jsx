@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
-import './DirectorUsers.css'; // Wspólne style
+import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 
@@ -210,8 +210,8 @@ const DirectorSchedule = () => {
                   </div>
                 </td>
                 <td className="actions-cell">
-                  <button className="action-icon-btn edit" onClick={() => openModal(activity)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(activity); }}><FaTrash/></button>
+                  <button className="action-icon-btn edit" onClick={() => openModal(activity)} title="Edytuj zajęcia"><FaEdit/></button>
+                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(activity); }} title="Usuń zajęcia"><FaTrash/></button>
                 </td>
               </tr>
             ))}

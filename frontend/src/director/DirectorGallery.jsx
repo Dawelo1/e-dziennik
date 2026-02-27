@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
-import './DirectorUsers.css'; // Wspólne style
+import './Director.css'; // Wspólne style
 import './DirectorGallery.css'; // Dedykowane style
 import LoadingScreen from '../users/LoadingScreen';
 
@@ -381,9 +381,9 @@ const DirectorGallery = () => {
                       </span>
                     </td>
                     <td className="actions-cell">
-                      <button className="action-icon-btn edit" onClick={() => openModal(album)}><FaEdit/></button>
-                      <button className="action-icon-btn download" onClick={() => handleDownloadAlbum(album)}><FaDownload/></button>
-                      <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(album); }}><FaTrash/></button>
+                      <button className="action-icon-btn edit" onClick={() => openModal(album)} title="Edytuj album"><FaEdit/></button>
+                      <button className="action-icon-btn download" onClick={() => handleDownloadAlbum(album)} title="Pobierz album"><FaDownload/></button>
+                      <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(album); }} title="Usuń album"><FaTrash/></button>
                     </td>
                   </tr>
                 ))

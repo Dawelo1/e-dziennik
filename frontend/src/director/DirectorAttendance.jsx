@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
-import './DirectorUsers.css'; // Wspólne style
+import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 

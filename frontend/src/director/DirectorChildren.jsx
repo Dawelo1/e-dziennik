@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
-import './DirectorUsers.css'; // Używamy stylów z Users dla spójności
+import './Director.css'; // Używamy wspólnych stylów dla spójności
 import LoadingScreen from '../users/LoadingScreen';
 import { formatDateWithDots } from '../dateUtils';
 
@@ -418,8 +418,8 @@ const DirectorChildren = () => {
                   </div>
                 </td>
                 <td className="actions-cell">
-                  <button className="action-icon-btn edit" onClick={() => openModal(child)}><FaEdit/></button>
-                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(child); }}><FaTrash/></button>
+                  <button className="action-icon-btn edit" onClick={() => openModal(child)} title="Edytuj dziecko"><FaEdit/></button>
+                  <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(child); }} title="Usuń dziecko"><FaTrash/></button>
                 </td>
               </tr>
             )})}

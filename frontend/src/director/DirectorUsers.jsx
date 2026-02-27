@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
-import './DirectorUsers.css';
+import './Director.css';
 
 // --- NOWY IMPORT ---
 import LoadingScreen from '../users/LoadingScreen'; 

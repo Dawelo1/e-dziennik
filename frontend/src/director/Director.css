@@ -1,4 +1,4 @@
-/* frontend/src/director/DirectorUsers.css */
+/* frontend/src/director/Director.css */
 
 .settings-main-title {
   color: #333;
@@ -574,7 +574,7 @@
 .modal-btn.cancel { background-color: #f0f0f0; color: #333; }
 .modal-btn.confirm.success { background-color: #f2c94c; color: #fff; }
 .modal-btn.confirm.danger { background-color: #e0245e; color: #fff; }
-/* W pliku DirectorUsers.css lub nowym DirectorAttendance.css */
+/* W pliku Director.css lub nowym DirectorAttendance.css */
 
 .filter-bar {
   display: flex;
@@ -739,7 +739,7 @@
   color: #000;
 }
 
-/* W pliku DirectorUsers.css */
+/* W pliku Director.css */
 
 .form-fieldset {
   border: 1px solid #eee;

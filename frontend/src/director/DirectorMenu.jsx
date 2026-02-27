@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
-import './DirectorUsers.css'; // Wspólne style
+import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 import { formatDateWithDots } from '../dateUtils';
 
@@ -393,8 +393,8 @@ const DirectorMenu = () => {
                     </td>
                     <td>{menu.fruit_break || '-'}</td>
                     <td className="actions-cell">
-                      <button className="action-icon-btn edit" onClick={() => openModal(menu)}><FaEdit/></button>
-                      <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(menu); }}><FaTrash/></button>
+                      <button className="action-icon-btn edit" onClick={() => openModal(menu)} title="Edytuj jadłospis"><FaEdit/></button>
+                      <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(menu); }} title="Usuń jadłospis"><FaTrash/></button>
                     </td>
                   </tr>
                 ))}
