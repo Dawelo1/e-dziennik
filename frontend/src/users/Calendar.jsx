@@ -26,6 +26,23 @@ const Calendar = () => {
   const daysHeader = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 
   useEffect(() => {
+    const markSeen = async () => {
+      try {
+        await axios.post(
+          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
+          { section: 'calendar' },
+          getAuthHeaders()
+        );
+        window.dispatchEvent(new Event('notifications-updated'));
+      } catch (err) {
+        console.error('Błąd oznaczania powiadomień (kalendarz):', err);
+      }
+    };
+
+    markSeen();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders());

@@ -52,6 +52,11 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             'count': event.get('count', 0),
         })
 
+    async def chat_notification_summary_changed(self, event):
+        await self.send_json({
+            'type': 'notification_summary_changed',
+        })
+
     async def chat_error(self, event):
         await self.send_json({
             'type': 'error',

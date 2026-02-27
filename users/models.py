@@ -34,6 +34,23 @@ class User(AbstractUser):
         verbose_name="Podgląd hasła aktywny"
     )
 
+    last_seen_schedule_activity_id = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ostatnio widziane zajęcia (ID)"
+    )
+    last_seen_gallery_item_id = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ostatnio widziana galeria (ID)"
+    )
+    last_seen_calendar_closure_id = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ostatnio widziany kalendarz (ID)"
+    )
+    last_seen_payment_id = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ostatnio widziane płatności (ID)"
+    )
+
     class Meta:
         verbose_name = "Użytkownik"
         verbose_name_plural = "Użytkownicy"

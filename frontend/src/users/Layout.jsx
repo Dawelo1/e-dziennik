@@ -1,5 +1,5 @@
 // frontend/src/Layout.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
@@ -21,6 +21,26 @@ const Layout = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationCounts, setNotificationCounts] = useState({
+    schedule: 0,
+    gallery: 0,
+    calendar: 0,
+    payments: 0,
+  });
+
+  const fetchNotificationSummary = useCallback(async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/users/notifications/summary/', getAuthHeaders());
+      setNotificationCounts({
+        schedule: Number(response.data.schedule) || 0,
+        gallery: Number(response.data.gallery) || 0,
+        calendar: Number(response.data.calendar) || 0,
+        payments: Number(response.data.payments) || 0,
+      });
+    } catch (err) {
+      console.error('Błąd pobierania powiadomień:', err);
+    }
+  }, []);
 
   useEffect(() => {
     const token = getToken();
@@ -38,6 +58,12 @@ const Layout = () => {
         localStorage.removeItem('token');
         navigate('/');
       });
+
+    fetchNotificationSummary();
+
+    const summaryInterval = setInterval(fetchNotificationSummary, 30000);
+    const onNotificationsUpdated = () => fetchNotificationSummary();
+    window.addEventListener('notifications-updated', onNotificationsUpdated);
 
     const wsUrl = getChatWebSocketUrl();
     if (!wsUrl) return;
@@ -59,6 +85,9 @@ const Layout = () => {
           const data = JSON.parse(event.data);
           if (data.type === 'unread_count') {
             setUnreadCount(Number(data.count) || 0);
+          }
+          if (data.type === 'notification_summary_changed') {
+            fetchNotificationSummary();
           }
         } catch (err) {
           console.error('Błąd parsowania WS (layout):', err);
@@ -92,10 +121,12 @@ const Layout = () => {
 
     return () => {
       shouldReconnect = false;
+      clearInterval(summaryInterval);
+      window.removeEventListener('notifications-updated', onNotificationsUpdated);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (socket) socket.close();
     };
-  }, [navigate]);
+  }, [navigate, fetchNotificationSummary]);
 
   // --- FUNKCJA NAPRAWIAJĄCA URL AVATARA ---
   const getAvatarUrl = (url) => {
@@ -196,18 +227,21 @@ const Layout = () => {
             <li>
               <NavLink to="/schedule" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                 <span className="menu-icon"><FaCalendarDay /></span> Zajęcia
+                {notificationCounts.schedule > 0 && <span className="menu-badge">{notificationCounts.schedule}</span>}
               </NavLink>
             </li>
 
             <li>
               <NavLink to="/gallery" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                 <span className="menu-icon"><FaImages /></span> Galeria
+                {notificationCounts.gallery > 0 && <span className="menu-badge">{notificationCounts.gallery}</span>}
               </NavLink>
             </li>
 
             <li>
               <NavLink to="/calendar" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                 <span className="menu-icon"><FaCalendarAlt /></span> Kalendarz
+                {notificationCounts.calendar > 0 && <span className="menu-badge">{notificationCounts.calendar}</span>}
               </NavLink>
             </li>
 
@@ -221,6 +255,7 @@ const Layout = () => {
               <li>
                 <NavLink to="/payments" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
                   <span className="menu-icon"><FaMoneyBillWave /></span> Płatności
+                  {notificationCounts.payments > 0 && <span className="menu-badge">{notificationCounts.payments}</span>}
                 </NavLink>
               </li>
             )}

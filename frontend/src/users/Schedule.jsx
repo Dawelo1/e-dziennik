@@ -46,6 +46,23 @@ const Schedule = () => {
   const formatDateDisplay = (date) => date.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
   useEffect(() => {
+    const markSeen = async () => {
+      try {
+        await axios.post(
+          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
+          { section: 'schedule' },
+          getAuthHeaders()
+        );
+        window.dispatchEvent(new Event('notifications-updated'));
+      } catch (err) {
+        console.error('Błąd oznaczania powiadomień (zajęcia):', err);
+      }
+    };
+
+    markSeen();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {

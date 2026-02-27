@@ -3,11 +3,31 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.decorators import action
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group
 from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer
 from users.permissions import IsDirector
+from users.models import User
 from rest_framework.views import APIView
 from communication.models import Message
+
+
+def broadcast_notification_summary_changed(user_ids=None):
+    channel_layer = get_channel_layer()
+    if not channel_layer:
+        return
+
+    if user_ids is None:
+        user_ids = User.objects.values_list('id', flat=True)
+
+    for user_id in user_ids:
+        async_to_sync(channel_layer.group_send)(
+            f'user_{int(user_id)}',
+            {
+                'type': 'chat.notification_summary_changed',
+            }
+        )
 
 class ChildViewSet(viewsets.ModelViewSet):
     serializer_class = ChildSerializer
@@ -66,6 +86,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if not self.request.user.is_director and 'is_paid' in serializer.validated_data:
             serializer.validated_data.pop('is_paid')
         serializer.save()
+
+    def perform_create(self, serializer):
+        payment = serializer.save()
+
+        parent_ids = payment.child.parents.values_list('id', flat=True)
+        director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
+        target_ids = set(parent_ids) | set(director_ids)
+        broadcast_notification_summary_changed(target_ids)
 
 class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast ReadOnly)
     """
@@ -205,6 +233,10 @@ class FacilityClosureViewSet(viewsets.ModelViewSet):
             return [IsDirector()]
         return super().get_permissions()
 
+    def perform_create(self, serializer):
+        serializer.save()
+        broadcast_notification_summary_changed()
+
 class SpecialActivityViewSet(viewsets.ModelViewSet):
     """
     Zwraca zajęcia dodatkowe.
@@ -237,6 +269,15 @@ class SpecialActivityViewSet(viewsets.ModelViewSet):
         # Filtrujemy zajęcia, które są przypisane do którejkolwiek z tych grup
         # distinct() jest ważne przy ManyToMany, żeby nie dublować wyników
         return SpecialActivity.objects.filter(groups__in=parent_groups).distinct()
+
+    def perform_create(self, serializer):
+        activity = serializer.save()
+
+        group_ids = activity.groups.values_list('id', flat=True)
+        parent_ids = User.objects.filter(child__group_id__in=group_ids).values_list('id', flat=True).distinct()
+        director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
+        target_ids = set(parent_ids) | set(director_ids)
+        broadcast_notification_summary_changed(target_ids)
     
 class DailyMenuViewSet(viewsets.ModelViewSet):
     """
@@ -333,6 +374,14 @@ class GalleryViewSet(viewsets.ModelViewSet):
         # W pętli tworzymy obiekty GalleryImage
         for image_file in images:
             GalleryImage.objects.create(gallery_item=album, image=image_file)
+
+        if album.target_group_id:
+            parent_ids = User.objects.filter(child__group_id=album.target_group_id).values_list('id', flat=True).distinct()
+            director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
+            target_ids = set(parent_ids) | set(director_ids)
+            broadcast_notification_summary_changed(target_ids)
+        else:
+            broadcast_notification_summary_changed()
             
         serializer = self.get_serializer(album)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

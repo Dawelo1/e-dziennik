@@ -27,6 +27,23 @@ const Payments = () => {
   const ibanNumber = 'PL 12 3456 0000 1111 2222 3333 4444';
 
   useEffect(() => {
+    const markSeen = async () => {
+      try {
+        await axios.post(
+          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
+          { section: 'payments' },
+          getAuthHeaders()
+        );
+        window.dispatchEvent(new Event('notifications-updated'));
+      } catch (err) {
+        console.error('Błąd oznaczania powiadomień (płatności):', err);
+      }
+    };
+
+    markSeen();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders());

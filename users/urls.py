@@ -4,6 +4,8 @@ from .views import (
     ChangePasswordView, 
     CurrentUserView, 
     DirectorStatusView, 
+    NotificationSummaryView,
+    MarkNotificationSeenView,
     LogoutView, 
     UserManagementViewSet
 )
@@ -21,5 +23,7 @@ urlpatterns = [
     path('password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     path('me/', CurrentUserView.as_view(), name='current-user'),
     path('director-status/', DirectorStatusView.as_view(), name='director-status'),
+    path('notifications/summary/', NotificationSummaryView.as_view(), name='notifications-summary'),
+    path('notifications/mark-seen/', MarkNotificationSeenView.as_view(), name='notifications-mark-seen'),
     path('logout/', LogoutView.as_view(), name='logout'),
 ]

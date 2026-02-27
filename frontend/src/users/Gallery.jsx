@@ -20,6 +20,23 @@ const Gallery = () => {
   };
 
   useEffect(() => {
+    const markSeen = async () => {
+      try {
+        await axios.post(
+          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
+          { section: 'gallery' },
+          getAuthHeaders()
+        );
+        window.dispatchEvent(new Event('notifications-updated'));
+      } catch (err) {
+        console.error('Błąd oznaczania powiadomień (galeria):', err);
+      }
+    };
+
+    markSeen();
+  }, []);
+
+  useEffect(() => {
     const fetchAlbums = async () => {
       try {
         const [res, directorStatusRes] = await Promise.all([

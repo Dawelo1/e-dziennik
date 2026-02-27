@@ -7,7 +7,9 @@ from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.contrib.auth.models import update_last_login
+from django.db.models import Q
 from users.models import User
+from core.models import SpecialActivity, GalleryItem, FacilityClosure, Payment
 from .permissions import IsDirector
 from .serializers import UserManagementSerializer
 from .utils import generate_unique_username, generate_secure_password
@@ -123,6 +125,88 @@ class DirectorStatusView(APIView):
                 director_avatar = director.avatar.url
 
         return Response({'is_online': is_any_online, 'avatar': director_avatar})
+
+
+class NotificationSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_parent_groups(self, user):
+        children = user.child.all()
+        return [child.group for child in children]
+
+    def _schedule_queryset_for_user(self, user):
+        if user.is_director:
+            return SpecialActivity.objects.all()
+
+        parent_groups = self._get_parent_groups(user)
+        if not parent_groups:
+            return SpecialActivity.objects.none()
+        return SpecialActivity.objects.filter(groups__in=parent_groups).distinct()
+
+    def _gallery_queryset_for_user(self, user):
+        if user.is_director:
+            return GalleryItem.objects.all()
+
+        parent_groups = self._get_parent_groups(user)
+        if not parent_groups:
+            return GalleryItem.objects.filter(target_group__isnull=True)
+
+        return GalleryItem.objects.filter(
+            Q(target_group__isnull=True) | Q(target_group__in=parent_groups)
+        ).distinct()
+
+    def _payments_queryset_for_user(self, user):
+        if user.is_director:
+            return Payment.objects.all()
+        return Payment.objects.filter(child__parents=user)
+
+    def get(self, request):
+        user = request.user
+
+        schedule_qs = self._schedule_queryset_for_user(user)
+        gallery_qs = self._gallery_queryset_for_user(user)
+        calendar_qs = FacilityClosure.objects.all()
+        payments_qs = self._payments_queryset_for_user(user)
+
+        counts = {
+            'schedule': schedule_qs.filter(id__gt=user.last_seen_schedule_activity_id).count(),
+            'gallery': gallery_qs.filter(id__gt=user.last_seen_gallery_item_id).count(),
+            'calendar': calendar_qs.filter(id__gt=user.last_seen_calendar_closure_id).count(),
+            'payments': payments_qs.filter(id__gt=user.last_seen_payment_id).count(),
+        }
+
+        return Response(counts)
+
+
+class MarkNotificationSeenView(NotificationSummaryView):
+    section_to_field = {
+        'schedule': 'last_seen_schedule_activity_id',
+        'gallery': 'last_seen_gallery_item_id',
+        'calendar': 'last_seen_calendar_closure_id',
+        'payments': 'last_seen_payment_id',
+    }
+
+    def post(self, request):
+        user = request.user
+        section = request.data.get('section')
+
+        if section not in self.section_to_field:
+            return Response({'error': 'Nieprawidłowa sekcja.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if section == 'schedule':
+            latest_id = self._schedule_queryset_for_user(user).order_by('-id').values_list('id', flat=True).first() or 0
+        elif section == 'gallery':
+            latest_id = self._gallery_queryset_for_user(user).order_by('-id').values_list('id', flat=True).first() or 0
+        elif section == 'calendar':
+            latest_id = FacilityClosure.objects.order_by('-id').values_list('id', flat=True).first() or 0
+        else:
+            latest_id = self._payments_queryset_for_user(user).order_by('-id').values_list('id', flat=True).first() or 0
+
+        field_name = self.section_to_field[section]
+        setattr(user, field_name, int(latest_id))
+        user.save(update_fields=[field_name])
+
+        return Response({'status': 'ok', 'section': section, 'seen_up_to_id': int(latest_id)})
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
