@@ -16,6 +16,8 @@ const DirectorGallery = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true); // Zaczynamy z loading=true
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState('date');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,6 +64,21 @@ const DirectorGallery = () => {
   }, []);
 
   const filteredAlbums = albums.filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const handleSortChange = (field) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+
+    setSortField(field);
+    setSortDirection(field === 'date' ? 'desc' : 'asc');
+  };
+
+  const getSortArrow = (field) => {
+    if (sortField !== field) return '↓';
+    return sortDirection === 'asc' ? '↑' : '↓';
+  };
 
   const openModal = (album = null) => {
     setError('');
@@ -305,6 +322,27 @@ const DirectorGallery = () => {
     return parsedDate.toLocaleDateString('pl-PL').replace(/\//g, '.');
   };
 
+  const getVisibilityValue = (album) => {
+    return getGroupName(album.target_group);
+  };
+
+  const sortedAlbums = [...filteredAlbums].sort((a, b) => {
+    if (sortField === 'visibility') {
+      const visibilityA = getVisibilityValue(a);
+      const visibilityB = getVisibilityValue(b);
+      const byVisibility = visibilityA.localeCompare(visibilityB, 'pl', { sensitivity: 'base' });
+
+      if (byVisibility !== 0) {
+        return sortDirection === 'asc' ? byVisibility : -byVisibility;
+      }
+
+      return new Date(b.created_at) - new Date(a.created_at);
+    }
+
+    const byDate = new Date(a.created_at) - new Date(b.created_at);
+    return sortDirection === 'asc' ? byDate : -byDate;
+  });
+
   // --- WIDOK ---
   if (loading) {
      return <LoadingScreen message="Wczytywanie galerii..." />;
@@ -331,16 +369,32 @@ const DirectorGallery = () => {
             <tr>
               <th>Album</th>
               <th>Zdjęcia (Podgląd)</th>
-              <th>Data dodania</th>
-              <th>Widoczność</th>
+              <th>
+                <button
+                  type="button"
+                  className="sortable-header-btn"
+                  onClick={() => handleSortChange('date')}
+                >
+                  Data dodania <span className="sort-arrow">{getSortArrow('date')}</span>
+                </button>
+              </th>
+              <th>
+                <button
+                  type="button"
+                  className="sortable-header-btn"
+                  onClick={() => handleSortChange('visibility')}
+                >
+                  Widoczność <span className="sort-arrow">{getSortArrow('visibility')}</span>
+                </button>
+              </th>
               <th className="actions-header">Akcje</th>
             </tr>
           </thead>
           <tbody>
-            {filteredAlbums.length === 0 ? (
+            {sortedAlbums.length === 0 ? (
                 <tr><td colSpan="5" className="text-center">Brak albumów w galerii.</td></tr>
             ) : (
-                filteredAlbums.map(album => (
+                sortedAlbums.map(album => (
                   <tr key={album.id}>
                     <td>
                       <div style={{fontWeight: 700}}>{album.title}</div>
