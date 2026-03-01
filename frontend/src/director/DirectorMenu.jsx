@@ -185,6 +185,14 @@ const DirectorMenu = () => {
       return;
     }
 
+    const trimmedAllergens = (formData.allergens || '').trim();
+    const allergensPattern = /^\d+(\s*,\s*\d+)*$/;
+
+    if (trimmedAllergens && !allergensPattern.test(trimmedAllergens)) {
+      setError('Pole „Alergeny” może zawierać tylko liczby (np. 1, 3, 7).');
+      return;
+    }
+
     if (isPastDateForNewMenu) {
       setPastDateConfirmOpen(true);
       return;
@@ -263,6 +271,7 @@ const DirectorMenu = () => {
           <td>${escapeHtml(breakfastText).replaceAll('\n', '<br/>')}</td>
           <td>${escapeHtml(lunchText).replaceAll('\n', '<br/>')}</td>
           <td>${escapeHtml(menu.fruit_break || '-')}</td>
+          <td>${escapeHtml(menu.allergens || '-')}</td>
         </tr>
       `;
     }).join('');
@@ -294,6 +303,7 @@ const DirectorMenu = () => {
                 <th>Śniadanie</th>
                 <th>Obiad</th>
                 <th>Podwieczorek</th>
+                <th>Alergeny</th>
               </tr>
             </thead>
             <tbody>
@@ -356,6 +366,7 @@ const DirectorMenu = () => {
               <th>Śniadanie</th>
               <th>Obiad</th>
               <th>Podwieczorek</th>
+              <th>Alergeny</th>
               <th className="actions-header">Akcje</th>
             </tr>
           </thead>
@@ -363,7 +374,7 @@ const DirectorMenu = () => {
             {menusByWeeks.map((week) => (
               <React.Fragment key={week.key}>
                 <tr className="menu-week-row">
-                  <td colSpan={5} className="menu-week-cell">
+                  <td colSpan={6} className="menu-week-cell">
                     <div className="menu-week-header">
                       <span>{week.label}</span>
                       <button
@@ -392,6 +403,7 @@ const DirectorMenu = () => {
                       {mealPart('Owoc / Deser', menu.lunch_fruit)}
                     </td>
                     <td>{menu.fruit_break || '-'}</td>
+                    <td>{menu.allergens || '-'}</td>
                     <td className="actions-cell">
                       <button className="action-icon-btn edit" onClick={() => openModal(menu)} title="Edytuj jadłospis"><FaEdit/></button>
                       <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(menu); }} title="Usuń jadłospis"><FaTrash/></button>
@@ -458,7 +470,11 @@ const DirectorMenu = () => {
               
               <div className="modal-form-grid" style={{marginTop: 20}}>
                 <div className="form-group"><label>Podwieczorek</label><input type="text" value={formData.fruit_break} onChange={e => setFormData({...formData, fruit_break: e.target.value})} /></div>
-                <div className="form-group"><label>Alergeny</label><input type="text" placeholder="np. 1, 3, 7" value={formData.allergens} onChange={e => setFormData({...formData, allergens: e.target.value})} /></div>
+                <div className="form-group"><label>Alergeny</label><input type="text" placeholder="np. 1, 3, 7" value={formData.allergens} onChange={e => {
+                  const sanitized = e.target.value.replace(/[^\d,\s]/g, '');
+                  setFormData({...formData, allergens: sanitized});
+                  if (error.includes('Alergeny')) setError('');
+                }} /></div>
               </div>
               
               <div className="modal-actions full-width" style={{marginTop: 30}}>

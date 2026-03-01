@@ -1,4 +1,5 @@
 from rest_framework import serializers
+import re
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from datetime import time
@@ -137,6 +138,19 @@ class DailyMenuSerializer(serializers.ModelSerializer):
         # Zwraca numer dnia (1=Poniedziałek, 7=Niedziela)
         # Frontend sobie to zamieni na nazwę
         return obj.date.isoweekday()
+
+    def validate_allergens(self, value):
+        if not value:
+            return value
+
+        normalized = value.strip()
+        if not normalized:
+            return ''
+
+        if not re.fullmatch(r'\d+(\s*,\s*\d+)*', normalized):
+            raise serializers.ValidationError('Pole "Alergeny" może zawierać tylko liczby (np. 1, 3, 7).')
+
+        return normalized
 
 # Warto też poprawić to w wiadomościach, jeśli tam jest podobnie:
 class MessageSerializer(serializers.ModelSerializer):
