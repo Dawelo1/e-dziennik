@@ -6,6 +6,7 @@ from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 from PIL import Image
 import os
+from .time_utils import now as effective_now, today as effective_today
 
 class Group(models.Model):
     GROUP_COLOR_CHOICES = [
@@ -124,7 +125,7 @@ class Payment(models.Model):
         # 2. NOWOŚĆ: Automatyczne ustawienie daty zapłaty
         # Jeśli zaznaczono is_paid=True, a nie ma daty -> wpisz "teraz"
         if self.is_paid and not self.payment_date:
-            self.payment_date = timezone.now()
+            self.payment_date = effective_now()
         # Jeśli odznaczono is_paid (korekta) -> usuń datę
         elif not self.is_paid:
             self.payment_date = None
@@ -136,7 +137,7 @@ class Payment(models.Model):
         first_name = self.child.first_name
         last_name = self.child.last_name
         
-        today = datetime.date.today()
+        today = effective_today()
         date_str = today.strftime("%m%Y") # Format MMRRRR (np. 122025)
         
         # Liczymy ile płatności powstało w TYM miesiącu i dodajemy 1

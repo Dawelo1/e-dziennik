@@ -5,6 +5,7 @@ from django.utils import timezone
 from datetime import time
 from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group
 from drf_writable_nested import WritableNestedModelSerializer
+from .time_utils import now as effective_now
 
 class ChildSerializer(serializers.ModelSerializer):
     # Automatyczne rozszyfrowanie medical_info przy odczycie
@@ -59,7 +60,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
             return data # Zezwól na wszystko
 
         # --- Logika dla Rodzica (bez zmian) ---
-        now = timezone.now()
+        now = effective_now()
         today = now.date()
 
         if target_date < today:
