@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from users.models import User
 from django_cryptography.fields import encrypt # Szyfrowanie RODO
 from django.utils import timezone
@@ -7,8 +8,52 @@ from PIL import Image
 import os
 
 class Group(models.Model):
+    GROUP_COLOR_CHOICES = [
+        ('red', 'Czerwony'),
+        ('yellow', 'Żółty'),
+        ('blue', 'Niebieski'),
+        ('green', 'Zielony'),
+        ('orange', 'Pomarańczowy'),
+        ('purple', 'Fioletowy'),
+    ]
+
     name = models.CharField(max_length=100, verbose_name="Nazwa Grupy")
     teachers_info = models.TextField(help_text="Imiona i nazwiska nauczycieli", verbose_name="Informacje o nauczycielach")
+    color_key = models.CharField(
+        max_length=20,
+        choices=GROUP_COLOR_CHOICES,
+        null=True,
+        blank=True,
+        editable=False,
+        verbose_name="Kolor grupy"
+    )
+
+    @classmethod
+    def color_pool(cls):
+        return [key for key, _ in cls.GROUP_COLOR_CHOICES]
+
+    @classmethod
+    def first_available_color(cls):
+        used_colors = set(
+            cls.objects.exclude(color_key__isnull=True)
+            .exclude(color_key='')
+            .values_list('color_key', flat=True)
+        )
+        for color_key in cls.color_pool():
+            if color_key not in used_colors:
+                return color_key
+        return None
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and Group.objects.count() >= len(self.color_pool()):
+            raise ValidationError('Maksymalna liczba grup to 6. Usuń jedną z istniejących grup, aby dodać nową.')
+
+        if not self.color_key:
+            available_color = self.first_available_color()
+            if available_color is None:
+                raise ValidationError('Brak wolnych kolorów grup. Maksymalna liczba grup to 6.')
+            self.color_key = available_color
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Grupa"

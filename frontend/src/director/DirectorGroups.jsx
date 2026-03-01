@@ -11,6 +11,10 @@ import {
 } from 'react-icons/fa';
 
 const DirectorGroups = () => {
+  const stripLeadingGroupEmoji = (groupName = '') => {
+    return groupName.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  };
+
   const parseTeachersInfo = (value = '') => {
     const parts = value
       .split(/[\n,;]+/)
@@ -41,6 +45,7 @@ const DirectorGroups = () => {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [limitErrorMessage, setLimitErrorMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [invalidFields, setInvalidFields] = useState({ name: false, teacher_1: false });
   const [requiredFieldErrors, setRequiredFieldErrors] = useState({ name: false, teacher_1: false });
@@ -54,6 +59,9 @@ const DirectorGroups = () => {
     try {
       const res = await axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders());
       setGroups(res.data);
+      if (Array.isArray(res.data) && res.data.length > 6) {
+        setLimitErrorMessage('W systemie jest więcej niż 6 grup. Usuń nadmiarowe grupy, aby przywrócić poprawną konfigurację kolorów.');
+      }
     } catch (err) {
       console.error("Błąd pobierania grup:", err);
     } finally {
@@ -107,13 +115,14 @@ const DirectorGroups = () => {
   const openModal = (group = null) => {
     setError('');
     setActionError('');
+    setLimitErrorMessage('');
     setInvalidFields({ name: false, teacher_1: false });
     setRequiredFieldErrors({ name: false, teacher_1: false });
     if (group) {
       const [teacher1, teacher2, teacher3] = parseTeachersInfo(group.teachers_info);
       setEditingGroup(group);
       setFormData({
-        name: group.name,
+        name: stripLeadingGroupEmoji(group.name),
         teacher_1: teacher1,
         teacher_2: teacher2,
         teacher_3: teacher3
@@ -129,7 +138,12 @@ const DirectorGroups = () => {
   const handleSave = async (e) => {
     e.preventDefault();
 
-    const trimmedName = formData.name.trim();
+    if (!editingGroup && groups.length >= 6) {
+      setLimitErrorMessage('Maksymalna liczba grup to 6. Usuń jedną z istniejących grup, aby dodać nową.');
+      return;
+    }
+
+    const trimmedName = stripLeadingGroupEmoji(formData.name.trim());
     const trimmedTeacher1 = formData.teacher_1.trim();
     const missingName = !trimmedName;
     const missingTeacher1 = !trimmedTeacher1;
@@ -173,12 +187,19 @@ const DirectorGroups = () => {
       console.error(err);
 
       const apiErrors = err?.response?.data;
-      if (apiErrors?.name?.[0]) {
+      const detailMessage = typeof apiErrors?.detail === 'string' ? apiErrors.detail : '';
+
+      if (
+        detailMessage.toLowerCase().includes('maksymalna liczba grup to 6') ||
+        detailMessage.toLowerCase().includes('brak wolnych kolorów grup')
+      ) {
+        setLimitErrorMessage(detailMessage);
+      } else if (apiErrors?.name?.[0]) {
         setError(`Nazwa grupy: ${apiErrors.name[0]}`);
       } else if (apiErrors?.teachers_info?.[0]) {
         setError(`Nauczyciele / Wychowawcy: ${apiErrors.teachers_info[0]}`);
-      } else if (typeof apiErrors?.detail === 'string') {
-        setError(apiErrors.detail);
+      } else if (detailMessage) {
+        setError(detailMessage);
       } else {
         setError('Wystąpił błąd podczas zapisu.');
       }
@@ -243,7 +264,7 @@ const DirectorGroups = () => {
           <thead>
             <tr>
               <th style={{width: '30%'}}>Nazwa Grupy</th>
-              <th>Nauczyciele / Opis</th>
+              <th>Nauczyciele</th>
               <th className="actions-header" style={{width: '100px'}}>Akcje</th>
             </tr>
           </thead>
@@ -255,7 +276,7 @@ const DirectorGroups = () => {
                 <tr key={group.id}>
                   <td>
                     <span style={{fontWeight: '700', color: '#333', fontSize: '15px'}}>
-                      {group.name}
+                      {stripLeadingGroupEmoji(group.name)}
                     </span>
                   </td>
                   <td>
@@ -366,13 +387,26 @@ const DirectorGroups = () => {
             <h3>Usunąć grupę?</h3>
             <p>
               Czy na pewno chcesz trwale usunąć grupę
-              {` "${deleteTarget.name}"`}
+              {` "${stripLeadingGroupEmoji(deleteTarget.name)}"`}
               ? Tej operacji nie można cofnąć.
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {limitErrorMessage && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon"><FaExclamationTriangle /></div>
+            <h3>Nie można dodać grupy</h3>
+            <p>{limitErrorMessage}</p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setLimitErrorMessage('')}>Zamknij</button>
             </div>
           </div>
         </div>

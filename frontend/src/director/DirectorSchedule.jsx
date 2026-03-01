@@ -112,6 +112,14 @@ const DirectorSchedule = () => {
     });
   };
 
+  const getGroupBadgeClass = (groupId) => {
+    if (!groupId) return 'group-default';
+
+    const group = groups.find((item) => item.id === groupId);
+    if (!group?.color_key) return 'group-default';
+    return `group-color-${group.color_key}`;
+  };
+
   const extractApiErrorMessage = (err) => {
     const errorData = err?.response?.data;
 
@@ -266,11 +274,11 @@ const DirectorSchedule = () => {
                 <td>
                   <div style={{display:'flex', gap: 5, flexWrap:'wrap'}}>
                     {activity.groups.length > 0 ? activity.groups.map(groupId => (
-                      <span key={groupId} className="role-badge parent">
-                        {groups.find(g => g.id === groupId)?.name}
+                      <span key={groupId} className={`role-badge ${getGroupBadgeClass(groupId)}`}>
+                        {groups.find(g => g.id === groupId)?.name || 'Nieznana grupa'}
                       </span>
                     )) : (
-                      <span className="role-badge">Wszystkie</span>
+                      <span className="role-badge group-all">Wszystkie</span>
                     )}
                   </div>
                 </td>

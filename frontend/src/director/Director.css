@@ -247,34 +247,40 @@
 .role-badge.group-all { background-color: #fff8e1; color: #f57f17; }
 .role-badge.group-default { background-color: #f3f4f6; color: #4b5563; }
 
-.role-badge.group-liski {
-  background-color: #fff0df;
-  color: #9a4a18;
-  border: 1px solid #e2b07f;
+.role-badge.group-color-red {
+  background-color: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #ffcdd2;
 }
 
-.role-badge.group-zajaczki {
-  background-color: #f2f8ef;
-  color: #6b5b4b;
-  border: 1px solid #d7e7c9;
+.role-badge.group-color-yellow {
+  background-color: #fff8e1;
+  color: #f57f17;
+  border: 1px solid #ffe0b2;
 }
 
-.role-badge.group-misie {
-  background-color: #fff4db;
-  color: #7a4f20;
-  border: 1px solid #e7c98b;
+.role-badge.group-color-blue {
+  background-color: #e3f2fd;
+  color: #0d47a1;
+  border: 1px solid #bbdefb;
 }
 
-.role-badge.group-robaczki {
-  background-color: #ffe8e8;
-  color: #9f1d1d;
-  border: 1px solid #e56f6f;
+.role-badge.group-color-green {
+  background-color: #e8f5e9;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
 }
 
-.role-badge.group-myszki {
-  background-color: #edf3fb;
-  color: #5d6778;
-  border: 1px solid #cfd8e6;
+.role-badge.group-color-orange {
+  background-color: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffe0b2;
+}
+
+.role-badge.group-color-purple {
+  background-color: #f3e5f5;
+  color: #4a148c;
+  border: 1px solid #e1bee7;
 }
 
 /* Akcje */

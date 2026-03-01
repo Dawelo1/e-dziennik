@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from datetime import time
 from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group
@@ -247,6 +248,15 @@ class GalleryItemSerializer(WritableNestedModelSerializer):
         return names
     
 class GroupSerializer(serializers.ModelSerializer):
+    color_key = serializers.CharField(read_only=True)
+
     class Meta:
         model = Group
-        fields = ['id', 'name', 'teachers_info']
+        fields = ['id', 'name', 'teachers_info', 'color_key']
+        read_only_fields = ['color_key']
+
+    def create(self, validated_data):
+        try:
+            return super().create(validated_data)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'detail': exc.messages[0] if exc.messages else str(exc)})

@@ -8,9 +8,8 @@ import { formatDateWithDots } from '../dateUtils';
 
 import { 
   FaChild, FaSearch, FaPlus, FaEdit, FaTrash, 
-  FaLayerGroup, FaUserFriends, FaSave, FaTimes, FaExclamationTriangle, FaTrashAlt
+  FaUserFriends, FaSave, FaTimes, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
-import { GiFox, GiRabbit, GiBearFace, GiLadybug, GiRat } from 'react-icons/gi';
 
 const DirectorChildren = () => {
   const [children, setChildren] = useState([]);
@@ -263,40 +262,21 @@ const DirectorChildren = () => {
   };
 
   // Helper do wyświetlania nazwy grupy
+  const stripLeadingGroupEmoji = (groupName = '') => {
+    return groupName.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+  };
+
   const getGroupName = (id) => {
     const g = groups.find(x => x.id === id);
-    return g ? g.name : '-';
+    return g ? stripLeadingGroupEmoji(g.name) : '-';
   };
 
-  const normalizeGroupName = (groupName) => {
-    return (groupName || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-  };
+  const getGroupBadgeClass = (groupId) => {
+    if (!groupId) return 'group-default';
 
-  const getGroupIcon = (groupName) => {
-    const normalizedGroupName = normalizeGroupName(groupName);
-
-    if (normalizedGroupName.includes('lis')) return <GiFox />;
-    if (normalizedGroupName.includes('zaj')) return <GiRabbit />;
-    if (normalizedGroupName.includes('mis')) return <GiBearFace />;
-    if (normalizedGroupName.includes('robac')) return <GiLadybug />;
-    if (normalizedGroupName.includes('mysz')) return <GiRat />;
-
-    return <FaLayerGroup />;
-  };
-
-  const getGroupBadgeClass = (groupName) => {
-    const normalizedGroupName = normalizeGroupName(groupName);
-
-    if (normalizedGroupName.includes('lis')) return 'group-liski';
-    if (normalizedGroupName.includes('zaj')) return 'group-zajaczki';
-    if (normalizedGroupName.includes('mis')) return 'group-misie';
-    if (normalizedGroupName.includes('robac')) return 'group-robaczki';
-    if (normalizedGroupName.includes('mysz')) return 'group-myszki';
-
-    return 'group-default';
+    const group = groups.find((item) => item.id === groupId);
+    if (!group?.color_key) return 'group-default';
+    return `group-color-${group.color_key}`;
   };
 
   const handleSortChange = (field) => {
@@ -379,7 +359,7 @@ const DirectorChildren = () => {
           <tbody>
             {sortedChildren.map(child => {
               const groupName = getGroupName(child.group);
-              const groupBadgeClass = getGroupBadgeClass(groupName);
+              const groupBadgeClass = getGroupBadgeClass(child.group);
 
               return (
               <tr key={child.id}>
@@ -396,7 +376,6 @@ const DirectorChildren = () => {
                 </td>
                 <td>
                   <span className={`role-badge ${groupBadgeClass}`}>
-                    {getGroupIcon(groupName)}
                     {groupName}
                   </span>
                 </td>
@@ -528,7 +507,7 @@ const DirectorChildren = () => {
                 >
                   <option value="">-- Wybierz grupę --</option>
                   {groups.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
+                    <option key={g.id} value={g.id}>{stripLeadingGroupEmoji(g.name)}</option>
                   ))}
                 </select>
                 {requiredFieldErrors.group && (
