@@ -185,3 +185,5 @@ DJANGO_REST_PASSWORDRESET_SERIALIZER_CLASS = 'users.serializers.CustomPasswordRe
 # USTAWIENIA EMAIL (Testowe - wyświetla w konsoli)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'przedszkole@example.com'
+
+ENABLE_TEST_CLOCK = os.getenv('ENABLE_TEST_CLOCK', '1') == '1'

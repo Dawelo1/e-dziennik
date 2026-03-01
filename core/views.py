@@ -12,6 +12,7 @@ from users.permissions import IsDirector
 from users.models import User
 from rest_framework.views import APIView
 from communication.models import Message
+from .time_utils import now as effective_now, today as effective_today, get_time_override, set_time_override, clear_time_override, is_test_clock_enabled
 
 
 def broadcast_notification_summary_changed(user_ids=None):
@@ -495,7 +496,7 @@ class DirectorStatsView(APIView):
     permission_classes = [IsDirector] # Tylko dyrektor
 
     def get(self, request):
-        today = timezone.now().date()
+        today = effective_today()
 
         # 1. Liczba nieprzeczytanych wiadomości (skierowanych do dyrekcji)
         unread_messages_count = Message.objects.filter(
@@ -524,3 +525,37 @@ class DirectorStatsView(APIView):
         }
         
         return Response(stats)
+
+
+class TestClockView(APIView):
+    permission_classes = [IsDirector]
+
+    def get(self, request):
+        override_value = get_time_override()
+        current_server_now = timezone.now()
+        effective_value = effective_now()
+
+        return Response({
+            'enabled': is_test_clock_enabled(),
+            'server_now': current_server_now.isoformat(),
+            'effective_now': effective_value.isoformat(),
+            'override': override_value.isoformat() if override_value else None,
+        })
+
+    def post(self, request):
+        if not is_test_clock_enabled():
+            return Response({'detail': 'Test clock jest wyłączony.'}, status=status.HTTP_403_FORBIDDEN)
+
+        raw_datetime = request.data.get('datetime')
+
+        if raw_datetime in [None, '', 'null']:
+            clear_time_override()
+            return self.get(request)
+
+        try:
+            parsed = timezone.datetime.fromisoformat(str(raw_datetime))
+        except ValueError:
+            return Response({'datetime': 'Nieprawidłowy format. Użyj ISO, np. 2026-03-01T08:30:00'}, status=status.HTTP_400_BAD_REQUEST)
+
+        set_time_override(parsed)
+        return self.get(request)

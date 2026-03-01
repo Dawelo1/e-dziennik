@@ -5,9 +5,10 @@ import { getCroppedImg } from '../cropUtils';
 import './DirectorSettings.css';
 import LoadingScreen from '../users/LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import { setClientTimeOverride, clearClientTimeOverride } from '../timeOverride';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
-  FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
+  FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave, FaClock
 } 
 from 'react-icons/fa';
 
@@ -26,6 +27,9 @@ const Settings = () => {
   const [personalMessage, setPersonalMessage] = useState({ type: '', text: '' });
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
+  const [testClockInfo, setTestClockInfo] = useState(null);
+  const [testClockInput, setTestClockInput] = useState('');
+  const [testClockMessage, setTestClockMessage] = useState({ type: '', text: '' });
 
   // --- STANY DO CROPPERA (KADROWANIA) ---
   const [imageSrc, setImageSrc] = useState(null); // Wczytane zdjęcie
@@ -60,7 +64,39 @@ const Settings = () => {
       .catch(err => console.error(err));
   };
 
-  useEffect(() => { fetchUserData(); }, []);
+  const toLocalInputValue = (isoValue) => {
+    if (!isoValue) return '';
+    const date = new Date(isoValue);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  const syncClockState = (clockPayload) => {
+    setTestClockInfo(clockPayload);
+    setTestClockInput(toLocalInputValue(clockPayload.override || clockPayload.effective_now));
+
+    if (clockPayload.override) {
+      setClientTimeOverride(clockPayload.override);
+    } else {
+      clearClientTimeOverride();
+    }
+  };
+
+  const fetchTestClock = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/debug/test-clock/', getAuthHeaders());
+      syncClockState(response.data);
+    } catch (err) {
+      setTestClockMessage({ type: 'error', text: 'Nie udało się pobrać ustawień zegara testowego.' });
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+    fetchTestClock();
+  }, []);
 
   // 1. WYBÓR PLIKU I OTWARCIE CROPPERA
   const handleFileChange = async (e) => {
@@ -269,6 +305,51 @@ const Settings = () => {
     } catch(e) { setPasswordMessage({ type: 'error', text: 'Nie udało się zmienić hasła. Sprawdź obecne hasło i spróbuj ponownie.' }); } finally { setLoading(false); }
   };
 
+  const handleSetTestClock = async () => {
+    setTestClockMessage({ type: '', text: '' });
+
+    if (!testClockInput) {
+      setTestClockMessage({ type: 'error', text: 'Wybierz datę i godzinę.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        'http://127.0.0.1:8000/api/debug/test-clock/',
+        { datetime: testClockInput },
+        getAuthHeaders()
+      );
+
+      syncClockState(response.data);
+      setTestClockMessage({ type: 'success', text: 'Ustawiono datę testową dla backendu i frontendu.' });
+    } catch (err) {
+      setTestClockMessage({ type: 'error', text: 'Nie udało się ustawić daty testowej.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearTestClock = async () => {
+    setTestClockMessage({ type: '', text: '' });
+    setLoading(true);
+
+    try {
+      const response = await axios.post(
+        'http://127.0.0.1:8000/api/debug/test-clock/',
+        { datetime: null },
+        getAuthHeaders()
+      );
+
+      syncClockState(response.data);
+      setTestClockMessage({ type: 'success', text: 'Przywrócono rzeczywistą datę systemową.' });
+    } catch (err) {
+      setTestClockMessage({ type: 'error', text: 'Nie udało się przywrócić zegara systemowego.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
 
   return (
@@ -456,6 +537,37 @@ const Settings = () => {
             </div>
             <div className="button-container-right">
               <button className="honey-btn" onClick={handlePersonalUpdate}>Zapisz Dane Osobowe</button>
+            </div>
+          </div>
+
+          <div className="settings-wide-card">
+            <div className="card-title"><FaClock style={{marginRight: '8px'}} /> Zegar Testowy</div>
+            {testClockMessage.text && <div className={`settings-alert ${testClockMessage.type}`}>{testClockMessage.text}</div>}
+
+            <div className="inputs-grid-2col">
+              <div className="input-box">
+                <FaClock className="field-icon" />
+                <input
+                  type="datetime-local"
+                  value={testClockInput}
+                  onChange={(e) => setTestClockInput(e.target.value)}
+                />
+              </div>
+              <div className="button-container-right" style={{alignItems: 'center', gap: '10px'}}>
+                <button className="honey-btn" onClick={handleSetTestClock}>Ustaw datę testową</button>
+                <button className="honey-btn" onClick={handleClearTestClock}>Wyczyść</button>
+              </div>
+            </div>
+
+            <div className="inputs-grid-2col" style={{marginBottom: 0}}>
+              <div className="input-box read-only">
+                <FaClock className="field-icon" />
+                <input value={testClockInfo?.server_now ? new Date(testClockInfo.server_now).toLocaleString('pl-PL') : '---'} disabled />
+              </div>
+              <div className="input-box read-only">
+                <FaClock className="field-icon" />
+                <input value={testClockInfo?.effective_now ? new Date(testClockInfo.effective_now).toLocaleString('pl-PL') : '---'} disabled />
+              </div>
             </div>
           </div>
         </div>

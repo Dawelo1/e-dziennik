@@ -124,6 +124,38 @@ python manage.py generate_meal_payments
 python manage.py process_recurring
 ```
 
+## 🕒 Zegar testowy (backend + frontend)
+
+Do testów mechanizmów czasowych możesz ręcznie ustawić datę systemową aplikacji bez zmiany zegara OS.
+
+- Panel: **Dyrektor → Ustawienia → Zegar Testowy**
+- Endpoint API: `GET/POST /api/debug/test-clock/` (tylko dyrektor)
+- Działa tylko w trybie developerskim (`DEBUG=True`)
+
+Przykład ustawienia przez API:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/debug/test-clock/ \
+	-H "Authorization: Token <TOKEN>" \
+	-H "Content-Type: application/json" \
+	-d '{"datetime":"2026-03-15T08:30:00"}'
+```
+
+Wyłączenie zegara testowego:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/debug/test-clock/ \
+	-H "Authorization: Token <TOKEN>" \
+	-H "Content-Type: application/json" \
+	-d '{"datetime":null}'
+```
+
+Jeśli chcesz całkowicie wyłączyć funkcję, ustaw zmienną środowiskową:
+
+```bash
+ENABLE_TEST_CLOCK=0
+```
+
 ## 📚 Aplikacje Django
 
 ### users

@@ -1,12 +1,12 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from core.models import RecurringPayment, Payment
+from core.time_utils import today as effective_today
 
 class Command(BaseCommand):
     help = 'Generuje płatności z aktywnych szablonów cyklicznych'
 
     def handle(self, *args, **kwargs):
-        today = timezone.now().date()
+        today = effective_today()
         
         # Pobierz wszystkie aktywne szablony, których data nadeszła (lub minęła)
         templates = RecurringPayment.objects.filter(is_active=True, next_payment_date__lte=today)

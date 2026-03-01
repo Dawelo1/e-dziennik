@@ -1,14 +1,14 @@
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from core.models import Child, Payment, Attendance, FacilityClosure
 import datetime
 from dateutil.relativedelta import relativedelta
+from core.time_utils import today as effective_today
 
 class Command(BaseCommand):
     help = 'Generuje płatności za wyżywienie za POPRZEDNI miesiąc'
 
     def handle(self, *args, **kwargs):
-        today = timezone.now().date()
+        today = effective_today()
         
         # Obliczamy zakres dat dla POPRZEDNIEGO miesiąca
         # Np. jeśli dziś jest 1 Lutego, to first_day = 1 Stycznia, last_day = 31 Stycznia
