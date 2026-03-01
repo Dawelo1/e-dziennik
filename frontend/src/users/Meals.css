@@ -80,11 +80,42 @@
 /* --- GRID KART DNI --- */
 .meals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); /* Responsywne kolumny */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 30px; /* Odstęp taki jak w inputs-grid */
   
   width: 66.666%;
   margin: 0 auto; 
+}
+
+.allergens-toggle-tile {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 220px;
+  padding-top: 6px;
+}
+
+.allergens-toggle-btn {
+  background: #fcfcfc;
+  border: 1px solid #e0e0e0;
+  border-radius: 30px;
+  padding: 12px 26px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.allergens-toggle-btn:hover {
+  background-color: #f2c94c;
+  border-color: #f2c94c;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(242, 201, 76, 0.3);
 }
 
 /* --- KARTA DNIA (Styl .settings-wide-card, ale mniejsza) --- */
@@ -216,6 +247,90 @@
 }
 .allergens-box svg { color: #8bc34a; font-size: 14px; }
 
+.allergen-catalog-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  width: 66.666%;
+  margin: 24px auto 0 auto;
+  padding: 24px 28px;
+}
+
+.allergen-catalog-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.allergen-catalog-title svg {
+  color: #8bc34a;
+}
+
+.allergen-catalog-list {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #333;
+  line-height: 1.5;
+}
+
+.allergen-name {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.allergen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.allergen-overlay-content {
+  width: min(920px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  padding: 24px 28px;
+}
+
+.allergen-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.allergen-close-btn {
+  background: #fcfcfc;
+  border: 1px solid #e0e0e0;
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.allergen-close-btn:hover {
+  background-color: #f2c94c;
+  border-color: #f2c94c;
+  color: white;
+}
+
 .nav-btn:disabled {
   background-color: #f0f0f0;
   color: #ccc;
@@ -242,8 +357,41 @@
   .meals-grid {
     grid-template-columns: 1fr; /* Jedna karta pod drugą na telefonie */
   }
+
+  .allergens-toggle-tile {
+    min-height: auto;
+  }
+
+  .allergens-toggle-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .nav-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .allergen-catalog-card {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .allergen-overlay {
+    padding: 12px;
+  }
+
+  .allergen-overlay-content {
+    max-height: calc(100vh - 24px);
+    padding: 18px;
+  }
+
+  .allergen-overlay-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .allergen-close-btn {
+    width: 100%;
   }
 }
