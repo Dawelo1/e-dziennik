@@ -160,6 +160,10 @@ const Layout = () => {
 
   if (!user) return null;
 
+  const parentGroupText = user.is_parent && Array.isArray(user.child_groups) && user.child_groups.length > 0
+    ? ` • GRUPA ${user.child_groups.join(', ')}`
+    : '';
+
   return (
     <div className="app-container">
       {/* HEADER */}
@@ -192,7 +196,7 @@ const Layout = () => {
             </div>
             <div className="user-name-box">
               <span className="user-name">{user.first_name} {user.last_name}</span>
-              <span className="user-role">{user.is_director ? 'Dyrektor' : 'Rodzic'}</span>
+              <span className="user-role">{user.is_director ? 'Dyrektor' : `Rodzic${parentGroupText}`}</span>
             </div>
           </div>
           

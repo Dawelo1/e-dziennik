@@ -44,6 +44,7 @@ class CustomPasswordResetSerializer(serializers.Serializer):
     
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
+    child_groups = serializers.SerializerMethodField()
 
     def get_avatar_url(self, obj):
         if not obj.avatar:
@@ -52,10 +53,17 @@ class UserSerializer(serializers.ModelSerializer):
         avatar_url = obj.avatar.url
         return request.build_absolute_uri(avatar_url) if request else avatar_url
 
+    def get_child_groups(self, obj):
+        if not obj.is_parent:
+            return []
+        return list(
+            obj.child.values_list('group__name', flat=True).distinct().order_by('group__name')
+        )
+
     class Meta:
         model = User
         # Zwracamy to, co potrzebne frontendowi do działania
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number', 'avatar', 'avatar_url']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number', 'avatar', 'avatar_url', 'child_groups']
         read_only_fields = ['id', 'username', 'is_director', 'is_parent']
 
 class UserManagementSerializer(serializers.ModelSerializer):
