@@ -13,17 +13,18 @@ class Command(BaseCommand):
         
         count = 0
         for template in templates:
-            # 1. Stwórz realną płatność
-            Payment.objects.create(
-                child=template.child,
-                amount=template.amount,
-                description=template.description, # np. "Czesne"
-                is_paid=False
-                # payment_title wygeneruje się sam w modelu Payment
-            )
+            # 1. Stwórz realne płatności dla wszystkich przypisanych dzieci
+            for child in template.children.all():
+                Payment.objects.create(
+                    child=child,
+                    amount=template.amount,
+                    description=template.description, # np. "Czesne"
+                    is_paid=False
+                    # payment_title wygeneruje się sam w modelu Payment
+                )
+                count += 1
             
             # 2. Zaktualizuj datę następnej płatności (np. na marzec)
             template.update_next_date()
-            count += 1
 
         self.stdout.write(self.style.SUCCESS(f'Wygenerowano {count} płatności cyklicznych.'))

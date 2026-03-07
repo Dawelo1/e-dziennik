@@ -52,9 +52,9 @@ class ChildAdmin(admin.ModelAdmin):
     form = ChildAdminForm  # Podpinamy nasz formularz z walidacją
     
     # Dodajemy 'get_parents_names' do listy kolumn
-    list_display = ('first_name', 'last_name', 'group', 'get_parents_names')
+    list_display = ('first_name', 'last_name', 'group', 'uses_meals', 'get_parents_names')
     
-    list_filter = ('group',)
+    list_filter = ('group', 'uses_meals')
     search_fields = ('last_name', 'first_name')
     filter_horizontal = ('parents',) # Wygodne okienko do wybierania rodziców
 
@@ -157,10 +157,15 @@ class DailyMenuAdmin(admin.ModelAdmin):
 admin.site.register(DailyMenu, DailyMenuAdmin)
 
 class RecurringPaymentAdmin(admin.ModelAdmin):
-    list_display = ('child', 'description', 'amount', 'frequency', 'next_payment_date', 'is_active')
+    list_display = ('children_list', 'description', 'amount', 'frequency', 'next_payment_date', 'is_active')
     list_filter = ('is_active', 'frequency', 'next_payment_date')
-    search_fields = ('child__last_name', 'description')
+    search_fields = ('children__last_name', 'description')
     list_editable = ('is_active', 'next_payment_date') # Szybka edycja daty i włączania/wyłączania
+
+    def children_list(self, obj):
+        return ', '.join(str(child) for child in obj.children.all())
+
+    children_list.short_description = 'Dzieci'
 
 admin.site.register(RecurringPayment, RecurringPaymentAdmin)
 

@@ -206,7 +206,7 @@ const DirectorAttendance = () => {
           <FaUserSlash /> Zarządzanie Nieobecnościami
         </h2>
         <button className="honey-btn" onClick={openModal}>
-          <FaPlus /> Dodaj Wpis Ręcznie
+          <FaPlus /> Dodaj Nieobecność
         </button>
       </div>
 

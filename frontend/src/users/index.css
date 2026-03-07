@@ -28,23 +28,42 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  --sb-track-color: #ffffff;
-  --sb-thumb-color: #cacaca;
-  --sb-size: 8px;
+  --sb-track-color: #fff8e1;
+  --sb-thumb-color: #f2c94c;
+  --sb-thumb-hover-color: #ecb11d;
+  --sb-thumb-active-color: #d89c12;
+  --sb-size: 10px;
 }
 
-body::-webkit-scrollbar {
-  width: var(--sb-size)
+*::-webkit-scrollbar {
+  width: var(--sb-size);
+  height: var(--sb-size);
 }
 
-body::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: var(--sb-track-color);
-  border-radius: 6px;
+  border-radius: 999px;
 }
 
-body::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
   background: var(--sb-thumb-color);
-  border-radius: 6px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--sb-thumb-hover-color);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: var(--sb-thumb-active-color);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator,
@@ -70,9 +89,9 @@ input[type="time"]:focus-visible {
 }
 
 @supports not selector(::-webkit-scrollbar) {
-  body {
-    scrollbar-color: var(--sb-thumb-color)
-                     var(--sb-track-color);
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
   }
 }
 

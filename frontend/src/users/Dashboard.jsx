@@ -184,7 +184,7 @@ const Dashboard = () => {
       return a.dateObj - b.dateObj;
     });
 
-    return widgetItems;
+    return widgetItems.slice(0, 3);
   };
 
   const widgetData = getWidgetItems();

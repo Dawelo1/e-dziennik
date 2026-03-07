@@ -116,8 +116,15 @@ przedszkole_api/
 
 ### Generowanie płatności za posiłki
 ```bash
-python manage.py generate_meal_payments
+python manage.py generate_meal_payments	
 ```
+
+#### Zasady rozliczania posiłków (od marca 2026)
+- Płatność za wyżywienie jest tworzona za **bieżący miesiąc**.
+- Przy aktywacji posiłków (`uses_meals=True`) system od razu tworzy pierwszą płatność za miesiąc startu.
+- Jeśli `meal_start_date` wypada w trakcie miesiąca, pierwsza płatność jest naliczana proporcjonalnie od tej daty.
+- Nieobecności z danego miesiąca obniżają płatność w **następnym miesiącu** (mechanizm przeniesienia).
+- Dla jednego dziecka i jednego okresu (`meal_period`) system utrzymuje tylko jedną płatność.
 
 ### Przetwarzanie płatności cyklicznych
 ```bash

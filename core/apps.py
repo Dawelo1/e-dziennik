@@ -6,3 +6,6 @@ class CoreConfig(AppConfig):
     name = 'core'
     verbose_name = "Zarządzanie Przedszkolem"
     default = True
+
+    def ready(self):
+        from . import signals  # noqa: F401

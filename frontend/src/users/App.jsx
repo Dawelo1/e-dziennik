@@ -33,6 +33,7 @@ import DirectorAttendance from '../director/DirectorAttendance';
 import DirectorSchedule from '../director/DirectorSchedule';
 import DirectorMenu from '../director/DirectorMenu';
 import DirectorCalendar from '../director/DirectorCalendar';
+import DirectorPayments from '../director/DirectorPayments';
 import DirectorSettings from '../director/DirectorSettings';
 
 function App() {
@@ -72,10 +73,6 @@ function App() {
             
             {/* Główny pulpit */}
             <Route path="/director/dashboard" element={<DirectorDashboard />} />
-
-            {/* Tymczasowe przekierowanie reszty linków do Dashboardu, 
-                żeby można było testować menu bez błędów 404. 
-                W kolejnych krokach będziemy podmieniać DirectorDashboard na właściwe komponenty. */}
             <Route path="/director/posts" element={<DirectorPosts />} />
             <Route path="/director/messages" element={<DirectorMessages />} />
             <Route path="/director/attendance" element={<DirectorAttendance />} />
@@ -83,7 +80,7 @@ function App() {
             <Route path="/director/menu" element={<DirectorMenu />} />
             <Route path="/director/gallery" element={<DirectorGallery />} />
             <Route path="/director/calendar" element={<DirectorCalendar />} />
-            <Route path="/director/payments" element={<DirectorDashboard />} />
+            <Route path="/director/payments" element={<DirectorPayments />} />
             <Route path="/director/groups" element={<DirectorGroups />} />
             <Route path="/director/children" element={<DirectorChildren />} />
             <Route path="/director/users" element={<DirectorUsers />} /> 

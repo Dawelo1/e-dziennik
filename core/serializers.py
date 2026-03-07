@@ -3,7 +3,7 @@ import re
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from datetime import time
-from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group
+from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group, RecurringPayment
 from drf_writable_nested import WritableNestedModelSerializer
 
 class ChildSerializer(serializers.ModelSerializer):
@@ -13,11 +13,65 @@ class ChildSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PaymentSerializer(serializers.ModelSerializer):
+    child_name = serializers.SerializerMethodField(read_only=True)
+
+    def get_child_name(self, obj):
+        first_name = (obj.child.first_name or '').strip()
+        last_name = (obj.child.last_name or '').strip()
+        full_name = f"{first_name} {last_name}".strip()
+        return full_name or str(obj.child)
+
     class Meta:
         model = Payment
-        fields = '__all__'
-        read_only_fields = ('payment_title', 'is_paid') 
-        # is_paid read_only dla rodzica, ale dyrektor musi mieć osobny serializer lub uprawnienie
+        fields = [
+            'id',
+            'child',
+            'child_name',
+            'amount',
+            'description',
+            'is_paid',
+            'created_at',
+            'payment_title',
+            'payment_date',
+            'meal_period',
+        ]
+        read_only_fields = ()
+
+
+class RecurringPaymentSerializer(serializers.ModelSerializer):
+    child_names = serializers.SerializerMethodField(read_only=True)
+    child_names_text = serializers.SerializerMethodField(read_only=True)
+
+    def get_child_names(self, obj):
+        names = []
+        for child in obj.children.all():
+            first_name = (child.first_name or '').strip()
+            last_name = (child.last_name or '').strip()
+            full_name = f"{first_name} {last_name}".strip()
+            names.append(full_name or str(child))
+        return names
+
+    def get_child_names_text(self, obj):
+        return ', '.join(self.get_child_names(obj))
+
+    def validate_children(self, value):
+        if not value:
+            raise serializers.ValidationError("Wybierz co najmniej jedno dziecko.")
+        return value
+
+    class Meta:
+        model = RecurringPayment
+        fields = [
+            'id',
+            'children',
+            'child_names',
+            'child_names_text',
+            'amount',
+            'description',
+            'frequency',
+            'next_payment_date',
+            'is_active',
+        ]
 
 class PostSerializer(serializers.ModelSerializer):
     # Dodajemy sformatowaną datę, żeby na froncie łatwo wyświetlić np. "12 Listopada 2023"

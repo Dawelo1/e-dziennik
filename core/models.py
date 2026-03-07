@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from users.models import User
 from django_cryptography.fields import encrypt # Szyfrowanie RODO
 from django.utils import timezone
@@ -74,6 +75,15 @@ class Child(models.Model):
         default=20.00, 
         verbose_name="Stawka żywieniowa"
     )
+    uses_meals = models.BooleanField(
+        default=False,
+        verbose_name="Korzysta z posiłków"
+    )
+    meal_start_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Data rozpoczęcia wyżywienia"
+    )
     
     # Dane wrażliwe (RODO) - szyfrowane w bazie
     medical_info = encrypt(models.TextField(blank=True, help_text="Alergie, uwagi zdrowotne", verbose_name="Informacje medyczne"))
@@ -88,12 +98,12 @@ class Child(models.Model):
 class Attendance(models.Model):
     STATUS_CHOICES = [
         # Zmieniamy logikę: rekord w bazie = zgłoszona nieobecność
-        ('nieobecny', 'Nieobecny (Zgłoszone)'),
+        ('absent', 'Nieobecny (Zgłoszone)'),
         # Opcjonalnie 'present' jeśli dyrektor chce ręcznie potwierdzić, ale domyślnie brak wpisu = obecny
     ]
     child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='attendance', verbose_name="Dziecko")
     date = models.DateField(verbose_name="Data nieobecności")
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='nieobecny')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='absent')
     
     # To pole spełnia Twoje wymaganie: "data kiedy to zostało wpisane do bazy"
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data zgłoszenia")
@@ -111,12 +121,22 @@ import datetime
 
 class Payment(models.Model):
     child = models.ForeignKey(Child, on_delete=models.CASCADE, verbose_name="Dziecko")
-    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Kwota")
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        verbose_name="Kwota"
+    )
     description = models.CharField(max_length=200, verbose_name="Opis") # np. "Czesne Styczeń"
     is_paid = models.BooleanField(default=False, verbose_name="Opłacone")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data utworzenia")
     payment_title = models.CharField(max_length=100, unique=True, blank=True, verbose_name="Tytuł płatności (generowany automatycznie/ zostawić pusty)")
     payment_date = models.DateTimeField(null=True, blank=True, verbose_name="Data opłacenia")
+    meal_period = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Okres rozliczeniowy wyżywienia (1. dzień miesiąca)"
+    )
 
     def save(self, *args, **kwargs):
         if not self.payment_title:
@@ -132,28 +152,45 @@ class Payment(models.Model):
 
     def generate_unique_title(self):
         # Format: Imie/Nazwisko/MMRRRR/CCC
-        
         first_name = self.child.first_name
         last_name = self.child.last_name
-        
-        today = datetime.date.today()
-        date_str = today.strftime("%m%Y") # Format MMRRRR (np. 122025)
-        
-        # Liczymy ile płatności powstało w TYM miesiącu i dodajemy 1
-        # Dzięki temu numeracja resetuje się każdego miesiąca (001, 002...)
-        count = Payment.objects.filter(
-            created_at__year=today.year, 
-            created_at__month=today.month
-        ).count() + 1
-        
-        unique_code = f"{count:03d}" # Formatowanie do 3 cyfr (np. 001, 015, 120)
 
-        # Wynik np.: Jan/Kowalski/122025/001
-        return f"{first_name}/{last_name}/{date_str}/{unique_code}"
+        today = datetime.date.today()
+        date_str = today.strftime("%m%Y")  # Format MMRRRR (np. 122025)
+        prefix = f"{first_name}/{last_name}/{date_str}/"
+
+        # Zamiast count()+1 (które po usunięciu rekordów może dać duplikat),
+        # znajdujemy najwyższy istniejący numer sekwencji dla danego prefiksu.
+        existing_titles = Payment.objects.filter(
+            payment_title__startswith=prefix
+        ).values_list('payment_title', flat=True)
+
+        max_code = 0
+        for title in existing_titles:
+            suffix = title.rsplit('/', 1)[-1]
+            if suffix.isdigit():
+                max_code = max(max_code, int(suffix))
+
+        next_code = max_code + 1
+        candidate = f"{prefix}{next_code:03d}"
+
+        while Payment.objects.filter(payment_title=candidate).exists():
+            next_code += 1
+            candidate = f"{prefix}{next_code:03d}"
+
+        return candidate
     
     class Meta:
         verbose_name = "Płatność"
         verbose_name_plural = "Płatności"
+        constraints = [
+            models.CheckConstraint(check=models.Q(amount__gte=0), name='payment_amount_gte_0'),
+            models.UniqueConstraint(
+                fields=['child', 'meal_period'],
+                condition=models.Q(meal_period__isnull=False),
+                name='unique_meal_payment_per_child_period',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.child} - {self.description} ({self.amount} zł)"
@@ -305,8 +342,13 @@ class RecurringPayment(models.Model):
         ('yearly', 'Co rok'),
     ]
     
-    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='recurring_payments', verbose_name="Dziecko")
-    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Kwota")
+    children = models.ManyToManyField(Child, related_name='recurring_payment_templates', verbose_name="Dzieci")
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        verbose_name="Kwota"
+    )
     description = models.CharField(max_length=200, verbose_name="Opis (np. Czesne)")
     frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='monthly', verbose_name="Częstotliwość")
     
@@ -316,9 +358,12 @@ class RecurringPayment(models.Model):
     class Meta:
         verbose_name = "Płatność Cykliczna (Szablon)"
         verbose_name_plural = "Płatności Cykliczne"
+        constraints = [
+            models.CheckConstraint(check=models.Q(amount__gte=0), name='recurring_payment_amount_gte_0'),
+        ]
 
     def __str__(self):
-        return f"{self.child} - {self.description} ({self.get_frequency_display()})"
+        return f"{self.description} ({self.get_frequency_display()})"
 
     def update_next_date(self):
         """Przesuwa datę następnej płatności w zależności od częstotliwości"""
