@@ -392,19 +392,21 @@ const DirectorChildren = () => {
         <h2 className="page-title">
           <FaChild /> Kartoteki Dzieci
         </h2>
+      </div>
+
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input 
+            type="text" 
+            placeholder="Szukaj dziecka..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Dziecko
         </button>
-      </div>
-
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input 
-          type="text" 
-          placeholder="Szukaj dziecka..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
       </div>
 
       <div className="table-card">

@@ -6,7 +6,7 @@ import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 
-  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt
+  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
 const DirectorAttendance = () => {
@@ -14,11 +14,9 @@ const DirectorAttendance = () => {
   const [children, setChildren] = useState([]); // Do listy w modalu
   const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(true);
-  const dateInputRef = useRef(null);
   
   // Filtry
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDate, setFilterDate] = useState('');
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,23 +88,29 @@ const DirectorAttendance = () => {
   };
 
   const filteredAbsences = absences.filter(absence => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+
     const childName = getChildName(absence.child).toLowerCase();
-    const matchesSearch = childName.includes(searchQuery.toLowerCase());
-    const matchesDate = filterDate ? absence.date === filterDate : true;
-    return matchesSearch && matchesDate;
+
+    const absenceDate = new Date(absence.date);
+    const createdAtDate = new Date(absence.created_at);
+
+    const absenceDateLocale = absenceDate.toLocaleDateString('pl-PL').toLowerCase();
+    const absenceDateIso = absence.date.toLowerCase();
+    const createdAtDateLocale = createdAtDate.toLocaleDateString('pl-PL').toLowerCase();
+    const createdAtDateTimeLocale = createdAtDate.toLocaleString('pl-PL').toLowerCase();
+    const createdAtDateIso = absence.created_at.toLowerCase();
+
+    return (
+      childName.includes(query) ||
+      absenceDateLocale.includes(query) ||
+      absenceDateIso.includes(query) ||
+      createdAtDateLocale.includes(query) ||
+      createdAtDateTimeLocale.includes(query) ||
+      createdAtDateIso.includes(query)
+    );
   });
-
-  const handleDateIconClick = () => {
-    const input = dateInputRef.current;
-    if (!input) return;
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-    } else {
-      input.focus();
-      input.click();
-    }
-  };
 
   const getDayOffReason = (dateString) => {
     if (!dateString) return null;
@@ -205,9 +209,6 @@ const DirectorAttendance = () => {
         <h2 className="page-title">
           <FaUserSlash /> Zarządzanie Nieobecnościami
         </h2>
-        <button className="honey-btn" onClick={openModal}>
-          <FaPlus /> Dodaj Nieobecność
-        </button>
       </div>
 
       {/* FILTRY */}
@@ -216,33 +217,14 @@ const DirectorAttendance = () => {
           <FaSearch className="search-icon"/>
           <input 
             type="text" 
-            placeholder="Szukaj po nazwisku dziecka..." 
+            placeholder="Szukaj po nazwisku, dacie nieobecności lub zgłoszenia..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="date-filter-container">
-          <button
-            type="button"
-            className="date-picker-trigger"
-            onClick={handleDateIconClick}
-            title="Pokaż selektor dat"
-            aria-label="Pokaż selektor dat"
-          >
-            <FaCalendarAlt className="search-icon"/>
-          </button>
-          <input 
-            type="date"
-            ref={dateInputRef}
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          />
-          {filterDate && (
-            <button className="clear-date-btn" onClick={() => setFilterDate('')}>
-              &times;
-            </button>
-          )}
-        </div>
+        <button className="honey-btn" onClick={openModal}>
+          <FaPlus /> Dodaj Nieobecność
+        </button>
       </div>
 
       {/* TABELA */}

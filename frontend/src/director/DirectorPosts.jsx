@@ -334,19 +334,21 @@ const DirectorPosts = () => {
         <h2 className="page-title">
           <FaBullhorn /> Tablica Ogłoszeń
         </h2>
+      </div>
+
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input 
+            type="text" 
+            placeholder="Szukaj po tytule..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Ogłoszenie
         </button>
-      </div>
-
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input 
-          type="text" 
-          placeholder="Szukaj po tytule..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
       </div>
 
       {actionError && <div className="form-error">{actionError}</div>}

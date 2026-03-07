@@ -353,12 +353,14 @@ const DirectorGallery = () => {
       
       <div className="page-header-row">
         <h2 className="page-title"><FaImages /> Galeria Zdjęć</h2>
-        <button className="honey-btn" onClick={() => openModal()}><FaPlus /> Dodaj Album</button>
       </div>
 
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input type="text" placeholder="Szukaj po tytule..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input type="text" placeholder="Szukaj po tytule..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </div>
+        <button className="honey-btn" onClick={() => openModal()}><FaPlus /> Dodaj Album</button>
       </div>
 
       {actionError && <div className="form-error">{actionError}</div>}

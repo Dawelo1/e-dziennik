@@ -620,19 +620,21 @@ const DirectorPayments = () => {
 				<h2 className="page-title" style={{ marginBottom: 0 }}>
 					<FaMoneyBillWave /> Płatności
 				</h2>
+			</div>
+
+			<div className="filter-bar">
+				<div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+					<FaSearch className="search-icon" />
+					<input
+						type="text"
+						placeholder={isRecurringView ? 'Szukaj po dziecku, dacie lub kwocie...' : 'Szukaj po dziecku, dacie lub kwocie...'}
+						value={searchQuery}
+						onChange={(event) => setSearchQuery(event.target.value)}
+					/>
+				</div>
 				<button className="honey-btn" onClick={openCreateModal}>
 					<FaPlus /> {addButtonLabel}
 				</button>
-			</div>
-
-			<div className="search-bar-container">
-				<FaSearch className="search-icon" />
-				<input
-					type="text"
-					placeholder={isRecurringView ? 'Szukaj po dziecku, dacie lub kwocie...' : 'Szukaj po dziecku, dacie lub kwocie...'}
-					value={searchQuery}
-					onChange={(event) => setSearchQuery(event.target.value)}
-				/>
 			</div>
 
 			<div className="table-card">

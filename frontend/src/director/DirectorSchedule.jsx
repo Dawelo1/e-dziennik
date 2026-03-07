@@ -243,6 +243,9 @@ const DirectorSchedule = () => {
         <h2 className="page-title">
           <FaChalkboardTeacher /> Zarządzanie Zajęciami
         </h2>
+      </div>
+
+      <div className="filter-bar" style={{ justifyContent: 'flex-end' }}>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Zajęcia
         </button>

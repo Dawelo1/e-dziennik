@@ -334,9 +334,6 @@ const DirectorMenu = () => {
         <h2 className="page-title">
           <FaUtensils /> Zarządzanie Jadłospisem
         </h2>
-        <button className="honey-btn" onClick={() => openModal()}>
-          <FaPlus /> Dodaj Jadłospis na Dzień
-        </button>
       </div>
 
       {actionError && <div className="form-error">{actionError}</div>}
@@ -356,6 +353,9 @@ const DirectorMenu = () => {
             </button>
           )}
         </div>
+        <button className="honey-btn" onClick={() => openModal()}>
+          <FaPlus /> Dodaj Jadłospis na Dzień
+        </button>
       </div>
 
       <div className="table-card">
