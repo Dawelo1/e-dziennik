@@ -6,7 +6,7 @@ import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 
-  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt
+  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt, FaEdit
 } from 'react-icons/fa';
 
 const DirectorAttendance = () => {
@@ -21,6 +21,7 @@ const DirectorAttendance = () => {
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ child: '', date: '' });
+  const [editingAbsence, setEditingAbsence] = useState(null);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -133,13 +134,26 @@ const DirectorAttendance = () => {
   };
 
   // 3. Otwieranie Modala
-  const openModal = () => {
+  const openModal = (absence = null) => {
     setError('');
     setActionError('');
     setInvalidFields({ child: false, date: false });
     setRequiredFieldErrors({ child: false, date: false });
-    setFormData({ child: '', date: new Date().toISOString().split('T')[0] }); // Domyślnie dziś
+    setEditingAbsence(absence);
+    if (absence) {
+      setFormData({ child: String(absence.child), date: absence.date });
+    } else {
+      setFormData({ child: '', date: new Date().toISOString().split('T')[0] }); // Domyślnie dziś
+    }
     setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingAbsence(null);
+    setError('');
+    setRequiredFieldErrors({ child: false, date: false });
+    setInvalidFields({ child: false, date: false });
   };
 
   // 4. Zapisywanie
@@ -162,14 +176,18 @@ const DirectorAttendance = () => {
     const dayOffReason = getDayOffReason(formData.date);
     if (dayOffReason) {
       triggerInvalidField('date');
-      setError(`Nie można dodać nieobecności. ${dayOffReason}`);
+      setError(`Nie można zapisać nieobecności. ${dayOffReason}`);
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post('http://127.0.0.1:8000/api/attendance/', formData, getAuthHeaders());
-      setIsModalOpen(false);
+      if (editingAbsence) {
+        await axios.patch(`http://127.0.0.1:8000/api/attendance/${editingAbsence.id}/`, formData, getAuthHeaders());
+      } else {
+        await axios.post('http://127.0.0.1:8000/api/attendance/', formData, getAuthHeaders());
+      }
+      closeModal();
       await fetchData();
     } catch (err) {
       const apiError = err?.response?.data;
@@ -179,7 +197,7 @@ const DirectorAttendance = () => {
         apiError?.detail ||
         (typeof apiError === 'string' ? apiError : null);
 
-      setError(errorMessage || "Błąd zapisu. Być może ta nieobecność jest już zgłoszona.");
+      setError(errorMessage || "Błąd zapisu. Sprawdź dane i spróbuj ponownie.");
       setLoading(false);
     }
   };
@@ -247,6 +265,9 @@ const DirectorAttendance = () => {
                 <td>{new Date(absence.date).toLocaleDateString('pl-PL')}</td>
                 <td>{new Date(absence.created_at).toLocaleString('pl-PL')}</td>
                 <td className="actions-cell">
+                  <button className="action-icon-btn edit" onClick={() => openModal(absence)} title="Edytuj">
+                    <FaEdit />
+                  </button>
                   <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(absence); }} title="Usuń">
                     <FaTrash />
                   </button>
@@ -261,7 +282,7 @@ const DirectorAttendance = () => {
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Dodaj Nieobecność</h3>
+            <h3>{editingAbsence ? 'Edytuj Nieobecność' : 'Dodaj Nieobecność'}</h3>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleSave} className="modal-form-grid" noValidate>
               
@@ -310,8 +331,8 @@ const DirectorAttendance = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
-                <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
+                <button type="submit" className="modal-btn confirm success"><FaSave /> {editingAbsence ? 'Zapisz zmiany' : 'Zapisz'}</button>
               </div>
 
             </form>

@@ -7,7 +7,7 @@ import LoadingScreen from '../users/LoadingScreen';
 import { formatDateWithDots } from '../dateUtils';
 
 import { 
-  FaUtensils, FaPlus, FaEdit, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt, FaPrint
+  FaUtensils, FaSearch, FaPlus, FaEdit, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt, FaPrint
 } from 'react-icons/fa';
 
 const DirectorMenu = () => {
@@ -15,7 +15,7 @@ const DirectorMenu = () => {
   const [loading, setLoading] = useState(true);
   
   // Filtr
-  const [filterDate, setFilterDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,7 +47,25 @@ const DirectorMenu = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filteredMenus = menus.filter(menu => filterDate ? menu.date === filterDate : true);
+  const filteredMenus = menus.filter((menu) => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+
+    const menuDate = new Date(`${menu.date}T00:00:00`);
+    const menuDateLocale = menuDate.toLocaleDateString('pl-PL').toLowerCase();
+    const menuDateWithWeekday = menuDate.toLocaleDateString('pl-PL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    }).toLowerCase();
+    const menuDateIso = String(menu.date || '').toLowerCase();
+
+    return (
+      menuDateLocale.includes(query) ||
+      menuDateWithWeekday.includes(query) ||
+      menuDateIso.includes(query)
+    );
+  });
   const sortedFilteredMenus = [...filteredMenus].sort(
     (a, b) => new Date(`${b.date}T00:00:00`) - new Date(`${a.date}T00:00:00`)
   );
@@ -340,15 +358,16 @@ const DirectorMenu = () => {
 
       {/* FILTRY */}
       <div className="filter-bar">
-        <div className="date-filter-container" style={{width: 'auto'}}>
-          <FaCalendarAlt className="search-icon"/>
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
           <input 
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
+            type="text"
+            placeholder="Szukaj po dacie..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          {filterDate && (
-            <button className="clear-date-btn" onClick={() => setFilterDate('')}>
+          {searchQuery && (
+            <button className="clear-date-btn" onClick={() => setSearchQuery('')}>
               &times;
             </button>
           )}
