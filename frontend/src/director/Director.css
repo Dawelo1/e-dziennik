@@ -102,6 +102,11 @@
   margin-bottom: 20px;
 }
 
+.page-header-row .page-title {
+  flex: 1;
+  min-width: 0;
+}
+
 .honey-btn {
   background-color: #f2c94c;
   color: #fff;

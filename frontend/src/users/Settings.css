@@ -8,29 +8,6 @@
   font-family: 'Segoe UI', sans-serif;
 }
 
-.settings-main-title {
-  color: #333;
-  font-size: 24px;
-  font-weight: 700;
-  
-  margin-bottom: 20px;
-  margin-left: 0;
-  padding-left: 15px;
-  
-  border-left: 5px solid #f2c94c;
-  
-  /* Flexbox do wyrównania ikony i tekstu */
-  display: flex;
-  align-items: center;
-  gap: 15px; /* Odstęp między ikoną a napisem */
-}
-
-/* Styl dla ikony w nagłówku */
-.settings-main-title svg {
-  color: #f2c94c; /* Miodowy kolor */
-  font-size: 28px; /* Nieco większa od tekstu */
-}
-
 /* --- Karta (Biały prostokąt) --- */
 .settings-wide-card {
   background-color: #fff;
