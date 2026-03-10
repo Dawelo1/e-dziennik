@@ -5,6 +5,7 @@ import { getCroppedImg } from '../cropUtils';
 import './Settings.css';
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
   FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
@@ -39,13 +40,11 @@ const Settings = () => {
   const fileInputRef = useRef(null);
 
   const getAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return toAbsoluteMediaUrl(url);
   };
 
   const fetchUserData = () => {
-    axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
+    axios.get('/api/users/me/', getAuthHeaders())
       .then(res => {
         setCurrentData({
           email: res.data.email || '',
@@ -58,7 +57,7 @@ const Settings = () => {
       })
       .catch(err => console.error(err));
 
-    axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders())
+    axios.get('/api/children/', getAuthHeaders())
       .then(res => setChildren(res.data))
       .catch(err => console.error(err));
   };
@@ -102,7 +101,7 @@ const Settings = () => {
       formData.append('avatar', croppedImageBlob, 'avatar.jpg');
 
       // Wysyłamy do API
-      await axios.patch('http://127.0.0.1:8000/api/users/me/', formData, getAuthHeaders());
+      await axios.patch('/api/users/me/', formData, getAuthHeaders());
 
       setMessage({ type: 'success', text: 'Zdjęcie profilowe zaktualizowane!' });
       fetchUserData();
@@ -123,14 +122,14 @@ const Settings = () => {
   const confirmDeleteAvatar = async () => {
     setLoading(true);
     try {
-      await axios.patch('http://127.0.0.1:8000/api/users/me/', { avatar: 'DELETE' }, getAuthHeaders());
+      await axios.patch('/api/users/me/', { avatar: 'DELETE' }, getAuthHeaders());
       setMessage({ type: 'success', text: 'Zdjęcie profilowe usunięte.' });
       fetchUserData();
       setIsDeleteModalOpen(false);
       setTimeout(() => {
         window.location.reload();
       }, 1500);
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Błąd podczas usuwania zdjęcia.' });
     } finally {
       setLoading(false);
@@ -190,11 +189,11 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      await axios.patch('http://127.0.0.1:8000/api/users/me/', payload, getAuthHeaders());
+      await axios.patch('/api/users/me/', payload, getAuthHeaders());
       setContactMessage({ type: 'success', text: 'Dane kontaktowe zostały zapisane.' });
       fetchUserData();
       setFormData((prev) => ({ ...prev, new_email: type === 'email' ? '' : prev.new_email, new_phone: type === 'phone' ? '' : prev.new_phone }));
-    } catch (err) { setContactMessage({ type: 'error', text: 'Nie udało się zapisać danych kontaktowych.' }); } finally { setLoading(false); }
+    } catch { setContactMessage({ type: 'error', text: 'Nie udało się zapisać danych kontaktowych.' }); } finally { setLoading(false); }
   };
 
   const handlePasswordChange = async () => {
@@ -224,11 +223,11 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      await axios.put('http://127.0.0.1:8000/api/users/change-password/', passwordData, getAuthHeaders());
+      await axios.put('/api/users/change-password/', passwordData, getAuthHeaders());
       setPasswordMessage({ type: 'success', text: 'Hasło zostało zmienione.' });
       setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
       setPasswordErrors({ old_password: '', new_password: '', confirm_password: '' });
-    } catch(e) { setPasswordMessage({ type: 'error', text: 'Nie udało się zmienić hasła. Sprawdź obecne hasło i spróbuj ponownie.' }); } finally { setLoading(false); }
+    } catch { setPasswordMessage({ type: 'error', text: 'Nie udało się zmienić hasła. Sprawdź obecne hasło i spróbuj ponownie.' }); } finally { setLoading(false); }
   };
   
   const handleMedicalUpdate = async (childId, val) => {
@@ -238,9 +237,9 @@ const Settings = () => {
     setContactErrors({ email: '', phone: '' });
     setLoading(true);
     try {
-        await axios.patch(`http://127.0.0.1:8000/api/children/${childId}/`, { medical_info: val }, getAuthHeaders());
+        await axios.patch(`/api/children/${childId}/`, { medical_info: val }, getAuthHeaders());
         setMessage({ type: 'success', text: 'Dane medyczne zapisane.' });
-    } catch(e) { setMessage({ type: 'error', text: 'Błąd zapisu.' }); }
+    } catch { setMessage({ type: 'error', text: 'Błąd zapisu.' }); }
     finally { setLoading(false); }
   };
   
@@ -252,7 +251,7 @@ const Settings = () => {
 
   return (
     <div className="settings-page-wrapper">
-      <h2 className="settings-main-title">
+      <h2 className="page-title">
         <FaUserCog /> Ustawienia Konta
       </h2>
 

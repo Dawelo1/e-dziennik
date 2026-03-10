@@ -7,47 +7,56 @@ const ImageGrid = ({ images }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
 
-  if (!images || images.length === 0) return null;
-
-  const count = images.length;
-  const displayImages = images.slice(0, 4);
+  const galleryImages = images || [];
+  const count = galleryImages.length;
+  const displayImages = galleryImages.slice(0, 4);
   const remaining = count - 4;
   const gridClass = count >= 4 ? 'grid-4' : `grid-${count}`;
+  const imageCount = galleryImages.length;
 
   const openLightbox = (index) => {
     setPhotoIndex(index);
     setIsOpen(true);
-    document.body.style.overflow = 'hidden';
   };
 
   const closeLightbox = () => {
     setIsOpen(false);
-    document.body.style.overflow = 'auto';
   };
 
   const nextImage = (e) => {
     e.stopPropagation();
-    setPhotoIndex((prev) => (prev + 1) % images.length);
+    setPhotoIndex((prev) => (prev + 1) % imageCount);
   };
 
   const prevImage = (e) => {
     e.stopPropagation();
-    setPhotoIndex((prev) => (prev + images.length - 1) % images.length);
+    setPhotoIndex((prev) => (prev + imageCount - 1) % imageCount);
   };
 
   useEffect(() => {
+    document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+
     const handleKeyDown = (e) => {
       if (!isOpen) return;
       if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowRight') nextImage(e);
-      if (e.key === 'ArrowLeft') prevImage(e);
+      if (e.key === 'ArrowRight') {
+        setPhotoIndex((prev) => (prev + 1) % imageCount);
+      }
+      if (e.key === 'ArrowLeft') {
+        setPhotoIndex((prev) => (prev + imageCount - 1) % imageCount);
+      }
     };
 
-    if (isOpen) {
+    if (isOpen && imageCount > 0) {
       window.addEventListener('keydown', handleKeyDown);
     }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen, imageCount]);
+
+  if (imageCount === 0) return null;
 
   // --- HTML DLA LIGHTBOXA ---
   const lightboxContent = (
@@ -57,7 +66,7 @@ const ImageGrid = ({ images }) => {
         <FaTimes />
       </button>
 
-      {images.length > 1 && (
+      {imageCount > 1 && (
         <button className="lightbox-nav-btn prev" onClick={prevImage}>
           <FaChevronLeft />
         </button>
@@ -65,15 +74,15 @@ const ImageGrid = ({ images }) => {
 
       <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
         <img 
-          src={images[photoIndex].image} 
+          src={galleryImages[photoIndex].image} 
           alt={`Gallery preview ${photoIndex + 1}`} 
         />
         <div className="lightbox-counter">
-          {photoIndex + 1} / {images.length}
+          {photoIndex + 1} / {imageCount}
         </div>
       </div>
 
-      {images.length > 1 && (
+      {imageCount > 1 && (
         <button className="lightbox-nav-btn next" onClick={nextImage}>
           <FaChevronRight />
         </button>

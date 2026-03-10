@@ -20,14 +20,14 @@ import {
 } 
 from 'react-icons/fa';
 import { formatDateWithDots } from '../dateUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 
+const POSTS_REFRESH_MS = 60 * 1000;
+const EVENTS_PAYMENTS_REFRESH_MS = 5 * 60 * 1000;
+const PROFILE_REFRESH_MS = 15 * 60 * 1000;
+const POLL_TICK_MS = 30 * 1000;
 
 const Dashboard = () => {
-  const POSTS_REFRESH_MS = 60 * 1000;
-  const EVENTS_PAYMENTS_REFRESH_MS = 5 * 60 * 1000;
-  const PROFILE_REFRESH_MS = 15 * 60 * 1000;
-  const POLL_TICK_MS = 30 * 1000;
-
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -46,9 +46,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const getAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return toAbsoluteMediaUrl(url);
   };
 
   const fetchData = useCallback(async ({ force = false } = {}) => {
@@ -67,11 +65,11 @@ const Dashboard = () => {
 
     try {
       const [postsRes, eventsRes, paymentsRes, userRes, directorStatusRes] = await Promise.all([
-        shouldFetchPosts ? axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders()) : Promise.resolve(null),
-        shouldFetchEventsPayments ? axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders()) : Promise.resolve(null),
-        shouldFetchEventsPayments ? axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders()) : Promise.resolve(null),
-        shouldFetchProfile ? axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders()) : Promise.resolve(null),
-        shouldFetchProfile ? axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders()) : Promise.resolve(null)
+        shouldFetchPosts ? axios.get('/api/newsfeed/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchEventsPayments ? axios.get('/api/calendar/activities/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchEventsPayments ? axios.get('/api/payments/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchProfile ? axios.get('/api/users/me/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchProfile ? axios.get('/api/users/director-status/', getAuthHeaders()) : Promise.resolve(null)
       ]);
 
       if (postsRes) {
@@ -184,7 +182,7 @@ const Dashboard = () => {
       return a.dateObj - b.dateObj;
     });
 
-    return widgetItems;
+    return widgetItems.slice(0, 3);
   };
 
   const widgetData = getWidgetItems();
@@ -204,7 +202,7 @@ const Dashboard = () => {
     }));
 
     try {
-      await axios.post(`http://127.0.0.1:8000/api/newsfeed/${postId}/like/`, {}, getAuthHeaders());
+      await axios.post(`/api/newsfeed/${postId}/like/`, {}, getAuthHeaders());
     } catch (err) {
       console.error("Błąd lajkowania:", err);
     }
@@ -239,7 +237,7 @@ const handleLikeComment = async (postId, commentId) => {
 
     // 2. Wysłanie żądania do API w tle
     try {
-      await axios.post(`http://127.0.0.1:8000/api/comments/${commentId}/like/`, {}, getAuthHeaders());
+      await axios.post(`/api/comments/${commentId}/like/`, {}, getAuthHeaders());
     } catch (err) {
       console.error("Błąd lajkowania komentarza:", err);
       // Opcjonalnie: Tu można dodać logikę cofania zmian w razie błędu serwera
@@ -256,7 +254,7 @@ const handleLikeComment = async (postId, commentId) => {
 
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/api/newsfeed/${postId}/comment/`, 
+        `/api/newsfeed/${postId}/comment/`, 
         { content: content }, 
         getAuthHeaders()
       );

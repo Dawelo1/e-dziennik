@@ -7,7 +7,7 @@ import LoadingScreen from '../users/LoadingScreen';
 import { formatDateWithDots } from '../dateUtils';
 
 import { 
-  FaUtensils, FaPlus, FaEdit, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt, FaPrint
+  FaUtensils, FaSearch, FaPlus, FaEdit, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt, FaPrint
 } from 'react-icons/fa';
 
 const DirectorMenu = () => {
@@ -15,7 +15,7 @@ const DirectorMenu = () => {
   const [loading, setLoading] = useState(true);
   
   // Filtr
-  const [filterDate, setFilterDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +39,7 @@ const DirectorMenu = () => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/api/menu/', getAuthHeaders());
+      const res = await axios.get('/api/menu/', getAuthHeaders());
       setMenus(res.data);
     } catch (err) { console.error(err); } 
     finally { setLoading(false); }
@@ -47,7 +47,25 @@ const DirectorMenu = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filteredMenus = menus.filter(menu => filterDate ? menu.date === filterDate : true);
+  const filteredMenus = menus.filter((menu) => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+
+    const menuDate = new Date(`${menu.date}T00:00:00`);
+    const menuDateLocale = menuDate.toLocaleDateString('pl-PL').toLowerCase();
+    const menuDateWithWeekday = menuDate.toLocaleDateString('pl-PL', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    }).toLowerCase();
+    const menuDateIso = String(menu.date || '').toLowerCase();
+
+    return (
+      menuDateLocale.includes(query) ||
+      menuDateWithWeekday.includes(query) ||
+      menuDateIso.includes(query)
+    );
+  });
   const sortedFilteredMenus = [...filteredMenus].sort(
     (a, b) => new Date(`${b.date}T00:00:00`) - new Date(`${a.date}T00:00:00`)
   );
@@ -148,8 +166,9 @@ const DirectorMenu = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -159,13 +178,13 @@ const DirectorMenu = () => {
     setLoading(true);
     try {
       if (editingMenu) {
-        await axios.patch(`http://127.0.0.1:8000/api/menu/${editingMenu.id}/`, formData, getAuthHeaders());
+        await axios.patch(`/api/menu/${editingMenu.id}/`, formData, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/menu/', formData, getAuthHeaders());
+        await axios.post('/api/menu/', formData, getAuthHeaders());
       }
       setIsModalOpen(false);
       await fetchData();
-    } catch (err) {
+    } catch {
       setError("Błąd zapisu. Sprawdź, czy na ten dzień nie ma już jadłospisu.");
       setLoading(false);
     }
@@ -211,10 +230,10 @@ const DirectorMenu = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/menu/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/menu/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć jadłospisu. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -334,28 +353,29 @@ const DirectorMenu = () => {
         <h2 className="page-title">
           <FaUtensils /> Zarządzanie Jadłospisem
         </h2>
-        <button className="honey-btn" onClick={() => openModal()}>
-          <FaPlus /> Dodaj Jadłospis na Dzień
-        </button>
       </div>
 
       {actionError && <div className="form-error">{actionError}</div>}
 
       {/* FILTRY */}
       <div className="filter-bar">
-        <div className="date-filter-container" style={{width: 'auto'}}>
-          <FaCalendarAlt className="search-icon"/>
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
           <input 
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
+            type="text"
+            placeholder="Szukaj po dacie..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          {filterDate && (
-            <button className="clear-date-btn" onClick={() => setFilterDate('')}>
+          {searchQuery && (
+            <button className="clear-date-btn" onClick={() => setSearchQuery('')}>
               &times;
             </button>
           )}
         </div>
+        <button className="honey-btn" onClick={() => openModal()}>
+          <FaPlus /> Dodaj Jadłospis na Dzień
+        </button>
       </div>
 
       <div className="table-card">

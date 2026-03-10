@@ -34,8 +34,8 @@ const DirectorSchedule = () => {
   const fetchData = async () => {
     try {
       const [actRes, groupsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders())
+        axios.get('/api/calendar/activities/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders())
       ]);
       setActivities(actRes.data);
       setGroups(groupsRes.data);
@@ -70,8 +70,9 @@ const DirectorSchedule = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -207,9 +208,9 @@ const DirectorSchedule = () => {
       };
 
       if (editingActivity) {
-        await axios.patch(`http://127.0.0.1:8000/api/calendar/activities/${editingActivity.id}/`, payload, getAuthHeaders());
+        await axios.patch(`/api/calendar/activities/${editingActivity.id}/`, payload, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/calendar/activities/', payload, getAuthHeaders());
+        await axios.post('/api/calendar/activities/', payload, getAuthHeaders());
       }
       setIsModalOpen(false);
       await fetchData();
@@ -225,10 +226,10 @@ const DirectorSchedule = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/calendar/activities/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/calendar/activities/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć zajęć. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -243,6 +244,9 @@ const DirectorSchedule = () => {
         <h2 className="page-title">
           <FaChalkboardTeacher /> Zarządzanie Zajęciami
         </h2>
+      </div>
+
+      <div className="filter-bar" style={{ justifyContent: 'flex-end' }}>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Zajęcia
         </button>

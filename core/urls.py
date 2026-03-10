@@ -1,11 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ChildViewSet, PaymentViewSet, PostViewSet, AttendanceViewSet, FacilityClosureViewSet, SpecialActivityViewSet, DailyMenuViewSet, GalleryViewSet, CommentViewSet, GroupViewSet, DirectorStatsView
+from .views import ChildViewSet, PaymentViewSet, RecurringPaymentViewSet, PostViewSet, AttendanceViewSet, FacilityClosureViewSet, SpecialActivityViewSet, DailyMenuViewSet, GalleryViewSet, CommentViewSet, GroupViewSet, DirectorStatsView
 
 # Router automatycznie tworzy ścieżki (np. /api/children/, /api/payments/)
 router = DefaultRouter()
 router.register(r'children', ChildViewSet, basename='child')
 router.register(r'payments', PaymentViewSet, basename='payment')
+router.register(r'recurring-payments', RecurringPaymentViewSet, basename='recurring-payment')
 router.register(r'newsfeed', PostViewSet, basename='newsfeed')
 router.register(r'attendance', AttendanceViewSet, basename='attendance')
 router.register(r'calendar/closures', FacilityClosureViewSet, basename='closures')

@@ -116,8 +116,15 @@ przedszkole_api/
 
 ### Generowanie płatności za posiłki
 ```bash
-python manage.py generate_meal_payments
+python manage.py generate_meal_payments	
 ```
+
+#### Zasady rozliczania posiłków (od marca 2026)
+- Płatność za wyżywienie jest tworzona za **bieżący miesiąc**.
+- Przy aktywacji posiłków (`uses_meals=True`) system od razu tworzy pierwszą płatność za miesiąc startu.
+- Jeśli `meal_start_date` wypada w trakcie miesiąca, pierwsza płatność jest naliczana proporcjonalnie od tej daty.
+- Nieobecności z danego miesiąca obniżają płatność w **następnym miesiącu** (mechanizm przeniesienia).
+- Dla jednego dziecka i jednego okresu (`meal_period`) system utrzymuje tylko jedną płatność.
 
 ### Przetwarzanie płatności cyklicznych
 ```bash
@@ -158,6 +165,22 @@ Projekt jest gotowy do wdrożenia na serwerach produkcyjnych. Pamiętaj o:
 3. Konfiguracji `ALLOWED_HOSTS`
 4. Użyciu produkcyjnej bazy danych (np. PostgreSQL)
 5. Setupie serwera statycznych plików
+
+### Minimalny checklist (bez wyboru konkretnego hostingu)
+
+1. Skopiuj `/.env.example` do własnych zmiennych środowiskowych i ustaw:
+	- `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=false`, `DJANGO_ALLOWED_HOSTS`
+	- `DJANGO_CORS_ALLOWED_ORIGINS`, `DJANGO_CSRF_TRUSTED_ORIGINS`
+	- `DATABASE_URL` (zalecany PostgreSQL) oraz `REDIS_URL` dla WebSocket
+2. Frontend buduj z:
+	- `VITE_API_BASE_URL=https://api.twoja-domena.pl`
+	- opcjonalnie `VITE_WS_CHAT_URL=wss://api.twoja-domena.pl/ws/chat/`
+3. Backend uruchamiaj po ASGI (np. Daphne), np.:
+	- `daphne -b 0.0.0.0 -p 8000 config.asgi:application`
+4. Przy każdym wdrożeniu backendu wykonaj:
+	- `python manage.py migrate`
+	- opcjonalnie `python manage.py collectstatic --noinput`
+5. Po wdrożeniu przetestuj: logowanie, upload mediów, reset hasła i czat WebSocket.
 
 ### WebSocket (chat) – produkcja
 

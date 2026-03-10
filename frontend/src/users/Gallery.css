@@ -14,23 +14,6 @@
   max-width: none; /* Nie ograniczaj szerokości, jak feed dashboardu */
 }
 
-/* --- TYTUŁ STRONY --- */
-.page-title {
-  color: #333;
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  margin-left: 0;
-  padding-left: 15px;
-  border-left: 5px solid #f2c94c;
-  display: flex; 
-  align-items: center; 
-  gap: 15px;
-}
-.page-title svg { 
-color: #f2c94c; font-size: 28px; 
-}
-
 /* --- LISTA ALBUMÓW --- */
 .gallery-feed {
   display: flex;

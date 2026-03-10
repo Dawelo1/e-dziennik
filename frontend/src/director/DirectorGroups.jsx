@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorGroups.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Używamy tych samych stylów (tabela, buttony) dla spójności
@@ -52,12 +52,12 @@ const DirectorGroups = () => {
   const invalidFieldTimers = useRef({ name: null, teacher_1: null });
 
   // 1. Pobieranie grup
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     // Pokazujemy loader tylko przy pierwszym ładowaniu lub gdy lista jest pusta
     if (groups.length === 0) setLoading(true);
 
     try {
-      const res = await axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders());
+      const res = await axios.get('/api/groups/', getAuthHeaders());
       setGroups(res.data);
       if (Array.isArray(res.data) && res.data.length > 6) {
         setLimitErrorMessage('W systemie jest więcej niż 6 grup. Usuń nadmiarowe grupy, aby przywrócić poprawną konfigurację kolorów.');
@@ -67,11 +67,11 @@ const DirectorGroups = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groups.length]);
 
   useEffect(() => {
     fetchGroups();
-  }, []);
+  }, [fetchGroups]);
 
   const triggerInvalidField = (fieldName) => {
     setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
@@ -98,8 +98,9 @@ const DirectorGroups = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -169,14 +170,14 @@ const DirectorGroups = () => {
       if (editingGroup) {
         // UPDATE
         await axios.patch(
-          `http://127.0.0.1:8000/api/groups/${editingGroup.id}/`, 
+          `/api/groups/${editingGroup.id}/`, 
           payload, 
           getAuthHeaders()
         );
       } else {
         // CREATE
         await axios.post(
-          'http://127.0.0.1:8000/api/groups/', 
+          '/api/groups/', 
           payload, 
           getAuthHeaders()
         );
@@ -215,10 +216,10 @@ const DirectorGroups = () => {
 
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/groups/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/groups/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchGroups();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć grupy (może są do niej przypisane dzieci?).');
       setLoading(false);
     }
@@ -242,20 +243,22 @@ const DirectorGroups = () => {
         <h2 className="page-title">
           <FaLayerGroup /> Zarządzanie Grupami
         </h2>
-        <button className="honey-btn" onClick={() => openModal()}>
-          <FaPlus /> Dodaj Grupę
-        </button>
       </div>
 
       {/* PASEK WYSZUKIWANIA */}
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input 
-          type="text" 
-          placeholder="Szukaj grupy lub nauczyciela..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input 
+            type="text" 
+            placeholder="Szukaj grupy lub nauczyciela..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <button className="honey-btn" onClick={() => openModal()}>
+          <FaPlus /> Dodaj Grupę
+        </button>
       </div>
 
       {/* TABELA GRUP */}

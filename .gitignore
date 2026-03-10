@@ -8,6 +8,7 @@ __pycache__/
 
 # Plik z danymi wrażliwymi
 .env
+.django_secret_key
 
 # Plik lokalnej bazy danych
 db.sqlite3

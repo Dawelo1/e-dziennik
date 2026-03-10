@@ -12,21 +12,78 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from urllib.parse import unquote, urlparse
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _load_or_create_local_secret_key():
+    """Use a stable local secret key in development when env var is not provided."""
+    key_path = BASE_DIR / '.django_secret_key'
+    if key_path.exists():
+        return key_path.read_text(encoding='utf-8').strip()
+
+    secret = get_random_secret_key()
+    key_path.write_text(secret, encoding='utf-8')
+    return secret
+
+
+def _is_truthy(value, default=False):
+    if value is None:
+        return default
+    return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _csv_env(name, default=''):
+    return [item.strip() for item in os.getenv(name, default).split(',') if item.strip()]
+
+
+def _database_from_url(db_url):
+    parsed = urlparse(db_url)
+    scheme = parsed.scheme.lower()
+    engine_map = {
+        'postgres': 'django.db.backends.postgresql',
+        'postgresql': 'django.db.backends.postgresql',
+        'pgsql': 'django.db.backends.postgresql',
+        'mysql': 'django.db.backends.mysql',
+        'sqlite': 'django.db.backends.sqlite3',
+    }
+
+    if scheme not in engine_map:
+        raise ValueError(f'Unsupported DB scheme: {scheme}')
+
+    if scheme == 'sqlite':
+        db_path = parsed.path or '/db.sqlite3'
+        if db_path.startswith('/'):
+            db_path = db_path[1:]
+        return {
+            'ENGINE': engine_map[scheme],
+            'NAME': unquote(db_path) or str(BASE_DIR / 'db.sqlite3'),
+        }
+
+    return {
+        'ENGINE': engine_map[scheme],
+        'NAME': unquote((parsed.path or '/')[1:]),
+        'USER': unquote(parsed.username or ''),
+        'PASSWORD': unquote(parsed.password or ''),
+        'HOST': parsed.hostname or 'localhost',
+        'PORT': str(parsed.port or ''),
+        'CONN_MAX_AGE': int(os.getenv('DJANGO_DB_CONN_MAX_AGE', '60')),
+    }
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o5npka%@$1jsnr!^tnvd@najyupksk$^9=r7hr#tb5(k=o*-(x'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or _load_or_create_local_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = _csv_env('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
 DJANGO_REST_PASSWORDRESET_TOKEN_EXPIRY_TIME = 24 # Token ważny przez 24 godziny
 
@@ -84,7 +141,6 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', #dodane
-    'django.middleware.common.CommonMiddleware', #dodane
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,12 +151,21 @@ MIDDLEWARE = [
     'core.middleware.ActiveDirectorMiddleware', #dodane
 ]
 
-# Pozwól Reactowi (zazwyczaj port 3000) łączyć się z API
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",      # Stary React
-    "http://localhost:5173",      # Vite (Twój obecny React)
-    "http://127.0.0.1:5173",      # Dla pewności wersja z IP
-]
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Domyślnie lokalne originy; produkcję ustawiaj przez DJANGO_CORS_ALLOWED_ORIGINS
+CORS_ALLOW_ALL_ORIGINS = _is_truthy(os.getenv('DJANGO_CORS_ALLOW_ALL_ORIGINS'), default=False)
+CORS_ALLOWED_ORIGINS = _csv_env(
+    'DJANGO_CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173',
+)
+CSRF_TRUSTED_ORIGINS = _csv_env('DJANGO_CSRF_TRUSTED_ORIGINS', '')
 
 ROOT_URLCONF = 'config.urls'
 
@@ -125,12 +190,18 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.getenv('DATABASE_URL', '').strip()
+if DATABASE_URL:
+    DATABASES = {
+        'default': _database_from_url(DATABASE_URL)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -183,5 +254,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DJANGO_REST_PASSWORDRESET_SERIALIZER_CLASS = 'users.serializers.CustomPasswordResetSerializer'
 
 # USTAWIENIA EMAIL (Testowe - wyświetla w konsoli)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'przedszkole@example.com'
+EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.getenv('DJANGO_DEFAULT_FROM_EMAIL', 'przedszkole@example.com')

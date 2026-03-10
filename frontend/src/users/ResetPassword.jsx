@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import './Login.css';
 import bgImage from '../assets/bg.png';
-import beeLogo from '../assets/bee.png';
 import { FaLock } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
 
@@ -41,7 +40,7 @@ const ResetPassword = () => {
 
     try {
       // 2. Wysłanie do Django
-      const response = await axios.post('http://127.0.0.1:8000/api/users/password_reset/confirm/', {
+      const response = await axios.post('/api/users/password_reset/confirm/', {
         token: token,
         password: password
       });
@@ -77,7 +76,7 @@ const ResetPassword = () => {
     }
   };
 
-  if (loading) return <LoadingScreen message="Resetowanie hasła..." />;
+  if (status === 'loading') return <LoadingScreen message="Resetowanie hasła..." />;
 
   return (
     <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>

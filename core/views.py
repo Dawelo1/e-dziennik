@@ -6,8 +6,8 @@ from django.db.models import Q
 from rest_framework.decorators import action
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group
-from .serializers import ChildSerializer, PaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer
+from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment
+from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer
 from users.permissions import IsDirector
 from users.models import User
 from rest_framework.views import APIView
@@ -90,18 +90,41 @@ class PaymentViewSet(viewsets.ModelViewSet):
         return Payment.objects.filter(child__parents=user)
         
     def perform_update(self, serializer):
-        # Zabezpieczenie: tylko dyrektor może zmienić status płatności
-        if not self.request.user.is_director and 'is_paid' in serializer.validated_data:
-            serializer.validated_data.pop('is_paid')
+        # Zabezpieczenie: tylko dyrektor może zmienić status i datę opłacenia
+        if not self.request.user.is_director:
+            if 'is_paid' in serializer.validated_data:
+                serializer.validated_data.pop('is_paid')
+            if 'payment_date' in serializer.validated_data:
+                serializer.validated_data.pop('payment_date')
         serializer.save()
 
     def perform_create(self, serializer):
+        if not self.request.user.is_director:
+            serializer.validated_data.pop('is_paid', None)
+            serializer.validated_data.pop('payment_date', None)
+
         payment = serializer.save()
 
         parent_ids = payment.child.parents.values_list('id', flat=True)
         director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
         target_ids = set(parent_ids) | set(director_ids)
         broadcast_notification_summary_changed(target_ids)
+
+
+class RecurringPaymentViewSet(viewsets.ModelViewSet):
+    serializer_class = RecurringPaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_director:
+            return RecurringPayment.objects.all()
+        return RecurringPayment.objects.filter(children__parents=user).distinct()
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsDirector()]
+        return super().get_permissions()
 
 class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast ReadOnly)
     """

@@ -1,4 +1,5 @@
 from rest_framework import viewsets, permissions, serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
@@ -66,7 +67,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         
         # C. Ktoś inny (np. Admin bez roli) nie może pisać
         else:
-            raise permissions.PermissionDenied("Nie masz uprawnień do wysyłania wiadomości.")
+            raise PermissionDenied("Nie masz uprawnień do wysyłania wiadomości.")
 
     def _send_ws_event(self, user_id, event_type, payload):
         channel_layer = get_channel_layer()

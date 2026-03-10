@@ -14,22 +14,6 @@
   flex-direction: column;
 }
 
-/* --- TYTUŁ STRONY --- */
-.page-title {
-  color: #333;
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  margin-left: 0;
-  padding-left: 15px;
-  border-left: 5px solid #f2c94c;
-  display: flex; 
-  align-items: center; 
-  gap: 15px; 
-  flex-shrink: 0;
-}
-.page-title svg { color: #f2c94c; font-size: 28px; }
-
 /* --- KARTA CZATU --- */
 .chat-card {
   background: white;

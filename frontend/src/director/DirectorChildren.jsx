@@ -11,6 +11,8 @@ import {
   FaUserFriends, FaSave, FaTimes, FaExclamationTriangle, FaTrashAlt
 } from 'react-icons/fa';
 
+const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
+
 const DirectorChildren = () => {
   const [children, setChildren] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -34,7 +36,9 @@ const DirectorChildren = () => {
     group: '',     // ID grupy
     parents: [],   // Tablica ID rodziców
     medical_info: '',
-    meal_rate: '20.00'
+    meal_rate: '20.00',
+    uses_meals: 'false',
+    meal_start_date: getTodayIsoDate()
   };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
@@ -45,6 +49,8 @@ const DirectorChildren = () => {
     first_name: false,
     last_name: false,
     date_of_birth: false,
+    uses_meals: false,
+    meal_start_date: false,
     meal_rate: false,
     group: false,
     parents: false
@@ -53,6 +59,8 @@ const DirectorChildren = () => {
     first_name: false,
     last_name: false,
     date_of_birth: false,
+    uses_meals: false,
+    meal_start_date: false,
     meal_rate: false,
     group: false,
     parents: false
@@ -61,6 +69,8 @@ const DirectorChildren = () => {
     first_name: null,
     last_name: null,
     date_of_birth: null,
+    uses_meals: null,
+    meal_start_date: null,
     meal_rate: null,
     group: null,
     parents: null
@@ -70,9 +80,9 @@ const DirectorChildren = () => {
   const fetchData = async () => {
     try {
       const [childRes, groupRes, userRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/manage/', getAuthHeaders()) // Pobieramy wszystkich userów
+        axios.get('/api/children/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders()),
+        axios.get('/api/users/manage/', getAuthHeaders()) // Pobieramy wszystkich userów
       ]);
 
       setChildren(childRes.data);
@@ -115,6 +125,8 @@ const DirectorChildren = () => {
       first_name: false,
       last_name: false,
       date_of_birth: false,
+      uses_meals: false,
+      meal_start_date: false,
       meal_rate: false,
       group: false,
       parents: false
@@ -123,6 +135,8 @@ const DirectorChildren = () => {
       first_name: false,
       last_name: false,
       date_of_birth: false,
+      uses_meals: false,
+      meal_start_date: false,
       meal_rate: false,
       group: false,
       parents: false
@@ -136,7 +150,9 @@ const DirectorChildren = () => {
       group: child.group,
       parents: child.parents, 
       medical_info: child.medical_info || '',
-      meal_rate: child.meal_rate || '20.00'
+      meal_rate: child.meal_rate || '20.00',
+      uses_meals: child.uses_meals ? 'true' : 'false',
+      meal_start_date: child.meal_start_date || ''
     });
     } else {
       setEditingChild(null);
@@ -170,8 +186,9 @@ const DirectorChildren = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -207,7 +224,10 @@ const DirectorChildren = () => {
     const missingFirstName = !formData.first_name.trim();
     const missingLastName = !formData.last_name.trim();
     const missingDateOfBirth = !formData.date_of_birth;
-    const missingMealRate = !String(formData.meal_rate).trim();
+    const missingUsesMeals = formData.uses_meals === '';
+    const selectedUsesMeals = formData.uses_meals === 'true';
+    const missingMealStartDate = selectedUsesMeals && !formData.meal_start_date;
+    const missingMealRate = selectedUsesMeals && !String(formData.meal_rate).trim();
     const missingGroup = !formData.group;
     const missingParents = !formData.parents || formData.parents.length === 0;
 
@@ -215,6 +235,8 @@ const DirectorChildren = () => {
       first_name: missingFirstName,
       last_name: missingLastName,
       date_of_birth: missingDateOfBirth,
+      uses_meals: missingUsesMeals,
+      meal_start_date: missingMealStartDate,
       meal_rate: missingMealRate,
       group: missingGroup,
       parents: missingParents
@@ -223,25 +245,46 @@ const DirectorChildren = () => {
     if (missingFirstName) triggerInvalidField('first_name');
     if (missingLastName) triggerInvalidField('last_name');
     if (missingDateOfBirth) triggerInvalidField('date_of_birth');
+    if (missingUsesMeals) triggerInvalidField('uses_meals');
+    if (missingMealStartDate) triggerInvalidField('meal_start_date');
     if (missingMealRate) triggerInvalidField('meal_rate');
     if (missingGroup) triggerInvalidField('group');
     if (missingParents) triggerInvalidField('parents');
 
-    if (missingFirstName || missingLastName || missingDateOfBirth || missingMealRate || missingGroup || missingParents) return;
+    if (missingFirstName || missingLastName || missingDateOfBirth || missingUsesMeals || missingMealStartDate || missingMealRate || missingGroup || missingParents) return;
 
     setLoading(true);
+    setError('');
 
     try {
+      const payload = {
+        ...formData,
+        uses_meals: selectedUsesMeals,
+        meal_start_date: selectedUsesMeals ? formData.meal_start_date : null
+      };
+
       if (editingChild) {
-        await axios.patch(`http://127.0.0.1:8000/api/children/${editingChild.id}/`, formData, getAuthHeaders());
+        await axios.patch(`/api/children/${editingChild.id}/`, payload, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/children/', formData, getAuthHeaders());
+        await axios.post('/api/children/', payload, getAuthHeaders());
       }
       setIsModalOpen(false);
       await fetchData(); // Odśwież wszystko
     } catch (err) {
       console.error(err);
-      setError("Wystąpił błąd zapisu. Sprawdź poprawność danych.");
+      const responseData = err?.response?.data;
+      if (typeof responseData === 'string' && responseData.trim()) {
+        setError(responseData);
+      } else if (responseData && typeof responseData === 'object') {
+        const firstError = Object.values(responseData).flat()[0];
+        if (firstError) {
+          setError(String(firstError));
+        } else {
+          setError('Wystąpił błąd zapisu. Sprawdź poprawność danych.');
+        }
+      } else {
+        setError('Wystąpił błąd zapisu. Sprawdź poprawność danych.');
+      }
       setLoading(false);
     }
   };
@@ -252,10 +295,10 @@ const DirectorChildren = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/children/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/children/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć kartoteki dziecka. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -309,6 +352,34 @@ const DirectorChildren = () => {
       return (a.first_name || '').localeCompare(b.first_name || '', 'pl', { sensitivity: 'base' });
     }
 
+    if (sortField === 'uses_meals') {
+      const mealsA = a.uses_meals ? 1 : 0;
+      const mealsB = b.uses_meals ? 1 : 0;
+      const byMeals = mealsA - mealsB;
+
+      if (byMeals !== 0) {
+        return sortDirection === 'asc' ? byMeals : -byMeals;
+      }
+
+      const byLastName = (a.last_name || '').localeCompare(b.last_name || '', 'pl', { sensitivity: 'base' });
+      if (byLastName !== 0) return byLastName;
+      return (a.first_name || '').localeCompare(b.first_name || '', 'pl', { sensitivity: 'base' });
+    }
+
+    if (sortField === 'meal_rate') {
+      const rateA = Number(String(a.meal_rate ?? '0').replace(',', '.'));
+      const rateB = Number(String(b.meal_rate ?? '0').replace(',', '.'));
+      const byRate = rateA - rateB;
+
+      if (byRate !== 0) {
+        return sortDirection === 'asc' ? byRate : -byRate;
+      }
+
+      const byLastName = (a.last_name || '').localeCompare(b.last_name || '', 'pl', { sensitivity: 'base' });
+      if (byLastName !== 0) return byLastName;
+      return (a.first_name || '').localeCompare(b.first_name || '', 'pl', { sensitivity: 'base' });
+    }
+
     return 0;
   });
 
@@ -322,19 +393,21 @@ const DirectorChildren = () => {
         <h2 className="page-title">
           <FaChild /> Kartoteki Dzieci
         </h2>
+      </div>
+
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input 
+            type="text" 
+            placeholder="Szukaj dziecka..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Dziecko
         </button>
-      </div>
-
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input 
-          type="text" 
-          placeholder="Szukaj dziecka..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
       </div>
 
       <div className="table-card">
@@ -352,6 +425,24 @@ const DirectorChildren = () => {
                 </button>
               </th>
               <th>Rodzice / Opiekunowie</th>
+              <th>
+                <button
+                  type="button"
+                  className="sortable-header-btn"
+                  onClick={() => handleSortChange('uses_meals')}
+                >
+                  Posiłki <span className="sort-arrow">{getSortArrow('uses_meals')}</span>
+                </button>
+              </th>
+              <th>
+                <button
+                  type="button"
+                  className="sortable-header-btn"
+                  onClick={() => handleSortChange('meal_rate')}
+                >
+                  Stawka żywieniowa <span className="sort-arrow">{getSortArrow('meal_rate')}</span>
+                </button>
+              </th>
               <th>Informacje medyczne</th>
               <th className="actions-header">Akcje</th>
             </tr>
@@ -390,6 +481,16 @@ const DirectorChildren = () => {
                        ) : null;
                     })}
                   </div>
+                </td>
+                <td>
+                  <span className={`role-badge ${child.uses_meals ? 'meal-yes' : 'meal-no'}`}>
+                    {child.uses_meals ? 'Tak' : 'Nie'}
+                  </span>
+                </td>
+                <td>
+                  {child.uses_meals
+                    ? `${String(child.meal_rate ?? '0.00').replace('.', ',')} zł`
+                    : '-'}
                 </td>
                 <td>
                   <div style={{fontSize: 12, color: '#666', maxWidth: '260px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
@@ -472,26 +573,6 @@ const DirectorChildren = () => {
               </div>
 
               <div className="form-group">
-                <label>Stawka żywieniowa (zł) <span className="required-asterisk">*</span></label>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  value={formData.meal_rate} 
-                  onChange={e => {
-                    setFormData({...formData, meal_rate: e.target.value});
-                    if (String(e.target.value).trim()) {
-                      clearInvalidField('meal_rate');
-                      setRequiredFieldErrors((prev) => ({ ...prev, meal_rate: false }));
-                    }
-                  }}
-                  className={invalidFields.meal_rate ? 'invalid-bounce' : ''}
-                />
-                {requiredFieldErrors.meal_rate && (
-                  <div className="field-required-message">To pole jest wymagane.</div>
-                )}
-              </div>
-
-              <div className="form-group">
                 <label>Grupa <span className="required-asterisk">*</span></label>
                 <select
                   value={formData.group}
@@ -512,6 +593,89 @@ const DirectorChildren = () => {
                 </select>
                 {requiredFieldErrors.group && (
                   <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Posiłki <span className="required-asterisk">*</span></label>
+                <select
+                  value={formData.uses_meals}
+                  onChange={e => {
+                    const nextUsesMeals = e.target.value;
+                    const nextMealRate = nextUsesMeals === 'true' ? '20.00' : '0.00';
+                    const nextMealStartDate = nextUsesMeals === 'true' ? (formData.meal_start_date || getTodayIsoDate()) : '';
+                    setFormData({...formData, uses_meals: nextUsesMeals, meal_rate: nextMealRate, meal_start_date: nextMealStartDate});
+                    if (nextUsesMeals !== '') {
+                      clearInvalidField('uses_meals');
+                      setRequiredFieldErrors((prev) => ({ ...prev, uses_meals: false }));
+                    }
+                    if (nextUsesMeals === 'false') {
+                      clearInvalidField('meal_start_date');
+                      setRequiredFieldErrors((prev) => ({ ...prev, meal_start_date: false }));
+                      clearInvalidField('meal_rate');
+                      setRequiredFieldErrors((prev) => ({ ...prev, meal_rate: false }));
+                    }
+                  }}
+                  className={invalidFields.uses_meals ? 'invalid-bounce' : ''}
+                >
+                  <option value="true">Tak</option>
+                  <option value="false">Nie</option>
+                </select>
+                {requiredFieldErrors.uses_meals && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+              </div>
+
+              <div className={`form-group ${formData.uses_meals !== 'true' ? 'meal-rate-disabled' : ''}`}>
+                <label>
+                  Data rozpoczęcia posiłków
+                  {formData.uses_meals === 'true' && <span className="required-asterisk">*</span>}
+                </label>
+                <input
+                  type="date"
+                  value={formData.meal_start_date}
+                  disabled={formData.uses_meals !== 'true'}
+                  onChange={e => {
+                    setFormData({...formData, meal_start_date: e.target.value});
+                    if (e.target.value) {
+                      clearInvalidField('meal_start_date');
+                      setRequiredFieldErrors((prev) => ({ ...prev, meal_start_date: false }));
+                    }
+                  }}
+                  className={invalidFields.meal_start_date ? 'invalid-bounce' : ''}
+                />
+                {formData.uses_meals === 'true' && requiredFieldErrors.meal_start_date && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+                {formData.uses_meals !== 'true' && (
+                  <div className="field-disabled-message">Pole nieaktywne, gdy dziecko nie korzysta z posiłków.</div>
+                )}
+              </div>
+
+              <div className={`form-group ${formData.uses_meals !== 'true' ? 'meal-rate-disabled' : ''}`}>
+                <label>
+                  Stawka żywieniowa (zł)
+                  {formData.uses_meals === 'true' && <span className="required-asterisk">*</span>}
+                </label>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  value={formData.meal_rate} 
+                  disabled={formData.uses_meals !== 'true'}
+                  onChange={e => {
+                    setFormData({...formData, meal_rate: e.target.value});
+                    if (String(e.target.value).trim()) {
+                      clearInvalidField('meal_rate');
+                      setRequiredFieldErrors((prev) => ({ ...prev, meal_rate: false }));
+                    }
+                  }}
+                  className={invalidFields.meal_rate ? 'invalid-bounce' : ''}
+                />
+                {formData.uses_meals === 'true' && requiredFieldErrors.meal_rate && (
+                  <div className="field-required-message">To pole jest wymagane.</div>
+                )}
+                {formData.uses_meals !== 'true' && (
+                  <div className="field-disabled-message">Pole nieaktywne, gdy dziecko nie korzysta z posiłków.</div>
                 )}
               </div>
 

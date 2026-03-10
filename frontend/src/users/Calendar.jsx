@@ -29,7 +29,7 @@ const Calendar = () => {
     const markSeen = async () => {
       try {
         await axios.post(
-          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
+          '/api/users/notifications/mark-seen/',
           { section: 'calendar' },
           getAuthHeaders()
         );
@@ -45,7 +45,7 @@ const Calendar = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders());
+        const res = await axios.get('/api/calendar/closures/', getAuthHeaders());
         const closuresMap = {};
         res.data.forEach(item => {
           closuresMap[item.date] = item.reason;

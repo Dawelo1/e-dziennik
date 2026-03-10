@@ -46,8 +46,8 @@ const DirectorGallery = () => {
     // Nie włączamy loading, bo jest już włączony na starcie
     try {
       const [albumsRes, groupsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/gallery/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders())
+        axios.get('/api/gallery/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders())
       ]);
       setAlbums(albumsRes.data);
       setGroups(groupsRes.data);
@@ -129,8 +129,9 @@ const DirectorGallery = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -183,7 +184,7 @@ const DirectorGallery = () => {
         responseType: 'blob'
       });
       downloadFromBlob(response.data, fileName);
-    } catch (err) {
+    } catch {
       downloadFromUrl(img.image, fileName);
     }
   };
@@ -232,8 +233,12 @@ const DirectorGallery = () => {
     const handlePreviewKeyDown = (e) => {
       if (!isPreviewOpen) return;
       if (e.key === 'Escape') closeAlbumPreview();
-      if (e.key === 'ArrowRight') nextPreviewImage(e);
-      if (e.key === 'ArrowLeft') prevPreviewImage(e);
+      if (e.key === 'ArrowRight') {
+        setPreviewIndex((prev) => (prev + 1) % previewImages.length);
+      }
+      if (e.key === 'ArrowLeft') {
+        setPreviewIndex((prev) => (prev + previewImages.length - 1) % previewImages.length);
+      }
     };
 
     if (isPreviewOpen) {
@@ -275,17 +280,17 @@ const DirectorGallery = () => {
         if (imagesToDelete.length > 0) {
            imagesToDelete.forEach(id => dataToSend.append('deleted_images', id));
         }
-        await axios.patch(`http://127.0.0.1:8000/api/gallery/${editingAlbum.id}/`, dataToSend, {
+        await axios.patch(`/api/gallery/${editingAlbum.id}/`, dataToSend, {
           headers: { ...getAuthHeaders().headers, 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        await axios.post('http://127.0.0.1:8000/api/gallery/', dataToSend, {
+        await axios.post('/api/gallery/', dataToSend, {
           headers: { ...getAuthHeaders().headers, 'Content-Type': 'multipart/form-data' }
         });
       }
       setIsModalOpen(false);
       await fetchData(); // To odświeży listę i wyłączy loading
-    } catch (err) {
+    } catch {
       setError("Błąd zapisu. Sprawdź, czy tytuł jest unikalny.");
       setLoading(false); // Wyłącz loading w razie błędu
     }
@@ -296,10 +301,10 @@ const DirectorGallery = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/gallery/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/gallery/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć albumu. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -353,12 +358,14 @@ const DirectorGallery = () => {
       
       <div className="page-header-row">
         <h2 className="page-title"><FaImages /> Galeria Zdjęć</h2>
-        <button className="honey-btn" onClick={() => openModal()}><FaPlus /> Dodaj Album</button>
       </div>
 
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input type="text" placeholder="Szukaj po tytule..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input type="text" placeholder="Szukaj po tytule..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        </div>
+        <button className="honey-btn" onClick={() => openModal()}><FaPlus /> Dodaj Album</button>
       </div>
 
       {actionError && <div className="form-error">{actionError}</div>}

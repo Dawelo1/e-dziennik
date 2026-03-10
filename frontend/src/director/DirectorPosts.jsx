@@ -47,8 +47,8 @@ const DirectorPosts = () => {
   const fetchData = async () => {
     try {
       const [postsRes, groupsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders())
+        axios.get('/api/newsfeed/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders())
       ]);
       // Sortowanie: Najnowsze na górze
       setPosts(postsRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
@@ -119,8 +119,9 @@ const DirectorPosts = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -194,14 +195,14 @@ const DirectorPosts = () => {
 
     try {
       if (editingPost) {
-        await axios.patch(`http://127.0.0.1:8000/api/newsfeed/${editingPost.id}/`, dataToSend, {
+        await axios.patch(`/api/newsfeed/${editingPost.id}/`, dataToSend, {
           headers: { 
              ...getAuthHeaders().headers,
              'Content-Type': 'multipart/form-data'
           }
         });
       } else {
-        await axios.post('http://127.0.0.1:8000/api/newsfeed/', dataToSend, {
+        await axios.post('/api/newsfeed/', dataToSend, {
           headers: { 
              ...getAuthHeaders().headers,
              'Content-Type': 'multipart/form-data'
@@ -223,10 +224,10 @@ const DirectorPosts = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/newsfeed/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/newsfeed/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć ogłoszenia. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -264,7 +265,7 @@ const DirectorPosts = () => {
         responseType: 'blob'
       });
       downloadFromBlob(response.data, fileName);
-    } catch (err) {
+    } catch {
       downloadFromUrl(post.image, fileName);
     }
   };
@@ -334,19 +335,21 @@ const DirectorPosts = () => {
         <h2 className="page-title">
           <FaBullhorn /> Tablica Ogłoszeń
         </h2>
+      </div>
+
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input 
+            type="text" 
+            placeholder="Szukaj po tytule..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Ogłoszenie
         </button>
-      </div>
-
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input 
-          type="text" 
-          placeholder="Szukaj po tytule..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
       </div>
 
       {actionError && <div className="form-error">{actionError}</div>}

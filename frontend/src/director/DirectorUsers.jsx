@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorUsers.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css';
@@ -78,14 +78,14 @@ const DirectorUsers = () => {
   };
 
   // 1. Pobieranie użytkowników
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     // Nie włączamy loading przy każdym wpisaniu litery w szukajkę, 
     // żeby ekran nie migał pszczółką przy pisaniu.
     // Ale przy pierwszym ładowaniu - tak.
     if (users.length === 0) setLoading(true); 
 
     try {
-      const url = `http://127.0.0.1:8000/api/users/manage/?search=${searchQuery}`;
+      const url = `/api/users/manage/?search=${searchQuery}`;
       const res = await axios.get(url, getAuthHeaders());
       setUsers(res.data);
     } catch (err) {
@@ -93,14 +93,14 @@ const DirectorUsers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, users.length]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchUsers();
     }, 500);
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
+  }, [fetchUsers]);
 
   const triggerInvalidField = (fieldName) => {
     setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
@@ -127,8 +127,9 @@ const DirectorUsers = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -181,7 +182,7 @@ const DirectorUsers = () => {
 
     try {
       const res = await axios.get(
-        'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
+        '/api/users/manage/generate-credentials/',
         getAuthHeaders()
       );
 
@@ -199,7 +200,7 @@ const DirectorUsers = () => {
         username: res.data?.username || '',
         password: res.data?.password || '',
       });
-    } catch (err) {
+    } catch {
       setError('Nie udało się wygenerować danych. Spróbuj ponownie.');
     } finally {
       setGeneratingCredentials(false);
@@ -212,7 +213,7 @@ const DirectorUsers = () => {
 
     try {
       const res = await axios.get(
-        'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
+        '/api/users/manage/generate-credentials/',
         getAuthHeaders()
       );
 
@@ -224,7 +225,7 @@ const DirectorUsers = () => {
       setPasswordWasGenerated(true);
       clearInvalidField('password');
       setRequiredFieldErrors((prev) => ({ ...prev, password: false }));
-    } catch (err) {
+    } catch {
       setError('Nie udało się wygenerować hasła. Spróbuj ponownie.');
     } finally {
       setGeneratingPassword(false);
@@ -310,13 +311,13 @@ const DirectorUsers = () => {
     try {
       if (editingUser) {
         await axios.patch(
-          `http://127.0.0.1:8000/api/users/manage/${editingUser.id}/`, 
+          `/api/users/manage/${editingUser.id}/`, 
           payload, 
           getAuthHeaders()
         );
       } else {
         await axios.post(
-          'http://127.0.0.1:8000/api/users/manage/', 
+          '/api/users/manage/', 
           payload, 
           getAuthHeaders()
         );
@@ -341,10 +342,10 @@ const DirectorUsers = () => {
     
     setLoading(true); // Pszczółka podczas usuwania
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/users/manage/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/users/manage/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       fetchUsers();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć użytkownika. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -356,7 +357,7 @@ const DirectorUsers = () => {
 
     try {
       const res = await axios.get(
-        `http://127.0.0.1:8000/api/users/manage/${user.id}/password-preview/`,
+        `/api/users/manage/${user.id}/password-preview/`,
         getAuthHeaders()
       );
 
@@ -364,7 +365,7 @@ const DirectorUsers = () => {
         username: res.data?.username || user.username,
         password: res.data?.password || '',
       });
-    } catch (err) {
+    } catch {
       setActionError('Podgląd hasła nie jest dostępny dla tego konta.');
     } finally {
       setPreviewLoadingUserId(null);
@@ -392,19 +393,21 @@ const DirectorUsers = () => {
         <h2 className="page-title">
           <FaUsers /> Zarządzanie Użytkownikami
         </h2>
+      </div>
+
+      <div className="filter-bar">
+        <div className="search-bar-container" style={{ flex: 1, margin: 0 }}>
+          <FaSearch className="search-icon"/>
+          <input 
+            type="text" 
+            placeholder="Szukaj po imieniu, nazwisku, loginie..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Użytkownika
         </button>
-      </div>
-
-      <div className="search-bar-container">
-        <FaSearch className="search-icon"/>
-        <input 
-          type="text" 
-          placeholder="Szukaj po imieniu, nazwisku, loginie..." 
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
       </div>
 
       <div className="table-card">

@@ -6,7 +6,7 @@ import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
 
 import { 
-  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaCalendarAlt, FaExclamationTriangle, FaTrashAlt
+  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt, FaEdit
 } from 'react-icons/fa';
 
 const DirectorAttendance = () => {
@@ -14,15 +14,14 @@ const DirectorAttendance = () => {
   const [children, setChildren] = useState([]); // Do listy w modalu
   const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(true);
-  const dateInputRef = useRef(null);
   
   // Filtry
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDate, setFilterDate] = useState('');
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ child: '', date: '' });
+  const [editingAbsence, setEditingAbsence] = useState(null);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -34,9 +33,9 @@ const DirectorAttendance = () => {
   const fetchData = async () => {
     try {
       const [absencesRes, childrenRes, closuresRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/attendance/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()), // Pobieramy dzieci
-        axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders())
+        axios.get('/api/attendance/', getAuthHeaders()),
+        axios.get('/api/children/', getAuthHeaders()), // Pobieramy dzieci
+        axios.get('/api/calendar/closures/', getAuthHeaders())
       ]);
       // Sortujemy od najnowszych
       setAbsences(absencesRes.data.sort((a,b) => new Date(b.date) - new Date(a.date)));
@@ -76,8 +75,9 @@ const DirectorAttendance = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -90,23 +90,29 @@ const DirectorAttendance = () => {
   };
 
   const filteredAbsences = absences.filter(absence => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+
     const childName = getChildName(absence.child).toLowerCase();
-    const matchesSearch = childName.includes(searchQuery.toLowerCase());
-    const matchesDate = filterDate ? absence.date === filterDate : true;
-    return matchesSearch && matchesDate;
+
+    const absenceDate = new Date(absence.date);
+    const createdAtDate = new Date(absence.created_at);
+
+    const absenceDateLocale = absenceDate.toLocaleDateString('pl-PL').toLowerCase();
+    const absenceDateIso = absence.date.toLowerCase();
+    const createdAtDateLocale = createdAtDate.toLocaleDateString('pl-PL').toLowerCase();
+    const createdAtDateTimeLocale = createdAtDate.toLocaleString('pl-PL').toLowerCase();
+    const createdAtDateIso = absence.created_at.toLowerCase();
+
+    return (
+      childName.includes(query) ||
+      absenceDateLocale.includes(query) ||
+      absenceDateIso.includes(query) ||
+      createdAtDateLocale.includes(query) ||
+      createdAtDateTimeLocale.includes(query) ||
+      createdAtDateIso.includes(query)
+    );
   });
-
-  const handleDateIconClick = () => {
-    const input = dateInputRef.current;
-    if (!input) return;
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-    } else {
-      input.focus();
-      input.click();
-    }
-  };
 
   const getDayOffReason = (dateString) => {
     if (!dateString) return null;
@@ -129,13 +135,26 @@ const DirectorAttendance = () => {
   };
 
   // 3. Otwieranie Modala
-  const openModal = () => {
+  const openModal = (absence = null) => {
     setError('');
     setActionError('');
     setInvalidFields({ child: false, date: false });
     setRequiredFieldErrors({ child: false, date: false });
-    setFormData({ child: '', date: new Date().toISOString().split('T')[0] }); // Domyślnie dziś
+    setEditingAbsence(absence);
+    if (absence) {
+      setFormData({ child: String(absence.child), date: absence.date });
+    } else {
+      setFormData({ child: '', date: new Date().toISOString().split('T')[0] }); // Domyślnie dziś
+    }
     setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingAbsence(null);
+    setError('');
+    setRequiredFieldErrors({ child: false, date: false });
+    setInvalidFields({ child: false, date: false });
   };
 
   // 4. Zapisywanie
@@ -158,14 +177,18 @@ const DirectorAttendance = () => {
     const dayOffReason = getDayOffReason(formData.date);
     if (dayOffReason) {
       triggerInvalidField('date');
-      setError(`Nie można dodać nieobecności. ${dayOffReason}`);
+      setError(`Nie można zapisać nieobecności. ${dayOffReason}`);
       return;
     }
 
     setLoading(true);
     try {
-      await axios.post('http://127.0.0.1:8000/api/attendance/', formData, getAuthHeaders());
-      setIsModalOpen(false);
+      if (editingAbsence) {
+        await axios.patch(`/api/attendance/${editingAbsence.id}/`, formData, getAuthHeaders());
+      } else {
+        await axios.post('/api/attendance/', formData, getAuthHeaders());
+      }
+      closeModal();
       await fetchData();
     } catch (err) {
       const apiError = err?.response?.data;
@@ -175,7 +198,7 @@ const DirectorAttendance = () => {
         apiError?.detail ||
         (typeof apiError === 'string' ? apiError : null);
 
-      setError(errorMessage || "Błąd zapisu. Być może ta nieobecność jest już zgłoszona.");
+      setError(errorMessage || "Błąd zapisu. Sprawdź dane i spróbuj ponownie.");
       setLoading(false);
     }
   };
@@ -186,10 +209,10 @@ const DirectorAttendance = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/attendance/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/attendance/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć wpisu nieobecności. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -205,9 +228,6 @@ const DirectorAttendance = () => {
         <h2 className="page-title">
           <FaUserSlash /> Zarządzanie Nieobecnościami
         </h2>
-        <button className="honey-btn" onClick={openModal}>
-          <FaPlus /> Dodaj Wpis Ręcznie
-        </button>
       </div>
 
       {/* FILTRY */}
@@ -216,33 +236,14 @@ const DirectorAttendance = () => {
           <FaSearch className="search-icon"/>
           <input 
             type="text" 
-            placeholder="Szukaj po nazwisku dziecka..." 
+            placeholder="Szukaj po nazwisku, dacie nieobecności lub zgłoszenia..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="date-filter-container">
-          <button
-            type="button"
-            className="date-picker-trigger"
-            onClick={handleDateIconClick}
-            title="Pokaż selektor dat"
-            aria-label="Pokaż selektor dat"
-          >
-            <FaCalendarAlt className="search-icon"/>
-          </button>
-          <input 
-            type="date"
-            ref={dateInputRef}
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-          />
-          {filterDate && (
-            <button className="clear-date-btn" onClick={() => setFilterDate('')}>
-              &times;
-            </button>
-          )}
-        </div>
+        <button className="honey-btn" onClick={openModal}>
+          <FaPlus /> Dodaj Nieobecność
+        </button>
       </div>
 
       {/* TABELA */}
@@ -265,6 +266,9 @@ const DirectorAttendance = () => {
                 <td>{new Date(absence.date).toLocaleDateString('pl-PL')}</td>
                 <td>{new Date(absence.created_at).toLocaleString('pl-PL')}</td>
                 <td className="actions-cell">
+                  <button className="action-icon-btn edit" onClick={() => openModal(absence)} title="Edytuj">
+                    <FaEdit />
+                  </button>
                   <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(absence); }} title="Usuń">
                     <FaTrash />
                   </button>
@@ -279,7 +283,7 @@ const DirectorAttendance = () => {
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Dodaj Nieobecność</h3>
+            <h3>{editingAbsence ? 'Edytuj Nieobecność' : 'Dodaj Nieobecność'}</h3>
             {error && <div className="form-error">{error}</div>}
             <form onSubmit={handleSave} className="modal-form-grid" noValidate>
               
@@ -328,8 +332,8 @@ const DirectorAttendance = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
-                <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
+                <button type="submit" className="modal-btn confirm success"><FaSave /> {editingAbsence ? 'Zapisz zmiany' : 'Zapisz'}</button>
               </div>
 
             </form>

@@ -17,7 +17,7 @@ const DirectorDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/director/stats/', getAuthHeaders());
+        const res = await axios.get('/api/director/stats/', getAuthHeaders());
         setStats(res.data);
       } catch (err) {
         console.error("Błąd pobierania statystyk:", err);

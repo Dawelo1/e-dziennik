@@ -6,6 +6,7 @@ import './Layout.css';
 import beeLogo from '../assets/bee.png';
 import { getToken, removeToken, getAuthHeaders } from '../authUtils';
 import { getChatWebSocketUrl } from '../wsUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 
 // Ikony
 import { 
@@ -30,7 +31,7 @@ const Layout = () => {
 
   const fetchNotificationSummary = useCallback(async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/users/notifications/summary/', getAuthHeaders());
+      const response = await axios.get('/api/users/notifications/summary/', getAuthHeaders());
       setNotificationCounts({
         schedule: Number(response.data.schedule) || 0,
         gallery: Number(response.data.gallery) || 0,
@@ -52,14 +53,15 @@ const Layout = () => {
     const config = getAuthHeaders();
 
     // 1. Pobierz dane usera
-    axios.get('http://127.0.0.1:8000/api/users/me/', config)
-      .then(response => setUser(response.data))
+    axios.get('/api/users/me/', config)
+      .then(response => {
+        setUser(response.data);
+        fetchNotificationSummary();
+      })
       .catch(() => {
         localStorage.removeItem('token');
         navigate('/');
       });
-
-    fetchNotificationSummary();
 
     const summaryInterval = setInterval(fetchNotificationSummary, 30000);
     const onNotificationsUpdated = () => fetchNotificationSummary();
@@ -134,9 +136,7 @@ const Layout = () => {
 
   // --- FUNKCJA NAPRAWIAJĄCA URL AVATARA ---
   const getAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return toAbsoluteMediaUrl(url);
   };
 
   const handleLogout = async () => {
@@ -149,10 +149,10 @@ const Layout = () => {
     // 2. Próbujemy powiadomić serwer (fire and forget)
     if (token) {
       try {
-        await axios.post('http://127.0.0.1:8000/api/users/logout/', {}, {
+        await axios.post('/api/users/logout/', {}, {
           headers: { Authorization: `Token ${token}` }
         });
-      } catch (error) { 
+      } catch { 
         console.log("Logout error (sesja mogła już wygasnąć)"); 
       }
     }
