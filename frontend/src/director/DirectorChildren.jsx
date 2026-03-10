@@ -80,9 +80,9 @@ const DirectorChildren = () => {
   const fetchData = async () => {
     try {
       const [childRes, groupRes, userRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/manage/', getAuthHeaders()) // Pobieramy wszystkich userów
+        axios.get('/api/children/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders()),
+        axios.get('/api/users/manage/', getAuthHeaders()) // Pobieramy wszystkich userów
       ]);
 
       setChildren(childRes.data);
@@ -264,9 +264,9 @@ const DirectorChildren = () => {
       };
 
       if (editingChild) {
-        await axios.patch(`http://127.0.0.1:8000/api/children/${editingChild.id}/`, payload, getAuthHeaders());
+        await axios.patch(`/api/children/${editingChild.id}/`, payload, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/children/', payload, getAuthHeaders());
+        await axios.post('/api/children/', payload, getAuthHeaders());
       }
       setIsModalOpen(false);
       await fetchData(); // Odśwież wszystko
@@ -295,7 +295,7 @@ const DirectorChildren = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/children/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/children/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch {

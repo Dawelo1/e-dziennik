@@ -34,8 +34,8 @@ const DirectorSchedule = () => {
   const fetchData = async () => {
     try {
       const [actRes, groupsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders())
+        axios.get('/api/calendar/activities/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders())
       ]);
       setActivities(actRes.data);
       setGroups(groupsRes.data);
@@ -208,9 +208,9 @@ const DirectorSchedule = () => {
       };
 
       if (editingActivity) {
-        await axios.patch(`http://127.0.0.1:8000/api/calendar/activities/${editingActivity.id}/`, payload, getAuthHeaders());
+        await axios.patch(`/api/calendar/activities/${editingActivity.id}/`, payload, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/calendar/activities/', payload, getAuthHeaders());
+        await axios.post('/api/calendar/activities/', payload, getAuthHeaders());
       }
       setIsModalOpen(false);
       await fetchData();
@@ -226,7 +226,7 @@ const DirectorSchedule = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/calendar/activities/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/calendar/activities/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch {

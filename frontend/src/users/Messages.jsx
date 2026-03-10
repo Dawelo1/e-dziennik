@@ -49,7 +49,7 @@ const Messages = () => {
   };
 
   useEffect(() => {
-    axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
+    axios.get('/api/users/me/', getAuthHeaders())
       .then(res => setCurrentUser(res.data))
       .catch(err => console.error(err));
   }, []);
@@ -82,7 +82,7 @@ const Messages = () => {
 
     try {
       isMarkingReadRef.current = true;
-      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_conversation_read/', {}, getAuthHeaders());
+      await axios.post('/api/communication/messages/mark_conversation_read/', {}, getAuthHeaders());
       setMessages(prev => prev.map(msg => (
         msg.receiver === me.id && msg.sender !== me.id ? { ...msg, is_read: true } : msg
       )));
@@ -96,8 +96,8 @@ const Messages = () => {
   const fetchData = useCallback(async () => {
     try {
       const [msgRes, statusRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/communication/messages/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders())
+        axios.get('/api/communication/messages/', getAuthHeaders()),
+        axios.get('/api/users/director-status/', getAuthHeaders())
       ]);
 
       const sorted = msgRes.data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -253,7 +253,7 @@ const Messages = () => {
     if (!newMessage.trim()) return;
 
     try {
-      await axios.post('http://127.0.0.1:8000/api/communication/messages/', {
+      await axios.post('/api/communication/messages/', {
         body: newMessage,
         subject: 'Czat' 
       }, getAuthHeaders());

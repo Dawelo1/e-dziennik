@@ -57,7 +57,7 @@ const DirectorGroups = () => {
     if (groups.length === 0) setLoading(true);
 
     try {
-      const res = await axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders());
+      const res = await axios.get('/api/groups/', getAuthHeaders());
       setGroups(res.data);
       if (Array.isArray(res.data) && res.data.length > 6) {
         setLimitErrorMessage('W systemie jest więcej niż 6 grup. Usuń nadmiarowe grupy, aby przywrócić poprawną konfigurację kolorów.');
@@ -170,14 +170,14 @@ const DirectorGroups = () => {
       if (editingGroup) {
         // UPDATE
         await axios.patch(
-          `http://127.0.0.1:8000/api/groups/${editingGroup.id}/`, 
+          `/api/groups/${editingGroup.id}/`, 
           payload, 
           getAuthHeaders()
         );
       } else {
         // CREATE
         await axios.post(
-          'http://127.0.0.1:8000/api/groups/', 
+          '/api/groups/', 
           payload, 
           getAuthHeaders()
         );
@@ -216,7 +216,7 @@ const DirectorGroups = () => {
 
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/groups/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/groups/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchGroups();
     } catch {

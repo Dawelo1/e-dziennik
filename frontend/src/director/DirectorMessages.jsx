@@ -62,7 +62,7 @@ const DirectorMessages = () => {
     }
     try {
       isMarkingReadRef.current = true;
-      await axios.post('http://127.0.0.1:8000/api/communication/messages/mark_conversation_read/', {
+      await axios.post('/api/communication/messages/mark_conversation_read/', {
         participant_id: participantId
       }, authConfig);
 
@@ -208,8 +208,8 @@ const DirectorMessages = () => {
         return;
       }
       const [messagesRes, allUsersRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/communication/messages/', authConfig),
-        axios.get('http://127.0.0.1:8000/api/users/manage/?is_parent=true', authConfig)
+        axios.get('/api/communication/messages/', authConfig),
+        axios.get('/api/users/manage/?is_parent=true', authConfig)
       ]);
 
       // Przekazujemy 'myId' bezpośrednio, żeby nie polegać na asynchronicznym stanie
@@ -331,7 +331,7 @@ const DirectorMessages = () => {
           return;
         }
 
-        const userRes = await axios.get('http://127.0.0.1:8000/api/users/me/', authConfig);
+        const userRes = await axios.get('/api/users/me/', authConfig);
         if (!mounted) return;
 
         const user = userRes.data;
@@ -398,7 +398,7 @@ const DirectorMessages = () => {
         navigate('/');
         return;
       }
-      await axios.post('http://127.0.0.1:8000/api/communication/messages/', {
+      await axios.post('/api/communication/messages/', {
         receiver: activeConversation.participantId,
         subject: 'Wiadomość od Dyrekcji',
         body: newMessage,

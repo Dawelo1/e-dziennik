@@ -271,9 +271,9 @@ const DirectorPayments = () => {
 
 	const fetchData = async () => {
 		const [childrenResponse, paymentsResponse, recurringResponse] = await Promise.all([
-			axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()),
-			axios.get('http://127.0.0.1:8000/api/payments/', getAuthHeaders()),
-			axios.get('http://127.0.0.1:8000/api/recurring-payments/', getAuthHeaders()),
+			axios.get('/api/children/', getAuthHeaders()),
+			axios.get('/api/payments/', getAuthHeaders()),
+			axios.get('/api/recurring-payments/', getAuthHeaders()),
 		]);
 
 		const sortedPayments = [...paymentsResponse.data].sort(
@@ -547,9 +547,9 @@ const DirectorPayments = () => {
 				};
 
 				if (editingRecurring) {
-					await axios.patch(`http://127.0.0.1:8000/api/recurring-payments/${editingRecurring.id}/`, payload, getAuthHeaders());
+					await axios.patch(`/api/recurring-payments/${editingRecurring.id}/`, payload, getAuthHeaders());
 				} else {
-					await axios.post('http://127.0.0.1:8000/api/recurring-payments/', payload, getAuthHeaders());
+					await axios.post('/api/recurring-payments/', payload, getAuthHeaders());
 				}
 			} else {
 				if (!oneTimeForm.child || !oneTimeForm.amount || !oneTimeForm.description.trim()) {
@@ -572,9 +572,9 @@ const DirectorPayments = () => {
 				}
 
 				if (editingOneTime) {
-					await axios.patch(`http://127.0.0.1:8000/api/payments/${editingOneTime.id}/`, payload, getAuthHeaders());
+					await axios.patch(`/api/payments/${editingOneTime.id}/`, payload, getAuthHeaders());
 				} else {
-					await axios.post('http://127.0.0.1:8000/api/payments/', payload, getAuthHeaders());
+					await axios.post('/api/payments/', payload, getAuthHeaders());
 				}
 			}
 
@@ -593,9 +593,9 @@ const DirectorPayments = () => {
 		setSubmitting(true);
 		try {
 			if (deleteTarget.type === 'recurring') {
-				await axios.delete(`http://127.0.0.1:8000/api/recurring-payments/${deleteTarget.id}/`, getAuthHeaders());
+				await axios.delete(`/api/recurring-payments/${deleteTarget.id}/`, getAuthHeaders());
 			} else {
-				await axios.delete(`http://127.0.0.1:8000/api/payments/${deleteTarget.id}/`, getAuthHeaders());
+				await axios.delete(`/api/payments/${deleteTarget.id}/`, getAuthHeaders());
 			}
 			setDeleteTarget(null);
 			await fetchData();

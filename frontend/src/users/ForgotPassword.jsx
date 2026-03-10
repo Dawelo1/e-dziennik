@@ -17,7 +17,7 @@ const ForgotPassword = () => {
 
     try {
       // Backend (Django) oczekuje klucza "email"
-      await axios.post('http://127.0.0.1:8000/api/users/password_reset/', {
+      await axios.post('/api/users/password_reset/', {
         email: email
       });
       setStatus('success');

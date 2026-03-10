@@ -46,8 +46,8 @@ const DirectorGallery = () => {
     // Nie włączamy loading, bo jest już włączony na starcie
     try {
       const [albumsRes, groupsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/gallery/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders())
+        axios.get('/api/gallery/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders())
       ]);
       setAlbums(albumsRes.data);
       setGroups(groupsRes.data);
@@ -280,11 +280,11 @@ const DirectorGallery = () => {
         if (imagesToDelete.length > 0) {
            imagesToDelete.forEach(id => dataToSend.append('deleted_images', id));
         }
-        await axios.patch(`http://127.0.0.1:8000/api/gallery/${editingAlbum.id}/`, dataToSend, {
+        await axios.patch(`/api/gallery/${editingAlbum.id}/`, dataToSend, {
           headers: { ...getAuthHeaders().headers, 'Content-Type': 'multipart/form-data' }
         });
       } else {
-        await axios.post('http://127.0.0.1:8000/api/gallery/', dataToSend, {
+        await axios.post('/api/gallery/', dataToSend, {
           headers: { ...getAuthHeaders().headers, 'Content-Type': 'multipart/form-data' }
         });
       }
@@ -301,7 +301,7 @@ const DirectorGallery = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/gallery/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/gallery/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch {

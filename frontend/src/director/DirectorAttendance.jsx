@@ -33,9 +33,9 @@ const DirectorAttendance = () => {
   const fetchData = async () => {
     try {
       const [absencesRes, childrenRes, closuresRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/attendance/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()), // Pobieramy dzieci
-        axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders())
+        axios.get('/api/attendance/', getAuthHeaders()),
+        axios.get('/api/children/', getAuthHeaders()), // Pobieramy dzieci
+        axios.get('/api/calendar/closures/', getAuthHeaders())
       ]);
       // Sortujemy od najnowszych
       setAbsences(absencesRes.data.sort((a,b) => new Date(b.date) - new Date(a.date)));
@@ -184,9 +184,9 @@ const DirectorAttendance = () => {
     setLoading(true);
     try {
       if (editingAbsence) {
-        await axios.patch(`http://127.0.0.1:8000/api/attendance/${editingAbsence.id}/`, formData, getAuthHeaders());
+        await axios.patch(`/api/attendance/${editingAbsence.id}/`, formData, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/attendance/', formData, getAuthHeaders());
+        await axios.post('/api/attendance/', formData, getAuthHeaders());
       }
       closeModal();
       await fetchData();
@@ -209,7 +209,7 @@ const DirectorAttendance = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/attendance/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/attendance/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch {

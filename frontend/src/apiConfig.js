@@ -1,12 +1,11 @@
-const LEGACY_API_BASE_URL = 'http://127.0.0.1:8000';
+const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8000';
 
 const normalizeBaseUrl = (value) => {
-  if (!value || typeof value !== 'string') return LEGACY_API_BASE_URL;
+  if (!value || typeof value !== 'string') return DEFAULT_API_BASE_URL;
   return value.replace(/\/+$/, '');
 };
 
 export const API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL);
-export const LEGACY_BASE_URL = LEGACY_API_BASE_URL;
 
 export const toAbsoluteMediaUrl = (url) => {
   if (!url) return null;
