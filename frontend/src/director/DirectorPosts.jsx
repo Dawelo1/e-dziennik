@@ -119,8 +119,9 @@ const DirectorPosts = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -226,7 +227,7 @@ const DirectorPosts = () => {
       await axios.delete(`http://127.0.0.1:8000/api/newsfeed/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć ogłoszenia. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -264,7 +265,7 @@ const DirectorPosts = () => {
         responseType: 'blob'
       });
       downloadFromBlob(response.data, fileName);
-    } catch (err) {
+    } catch {
       downloadFromUrl(post.image, fileName);
     }
   };

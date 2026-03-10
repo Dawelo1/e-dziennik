@@ -20,14 +20,14 @@ import {
 } 
 from 'react-icons/fa';
 import { formatDateWithDots } from '../dateUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 
+const POSTS_REFRESH_MS = 60 * 1000;
+const EVENTS_PAYMENTS_REFRESH_MS = 5 * 60 * 1000;
+const PROFILE_REFRESH_MS = 15 * 60 * 1000;
+const POLL_TICK_MS = 30 * 1000;
 
 const Dashboard = () => {
-  const POSTS_REFRESH_MS = 60 * 1000;
-  const EVENTS_PAYMENTS_REFRESH_MS = 5 * 60 * 1000;
-  const PROFILE_REFRESH_MS = 15 * 60 * 1000;
-  const POLL_TICK_MS = 30 * 1000;
-
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -46,9 +46,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const getAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return toAbsoluteMediaUrl(url);
   };
 
   const fetchData = useCallback(async ({ force = false } = {}) => {

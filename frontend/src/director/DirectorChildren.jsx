@@ -186,8 +186,9 @@ const DirectorChildren = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -297,7 +298,7 @@ const DirectorChildren = () => {
       await axios.delete(`http://127.0.0.1:8000/api/children/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć kartoteki dziecka. Spróbuj ponownie później.');
       setLoading(false);
     }

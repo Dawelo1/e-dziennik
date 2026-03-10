@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getAuthHeaders, removeToken } from '../authUtils';
 import { getChatWebSocketUrl } from '../wsUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 import './DirectorMessages.css'; 
 import LoadingScreen from '../users/LoadingScreen';
 
@@ -11,12 +12,8 @@ import {
   FaEnvelope, FaSearch, FaPaperPlane, FaUserPlus, FaArrowDown
 } from 'react-icons/fa';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
-
 const toAbsoluteUrl = (avatarUrl) => {
-  if (!avatarUrl) return null;
-  if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) return avatarUrl;
-  return `${API_BASE_URL}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`;
+  return toAbsoluteMediaUrl(avatarUrl);
 };
 
 const getInitial = (name) => (name?.trim()?.[0] || '?').toUpperCase();
@@ -55,14 +52,7 @@ const DirectorMessages = () => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
-  const markActiveConversationRead = useCallback(() => {
-    const active = activeConversationRef.current;
-    if (!active) return;
-    if (document.visibilityState !== 'visible') return;
-    markConversationRead(active.participantId);
-  }, []);
-
-  const markConversationRead = async (participantId) => {
+  const markConversationRead = useCallback(async (participantId) => {
     if (isMarkingReadRef.current) return;
     const authConfig = getAuthHeaders();
     if (!authConfig) {
@@ -100,7 +90,14 @@ const DirectorMessages = () => {
     } finally {
       isMarkingReadRef.current = false;
     }
-  };
+  }, [navigate]);
+
+  const markActiveConversationRead = useCallback(() => {
+    const active = activeConversationRef.current;
+    if (!active) return;
+    if (document.visibilityState !== 'visible') return;
+    markConversationRead(active.participantId);
+  }, [markConversationRead]);
 
   const getConvSignature = (conv) => {
     if (!conv) return '';
@@ -113,42 +110,7 @@ const DirectorMessages = () => {
   };
 
   // --- 1. POBIERANIE DANYCH ---
-  const fetchData = useCallback(async (myId) => {
-    if (isFetchingRef.current) {
-      pendingFetchRef.current = true;
-      return;
-    }
-    isFetchingRef.current = true;
-    try {
-      const authConfig = getAuthHeaders();
-      if (!authConfig) {
-        removeToken();
-        navigate('/');
-        return;
-      }
-      const [messagesRes, allUsersRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/communication/messages/', authConfig),
-        axios.get('http://127.0.0.1:8000/api/users/manage/?is_parent=true', authConfig)
-      ]);
-
-      // Przekazujemy 'myId' bezpośrednio, żeby nie polegać na asynchronicznym stanie
-      processMessages(messagesRes.data, myId, allUsersRes.data);
-
-    } catch (err) {
-      console.error("Błąd pobierania:", err);
-    } finally {
-      isFetchingRef.current = false;
-      setLoading(false);
-
-      if (pendingFetchRef.current) {
-        pendingFetchRef.current = false;
-        fetchData(myId);
-      }
-    }
-  }, [navigate]);
-  
-  // --- 2. PRZETWARZANIE WIADOMOŚCI ---
-  const processMessages = (messages, myId, allParentUsers) => {
+  const processMessages = useCallback((messages, myId, allParentUsers) => {
     const grouped = messages.reduce((acc, msg) => {
         const otherId = msg.sender === myId ? msg.receiver : msg.sender;
         if (otherId === myId) return acc;
@@ -217,7 +179,9 @@ const DirectorMessages = () => {
         const updatedSig = getConvSignature(updatedActiveConv);
         if (currentSig !== updatedSig) {
           setActiveConversation(updatedActiveConv);
-          if (isUserAtBottomRef.current) setTimeout(scrollToBottom, 100);
+          if (isUserAtBottomRef.current) {
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+          }
         }
 
         const hasUnread = updatedActiveConv.messages.some(
@@ -228,7 +192,41 @@ const DirectorMessages = () => {
         }
       }
     }
-  };
+  }, [markConversationRead]);
+
+  const fetchData = useCallback(async (myId) => {
+    if (isFetchingRef.current) {
+      pendingFetchRef.current = true;
+      return;
+    }
+    isFetchingRef.current = true;
+    try {
+      const authConfig = getAuthHeaders();
+      if (!authConfig) {
+        removeToken();
+        navigate('/');
+        return;
+      }
+      const [messagesRes, allUsersRes] = await Promise.all([
+        axios.get('http://127.0.0.1:8000/api/communication/messages/', authConfig),
+        axios.get('http://127.0.0.1:8000/api/users/manage/?is_parent=true', authConfig)
+      ]);
+
+      // Przekazujemy 'myId' bezpośrednio, żeby nie polegać na asynchronicznym stanie
+      processMessages(messagesRes.data, myId, allUsersRes.data);
+
+    } catch (err) {
+      console.error("Błąd pobierania:", err);
+    } finally {
+      isFetchingRef.current = false;
+      setLoading(false);
+
+      if (pendingFetchRef.current) {
+        pendingFetchRef.current = false;
+        fetchData(myId);
+      }
+    }
+  }, [navigate, processMessages]);
   
   // --- POPRAWIONY START I POLLING ---
   useEffect(() => {
@@ -369,7 +367,7 @@ const DirectorMessages = () => {
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (wsRef.current) wsRef.current.close();
     };
-  }, [fetchData, markActiveConversationRead, navigate]);
+  }, [fetchData, markActiveConversationRead, markConversationRead, navigate]);
 
   // --- LOGIKA "PRZECZYTANO" PO KLIKNIĘCIU ---
   useEffect(() => {

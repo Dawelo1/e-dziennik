@@ -129,8 +129,9 @@ const DirectorGallery = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -183,7 +184,7 @@ const DirectorGallery = () => {
         responseType: 'blob'
       });
       downloadFromBlob(response.data, fileName);
-    } catch (err) {
+    } catch {
       downloadFromUrl(img.image, fileName);
     }
   };
@@ -232,8 +233,12 @@ const DirectorGallery = () => {
     const handlePreviewKeyDown = (e) => {
       if (!isPreviewOpen) return;
       if (e.key === 'Escape') closeAlbumPreview();
-      if (e.key === 'ArrowRight') nextPreviewImage(e);
-      if (e.key === 'ArrowLeft') prevPreviewImage(e);
+      if (e.key === 'ArrowRight') {
+        setPreviewIndex((prev) => (prev + 1) % previewImages.length);
+      }
+      if (e.key === 'ArrowLeft') {
+        setPreviewIndex((prev) => (prev + previewImages.length - 1) % previewImages.length);
+      }
     };
 
     if (isPreviewOpen) {
@@ -285,7 +290,7 @@ const DirectorGallery = () => {
       }
       setIsModalOpen(false);
       await fetchData(); // To odświeży listę i wyłączy loading
-    } catch (err) {
+    } catch {
       setError("Błąd zapisu. Sprawdź, czy tytuł jest unikalny.");
       setLoading(false); // Wyłącz loading w razie błędu
     }
@@ -299,7 +304,7 @@ const DirectorGallery = () => {
       await axios.delete(`http://127.0.0.1:8000/api/gallery/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć albumu. Spróbuj ponownie później.');
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorGroups.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Używamy tych samych stylów (tabela, buttony) dla spójności
@@ -52,7 +52,7 @@ const DirectorGroups = () => {
   const invalidFieldTimers = useRef({ name: null, teacher_1: null });
 
   // 1. Pobieranie grup
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     // Pokazujemy loader tylko przy pierwszym ładowaniu lub gdy lista jest pusta
     if (groups.length === 0) setLoading(true);
 
@@ -67,11 +67,11 @@ const DirectorGroups = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [groups.length]);
 
   useEffect(() => {
     fetchGroups();
-  }, []);
+  }, [fetchGroups]);
 
   const triggerInvalidField = (fieldName) => {
     setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
@@ -98,8 +98,9 @@ const DirectorGroups = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -218,7 +219,7 @@ const DirectorGroups = () => {
       await axios.delete(`http://127.0.0.1:8000/api/groups/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchGroups();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć grupy (może są do niej przypisane dzieci?).');
       setLoading(false);
     }

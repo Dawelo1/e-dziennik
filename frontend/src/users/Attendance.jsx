@@ -1,5 +1,5 @@
 // frontend/src/Attendance.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -49,12 +49,7 @@ const Attendance = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (!selectedChild) return;
-    fetchAttendance();
-  }, [selectedChild]);
-
-  const fetchAttendance = () => {
+  const fetchAttendance = useCallback(() => {
     axios.get('http://127.0.0.1:8000/api/attendance/', getAuthHeaders())
       .then(res => {
         const map = {};
@@ -66,7 +61,12 @@ const Attendance = () => {
         setAbsencesMap(map);
       })
       .catch(err => console.error(err));
-  };
+  }, [selectedChild]);
+
+  useEffect(() => {
+    if (!selectedChild) return;
+    fetchAttendance();
+  }, [selectedChild, fetchAttendance]);
 
   const formatDate = (date) => {
     const offset = date.getTimezoneOffset();
@@ -132,7 +132,7 @@ const Attendance = () => {
         setMessage({ type: 'info', text: `Cofnięto zgłoszenie na dzień ${formatDisplayDate(date)}.` });
       }
       fetchAttendance();
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Wystąpił błąd podczas wysyłania.' });
     }
   };
@@ -151,8 +151,8 @@ const Attendance = () => {
   const getTileClassName = ({ date, view }) => {
     if (view === 'month') {
       const dateStr = formatDate(date);
-      if (absencesMap.hasOwnProperty(dateStr)) return 'absent-day';
-      if (closuresMap.hasOwnProperty(dateStr)) return 'closure-day'; // Sprawdzamy klucz w obiekcie
+      if (Object.prototype.hasOwnProperty.call(absencesMap, dateStr)) return 'absent-day';
+      if (Object.prototype.hasOwnProperty.call(closuresMap, dateStr)) return 'closure-day'; // Sprawdzamy klucz w obiekcie
       if (date.getDay() === 0 || date.getDay() === 6) return 'weekend-day';
     }
   };

@@ -7,6 +7,7 @@ import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp, FaUserTie } from 'reac
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
 import { formatDateWithDots } from '../dateUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);
@@ -14,9 +15,7 @@ const Gallery = () => {
   const [loading, setLoading] = useState(true);
 
   const getAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return toAbsoluteMediaUrl(url);
   };
 
   useEffect(() => {

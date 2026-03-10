@@ -6,6 +6,7 @@ import { FaPaperPlane, FaUserTie, FaEnvelope, FaArrowDown } from 'react-icons/fa
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
 import { getChatWebSocketUrl } from '../wsUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
@@ -44,9 +45,7 @@ const Messages = () => {
 
   // --- FUNKCJA POMOCNICZA DO URL ---
   const getAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return toAbsoluteMediaUrl(url);
   };
 
   useEffect(() => {

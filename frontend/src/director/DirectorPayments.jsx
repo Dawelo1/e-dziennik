@@ -66,7 +66,7 @@ const frequencyLabel = (value) => {
 	return value || '-';
 };
 
-const PaymentsTable = ({ items, onEdit, onDelete, sortField, getSortArrow, onSortChange }) => {
+const PaymentsTable = ({ items, onEdit, onDelete, getSortArrow, onSortChange }) => {
 	if (!items.length) {
 		return <p className="text-center">Brak płatności w tej sekcji.</p>;
 	}
@@ -140,7 +140,7 @@ const PaymentsTable = ({ items, onEdit, onDelete, sortField, getSortArrow, onSor
 	);
 };
 
-const RecurringTemplatesTable = ({ items, onEdit, onDelete, recurringSortField, getRecurringSortArrow, onRecurringSortChange }) => {
+const RecurringTemplatesTable = ({ items, onEdit, onDelete, getRecurringSortArrow, onRecurringSortChange }) => {
 	if (!items.length) {
 		return <p className="text-center">Brak wzorów płatności cyklicznych.</p>;
 	}

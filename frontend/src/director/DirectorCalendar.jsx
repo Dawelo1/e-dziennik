@@ -60,8 +60,9 @@ const DirectorCalendar = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -94,7 +95,7 @@ const DirectorCalendar = () => {
       setIsModalOpen(false);
       setClosureImpactTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setError("Błąd zapisu. Sprawdź, czy ta data nie jest już dodana.");
       setLoading(false);
     }
@@ -128,7 +129,7 @@ const DirectorCalendar = () => {
       }
 
       await saveClosure();
-    } catch (err) {
+    } catch {
       setError("Błąd zapisu. Sprawdź, czy ta data nie jest już dodana.");
       setLoading(false);
     }
@@ -146,7 +147,7 @@ const DirectorCalendar = () => {
       await axios.delete(`http://127.0.0.1:8000/api/calendar/closures/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć dnia wolnego. Spróbuj ponownie później.');
       setLoading(false);
     }

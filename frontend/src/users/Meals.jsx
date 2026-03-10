@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import './Meals.css';
 import LoadingScreen from './LoadingScreen';
@@ -46,9 +46,12 @@ const Meals = () => {
     return new Date(date.setDate(diff));
   };
 
-  const monday = getMonday(currentDate);
-  const friday = new Date(monday);
-  friday.setDate(monday.getDate() + 4);
+  const monday = useMemo(() => getMonday(currentDate), [currentDate]);
+  const friday = useMemo(() => {
+    const fridayDate = new Date(monday);
+    fridayDate.setDate(monday.getDate() + 4);
+    return fridayDate;
+  }, [monday]);
 
   const todayReal = new Date();
   todayReal.setHours(0, 0, 0, 0);
@@ -91,7 +94,7 @@ const Meals = () => {
       }
     };
     fetchData();
-  }, [currentDate]);
+  }, [monday, friday]);
 
   useEffect(() => {
     document.body.style.overflow = showAllergens ? 'hidden' : '';

@@ -1,5 +1,5 @@
 // frontend/src/director/DirectorUsers.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css';
@@ -78,7 +78,7 @@ const DirectorUsers = () => {
   };
 
   // 1. Pobieranie użytkowników
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     // Nie włączamy loading przy każdym wpisaniu litery w szukajkę, 
     // żeby ekran nie migał pszczółką przy pisaniu.
     // Ale przy pierwszym ładowaniu - tak.
@@ -93,14 +93,14 @@ const DirectorUsers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchQuery, users.length]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       fetchUsers();
     }, 500);
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
+  }, [fetchUsers]);
 
   const triggerInvalidField = (fieldName) => {
     setInvalidFields((prev) => ({ ...prev, [fieldName]: false }));
@@ -127,8 +127,9 @@ const DirectorUsers = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -199,7 +200,7 @@ const DirectorUsers = () => {
         username: res.data?.username || '',
         password: res.data?.password || '',
       });
-    } catch (err) {
+    } catch {
       setError('Nie udało się wygenerować danych. Spróbuj ponownie.');
     } finally {
       setGeneratingCredentials(false);
@@ -224,7 +225,7 @@ const DirectorUsers = () => {
       setPasswordWasGenerated(true);
       clearInvalidField('password');
       setRequiredFieldErrors((prev) => ({ ...prev, password: false }));
-    } catch (err) {
+    } catch {
       setError('Nie udało się wygenerować hasła. Spróbuj ponownie.');
     } finally {
       setGeneratingPassword(false);
@@ -344,7 +345,7 @@ const DirectorUsers = () => {
       await axios.delete(`http://127.0.0.1:8000/api/users/manage/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       fetchUsers();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć użytkownika. Spróbuj ponownie później.');
       setLoading(false);
     }
@@ -364,7 +365,7 @@ const DirectorUsers = () => {
         username: res.data?.username || user.username,
         password: res.data?.password || '',
       });
-    } catch (err) {
+    } catch {
       setActionError('Podgląd hasła nie jest dostępny dla tego konta.');
     } finally {
       setPreviewLoadingUserId(null);

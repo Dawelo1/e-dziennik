@@ -5,6 +5,7 @@ import { getCroppedImg } from '../cropUtils';
 import './DirectorSettings.css';
 import LoadingScreen from '../users/LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import { toAbsoluteMediaUrl } from '../apiConfig';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
   FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
@@ -40,9 +41,7 @@ const Settings = () => {
   const fileInputRef = useRef(null);
 
   const getAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return toAbsoluteMediaUrl(url);
   };
 
   const fetchUserData = () => {
@@ -127,7 +126,7 @@ const Settings = () => {
       setTimeout(() => {
         window.location.reload();
       }, 1500);
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Błąd podczas usuwania zdjęcia.' });
     } finally {
       setLoading(false);
@@ -192,7 +191,7 @@ const Settings = () => {
       setContactMessage({ type: 'success', text: 'Dane kontaktowe zostały zapisane.' });
       fetchUserData();
       setFormData((prev) => ({ ...prev, new_email: type === 'email' ? '' : prev.new_email, new_phone: type === 'phone' ? '' : prev.new_phone }));
-    } catch (err) { setContactMessage({ type: 'error', text: 'Nie udało się zapisać danych kontaktowych.' }); } finally { setLoading(false); }
+    } catch { setContactMessage({ type: 'error', text: 'Nie udało się zapisać danych kontaktowych.' }); } finally { setLoading(false); }
   };
 
   const handlePersonalUpdate = async () => {
@@ -228,7 +227,7 @@ const Settings = () => {
       setPersonalMessage({ type: 'success', text: 'Dane osobowe zostały zapisane.' });
       fetchUserData();
       setFormData((prev) => ({ ...prev, new_first_name: '', new_last_name: '' }));
-    } catch (err) {
+    } catch {
       setPersonalMessage({ type: 'error', text: 'Nie udało się zapisać danych osobowych.' });
     } finally {
       setLoading(false);
@@ -266,7 +265,7 @@ const Settings = () => {
       setPasswordMessage({ type: 'success', text: 'Hasło zostało zmienione.' });
       setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
       setPasswordErrors({ old_password: '', new_password: '', confirm_password: '' });
-    } catch(e) { setPasswordMessage({ type: 'error', text: 'Nie udało się zmienić hasła. Sprawdź obecne hasło i spróbuj ponownie.' }); } finally { setLoading(false); }
+    } catch { setPasswordMessage({ type: 'error', text: 'Nie udało się zmienić hasła. Sprawdź obecne hasło i spróbuj ponownie.' }); } finally { setLoading(false); }
   };
 
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;

@@ -70,8 +70,9 @@ const DirectorSchedule = () => {
   };
 
   useEffect(() => {
+    const timers = invalidFieldTimers.current;
     return () => {
-      Object.values(invalidFieldTimers.current).forEach((timer) => {
+      Object.values(timers).forEach((timer) => {
         if (timer) clearTimeout(timer);
       });
     };
@@ -228,7 +229,7 @@ const DirectorSchedule = () => {
       await axios.delete(`http://127.0.0.1:8000/api/calendar/activities/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
-    } catch (err) {
+    } catch {
       setActionError('Nie udało się usunąć zajęć. Spróbuj ponownie później.');
       setLoading(false);
     }
