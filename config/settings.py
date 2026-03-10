@@ -19,6 +19,17 @@ from django.core.management.utils import get_random_secret_key
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_or_create_local_secret_key():
+    """Use a stable local secret key in development when env var is not provided."""
+    key_path = BASE_DIR / '.django_secret_key'
+    if key_path.exists():
+        return key_path.read_text(encoding='utf-8').strip()
+
+    secret = get_random_secret_key()
+    key_path.write_text(secret, encoding='utf-8')
+    return secret
+
+
 def _is_truthy(value, default=False):
     if value is None:
         return default
@@ -67,7 +78,7 @@ def _database_from_url(db_url):
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', get_random_secret_key())
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY') or _load_or_create_local_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes', 'on')
