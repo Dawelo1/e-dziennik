@@ -18,6 +18,7 @@ import Schedule from './Schedule';
 import Calendar from './Calendar';
 import Messages from './Messages';
 import Gallery from './Gallery';
+import ParentRoute from './ParentRoute';
 
 // --- NOWE IMPORTY DLA DYREKTORA ---
 import DirectorRoute from '../director/DirectorRoute';
@@ -52,17 +53,19 @@ function App() {
         {/* ==========================
             STREFA RODZICA (Chroniona)
            ========================== */}
-        <Route element={<Layout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/attendance" element={<Attendance />} />
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/calendar" element={<Calendar />} /> 
-          <Route path="/schedule" element={<Schedule />} />
-          <Route path="/meals" element={<Meals />} /> 
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/info" element={<Info />} />
+        <Route element={<ParentRoute />}>
+          <Route element={<Layout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/attendance" element={<Attendance />} />
+            <Route path="/gallery" element={<Gallery />} />
+            <Route path="/calendar" element={<Calendar />} /> 
+            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/meals" element={<Meals />} /> 
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/info" element={<Info />} />
+          </Route>
         </Route>
 
         {/* ==========================

@@ -1,13 +1,13 @@
 // frontend/src/Login.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import './Login.css';
 import LoadingScreen from './LoadingScreen';
 import bgImage from '../assets/bg.png';
 import BeeIcon from '../assets/bee-icon.png';
 import padlockIcon from '../assets/padlock-icon.png';
-import { setToken } from '../authUtils';
+import { setToken, removeToken } from '../authUtils';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -19,6 +19,14 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('reason') === 'no-child') {
+      setError('To konto nie ma przypisanego dziecka. Skontaktuj sie z dyrektorem przedszkola.');
+    }
+  }, [location.search]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -31,20 +39,29 @@ const Login = () => {
         password: password
       });
 
-      // --- ZMIANA POCZĄTEK ---
-      // Pobieramy token ORAZ flagę is_director z odpowiedzi serwera
       const { token, is_director } = response.data;
 
-      // Zapisujemy token (używając funkcji z authUtils)
       setToken(token, rememberMe);
-      
-      // Logika przekierowania zależna od roli:
+
       if (is_director) {
-        navigate('/director/dashboard'); // Dyrektor idzie do swojego panelu
+        navigate('/director/dashboard');
       } else {
-        navigate('/dashboard'); // Rodzic idzie do zwykłego dashboardu
+        try {
+          const meRes = await axios.get('http://127.0.0.1:8000/api/users/me/', {
+            headers: { Authorization: `Token ${token}` },
+          });
+
+          const hasAssignedChild = Array.isArray(meRes.data.child_groups) && meRes.data.child_groups.length > 0;
+          if (!hasAssignedChild) {
+            removeToken();
+            setError('To konto nie ma przypisanego dziecka. Skontaktuj sie z dyrektorem przedszkola.');
+          } else {
+            navigate('/dashboard');
+          }
+        } catch (profileErr) {
+          navigate('/dashboard');
+        }
       }
-      // --- ZMIANA KONIEC ---
 
     } catch (err) {
       console.error(err);
