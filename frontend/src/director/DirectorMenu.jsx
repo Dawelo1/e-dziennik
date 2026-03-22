@@ -47,23 +47,43 @@ const DirectorMenu = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const normalizeDateSearch = (value = '') =>
+    String(value)
+      // Ujednolicamy zapis 05.01 -> 5.1, aby oba formaty wyszukiwania działały tak samo.
+      .replace(/(^|[^\d])0(?=\d)/g, '$1')
+      .toLowerCase();
+
   const filteredMenus = menus.filter((menu) => {
     const query = searchQuery.toLowerCase().trim();
+    const normalizedQuery = normalizeDateSearch(query);
     if (!query) return true;
 
     const menuDate = new Date(`${menu.date}T00:00:00`);
     const menuDateLocale = menuDate.toLocaleDateString('pl-PL').toLowerCase();
+    const menuDateLocalePadded = menuDate.toLocaleDateString('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).toLowerCase();
     const menuDateWithWeekday = menuDate.toLocaleDateString('pl-PL', {
       weekday: 'long',
       day: 'numeric',
       month: 'long'
     }).toLowerCase();
     const menuDateIso = String(menu.date || '').toLowerCase();
+    const normalizedDateFields = [
+      menuDateLocale,
+      menuDateLocalePadded,
+      menuDateWithWeekday,
+      menuDateIso
+    ].map((value) => normalizeDateSearch(value));
 
     return (
       menuDateLocale.includes(query) ||
+      menuDateLocalePadded.includes(query) ||
       menuDateWithWeekday.includes(query) ||
-      menuDateIso.includes(query)
+      menuDateIso.includes(query) ||
+      normalizedDateFields.some((value) => value.includes(normalizedQuery))
     );
   });
   const sortedFilteredMenus = [...filteredMenus].sort(

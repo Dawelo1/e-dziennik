@@ -112,6 +112,12 @@ const DirectorAttendance = () => {
     return child ? `${child.first_name} ${child.last_name}` : 'Nieznane';
   };
 
+  const normalizeDateSearch = (value = '') =>
+    String(value)
+      // Ujednolicamy zapis 05.01 -> 5.1, aby oba formaty wyszukiwania działały tak samo.
+      .replace(/(^|[^\d])0(?=\d)/g, '$1')
+      .toLowerCase();
+
   const filteredAbsences = absences.filter(absence => {
     if (dayFilter && absence.date !== dayFilter) {
       return false;
@@ -127,6 +133,7 @@ const DirectorAttendance = () => {
     }
 
     const query = searchQuery.toLowerCase().trim();
+    const normalizedQuery = normalizeDateSearch(query);
     if (!query) return true;
 
     const childName = getChildName(absence.child).toLowerCase();
@@ -135,18 +142,41 @@ const DirectorAttendance = () => {
     const createdAtDate = new Date(absence.created_at);
 
     const absenceDateLocale = absenceDate.toLocaleDateString('pl-PL').toLowerCase();
+    const absenceDateLocalePadded = absenceDate.toLocaleDateString('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).toLowerCase();
     const absenceDateIso = absence.date.toLowerCase();
     const createdAtDateLocale = createdAtDate.toLocaleDateString('pl-PL').toLowerCase();
+    const createdAtDateLocalePadded = createdAtDate.toLocaleDateString('pl-PL', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).toLowerCase();
     const createdAtDateTimeLocale = createdAtDate.toLocaleString('pl-PL').toLowerCase();
     const createdAtDateIso = absence.created_at.toLowerCase();
+
+    const normalizedDateFields = [
+      absenceDateLocale,
+      absenceDateLocalePadded,
+      createdAtDateLocale,
+      createdAtDateLocalePadded,
+      createdAtDateTimeLocale,
+      absenceDateIso,
+      createdAtDateIso
+    ].map((value) => normalizeDateSearch(value));
 
     return (
       childName.includes(query) ||
       absenceDateLocale.includes(query) ||
+      absenceDateLocalePadded.includes(query) ||
       absenceDateIso.includes(query) ||
       createdAtDateLocale.includes(query) ||
+      createdAtDateLocalePadded.includes(query) ||
       createdAtDateTimeLocale.includes(query) ||
-      createdAtDateIso.includes(query)
+      createdAtDateIso.includes(query) ||
+      normalizedDateFields.some((value) => value.includes(normalizedQuery))
     );
   });
 
