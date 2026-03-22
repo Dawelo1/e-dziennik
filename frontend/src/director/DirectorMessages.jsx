@@ -509,9 +509,7 @@ const DirectorMessages = () => {
               <div className="messages-area" ref={messagesContainerRef} onScroll={handleScroll}>
                 {activeConversation.messages.map(msg => {
                   const isIncoming = isSameParticipant(msg.sender, activeConversation.participantId);
-                  const senderAvatar = isIncoming
-                    ? activeConversation.participantAvatar
-                    : toAbsoluteUrl(msg.sender_avatar_url || currentUser?.avatar_url || currentUser?.avatar);
+                  const senderAvatar = activeConversation.participantAvatar;
                   const senderLabel = isIncoming ? activeConversation.participantName : msg.sender_name;
                   
                   return (
@@ -524,16 +522,6 @@ const DirectorMessages = () => {
                             getInitial(activeConversation.participantName)
                           )}
                         </div>
-                      )}
-                      
-                      {!isIncoming && (
-                          <div className="msg-avatar" title={msg.sender_name}>
-                             {senderAvatar ? (
-                               <img src={senderAvatar} alt={senderLabel} className="avatar-image" />
-                             ) : (
-                               getInitial(msg.sender_name || 'Dyrektor')
-                             )}
-                          </div>
                       )}
 
                       <div className="bubble-wrapper">
