@@ -2,7 +2,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, Count, F, Case, When, IntegerField
 from rest_framework.decorators import action
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -12,6 +12,8 @@ from users.permissions import IsDirector
 from users.models import User
 from rest_framework.views import APIView
 from communication.models import Message
+from datetime import timedelta
+from decimal import Decimal
 
 
 def broadcast_notification_summary_changed(user_ids=None):
@@ -517,18 +519,189 @@ class DirectorStatsView(APIView):
     """
     permission_classes = [IsDirector] # Tylko dyrektor
 
+    def _build_attendance_series(self, days, group_id=None):
+        today = timezone.localdate()
+        start_date = today - timedelta(days=days - 1)
+
+        children_qs = Child.objects.all()
+        if group_id is not None:
+            children_qs = children_qs.filter(group_id=group_id)
+
+        total_children = children_qs.count()
+
+        absence_qs = Attendance.objects.filter(
+            status='absent',
+            date__range=(start_date, today),
+        )
+        if group_id is not None:
+            absence_qs = absence_qs.filter(child__group_id=group_id)
+
+        absences_by_date = {
+            entry['date']: entry['count']
+            for entry in absence_qs.values('date').annotate(count=Count('id'))
+        }
+
+        series = []
+        for day_index in range(days):
+            current_date = start_date + timedelta(days=day_index)
+            absent_count = int(absences_by_date.get(current_date, 0) or 0)
+            present_count = max(total_children - absent_count, 0)
+            attendance_rate = round((present_count / total_children) * 100, 1) if total_children else 0.0
+
+            series.append({
+                'date': current_date.isoformat(),
+                'label': current_date.strftime('%d.%m'),
+                'present': present_count,
+                'absent': absent_count,
+                'total': total_children,
+                'attendance_rate': attendance_rate,
+            })
+
+        return series
+
+    def _build_debt_stats(self):
+        unpaid_payments = Payment.objects.filter(is_paid=False).select_related(
+            'child',
+            'child__group',
+        ).prefetch_related('child__parents')
+
+        total_outstanding = Decimal('0.00')
+        group_totals = {}
+        parent_map = {}
+
+        for payment in unpaid_payments:
+            payment_amount = payment.amount or Decimal('0.00')
+            total_outstanding += payment_amount
+
+            group_obj = payment.child.group
+            group_key = int(group_obj.id)
+            if group_key not in group_totals:
+                group_totals[group_key] = {
+                    'group_id': group_key,
+                    'group_name': group_obj.name,
+                    'amount': Decimal('0.00'),
+                    'unpaid_items': 0,
+                }
+            group_totals[group_key]['amount'] += payment_amount
+            group_totals[group_key]['unpaid_items'] += 1
+
+            parent_users = list(payment.child.parents.all())
+            for parent in parent_users:
+                parent_key = int(parent.id)
+                full_name = f"{parent.first_name} {parent.last_name}".strip() or parent.username
+                if parent_key not in parent_map:
+                    parent_map[parent_key] = {
+                        'parent_id': parent_key,
+                        'parent_name': full_name,
+                        'amount': Decimal('0.00'),
+                        'unpaid_items': 0,
+                        'group_names': set(),
+                        'debts': [],
+                    }
+
+                parent_map[parent_key]['amount'] += payment_amount
+                parent_map[parent_key]['unpaid_items'] += 1
+                parent_map[parent_key]['group_names'].add(group_obj.name)
+                parent_map[parent_key]['debts'].append({
+                    'payment_id': payment.id,
+                    'payment_title': payment.payment_title,
+                    'description': payment.description,
+                    'amount': float(payment_amount),
+                    'group_id': group_key,
+                    'group_name': group_obj.name,
+                    'child_id': payment.child_id,
+                    'child_name': f"{payment.child.first_name} {payment.child.last_name}",
+                    'created_at': payment.created_at.isoformat(),
+                })
+
+        debtors = []
+        for entry in parent_map.values():
+            entry['amount'] = float(entry['amount'])
+            entry['group_names'] = sorted(list(entry['group_names']))
+            entry['debts'].sort(key=lambda debt: debt['created_at'])
+            debtors.append(entry)
+
+        debtors.sort(key=lambda debtor: debtor['amount'], reverse=True)
+
+        by_group = []
+        for group_entry in group_totals.values():
+            by_group.append({
+                'group_id': group_entry['group_id'],
+                'group_name': group_entry['group_name'],
+                'amount': float(group_entry['amount']),
+                'unpaid_items': group_entry['unpaid_items'],
+            })
+        by_group.sort(key=lambda group_entry: group_entry['amount'], reverse=True)
+
+        return {
+            'total_outstanding': float(total_outstanding),
+            'total_unpaid_items': sum(item['unpaid_items'] for item in by_group),
+            'by_group': by_group,
+            'debtors': debtors,
+            'top_debtor': debtors[0] if debtors else None,
+        }
+
+    def _build_unanswered_over_24h(self, director_user):
+        threshold = timezone.now() - timedelta(hours=24)
+
+        message_qs = Message.objects.filter(
+            Q(sender=director_user) | Q(receiver=director_user)
+        ).annotate(
+            participant_id=Case(
+                When(sender=director_user, then=F('receiver_id')),
+                default=F('sender_id'),
+                output_field=IntegerField(),
+            )
+        ).exclude(participant_id=director_user.id).select_related('sender', 'receiver').order_by('participant_id', '-created_at')
+
+        latest_by_participant = {}
+        for message in message_qs:
+            participant_id = int(message.participant_id)
+            if participant_id not in latest_by_participant:
+                latest_by_participant[participant_id] = message
+
+        pending = []
+        now = timezone.now()
+        for participant_id, last_message in latest_by_participant.items():
+            if last_message.sender_id == director_user.id:
+                continue
+            if last_message.created_at > threshold:
+                continue
+
+            participant = last_message.sender
+            if participant.id == director_user.id:
+                participant = last_message.receiver
+
+            if not participant or not participant.is_parent:
+                continue
+
+            full_name = f"{participant.first_name} {participant.last_name}".strip() or participant.username
+            hours_waiting = int((now - last_message.created_at).total_seconds() // 3600)
+            pending.append({
+                'participant_id': int(participant.id),
+                'participant_name': full_name,
+                'last_message_preview': (last_message.body or '')[:100],
+                'last_message_at': last_message.created_at.isoformat(),
+                'hours_waiting': max(hours_waiting, 24),
+            })
+
+        pending.sort(key=lambda item: item['last_message_at'])
+        return pending
+
     def get(self, request):
-        today = timezone.now().date()
+        today = timezone.localdate()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=4)
 
         # 1. Liczba nieprzeczytanych wiadomości (skierowanych do dyrekcji)
         unread_messages_count = Message.objects.filter(
-            receiver__is_director=True, 
+            receiver=request.user,
             is_read=False
         ).count()
 
-        # 2. Liczba zgłoszonych nieobecności na dzisiaj
-        absent_today_count = Attendance.objects.filter(
-            date=today, 
+        # 2. Liczba zgłoszonych nieobecności w bieżącym tygodniu roboczym (poniedziałek-piątek)
+        absent_week_count = Attendance.objects.filter(
+            date__range=(week_start, week_end),
             status='absent'
         ).count()
 
@@ -536,14 +709,46 @@ class DirectorStatsView(APIView):
         total_children_count = Child.objects.count()
         
         # 4. Liczba obecnych (Total - Nieobecni)
-        present_today_count = total_children_count - absent_today_count
+        present_today_count = total_children_count - Attendance.objects.filter(
+            date=today,
+            status='absent'
+        ).count()
+
+        # 5. Frekwencja tygodniowa/miesięczna (cała placówka + każda grupa)
+        groups = list(Group.objects.order_by('name').values('id', 'name'))
+        attendance_week = {'all': self._build_attendance_series(7)}
+        attendance_month = {'all': self._build_attendance_series(30)}
+
+        for group in groups:
+            group_id = int(group['id'])
+            key = str(group_id)
+            attendance_week[key] = self._build_attendance_series(7, group_id=group_id)
+            attendance_month[key] = self._build_attendance_series(30, group_id=group_id)
+
+        # 6. Zaległości i najwięksi dłużnicy
+        debt_stats = self._build_debt_stats()
+
+        # 7. Rozmowy bez odpowiedzi >24h
+        unanswered = self._build_unanswered_over_24h(request.user)
         
         # Przygotowujemy dane do wysłania
         stats = {
             'unread_messages': unread_messages_count,
-            'absent_today': absent_today_count,
+            'absent_today': absent_week_count,
+            'absent_week': absent_week_count,
             'present_today': present_today_count,
             'total_children': total_children_count,
+            'attendance': {
+                'groups': [{'id': 'all', 'name': 'Cała placówka'}] + [
+                    {'id': str(group['id']), 'name': group['name']}
+                    for group in groups
+                ],
+                'week': attendance_week,
+                'month': attendance_month,
+            },
+            'debts': debt_stats,
+            'unanswered_over_24h': unanswered,
+            'unanswered_over_24h_count': len(unanswered),
         }
         
         return Response(stats)

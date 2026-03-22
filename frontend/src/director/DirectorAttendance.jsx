@@ -1,5 +1,6 @@
 // frontend/src/director/DirectorAttendance.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Wspólne style
@@ -10,6 +11,9 @@ import {
 } from 'react-icons/fa';
 
 const DirectorAttendance = () => {
+  const [searchParams] = useSearchParams();
+  const dayFilter = searchParams.get('day') || '';
+  const weekFilterAnchor = searchParams.get('week') || '';
   const [absences, setAbsences] = useState([]);
   const [children, setChildren] = useState([]); // Do listy w modalu
   const [closures, setClosures] = useState([]);
@@ -28,6 +32,26 @@ const DirectorAttendance = () => {
   const [invalidFields, setInvalidFields] = useState({ child: false, date: false });
   const [requiredFieldErrors, setRequiredFieldErrors] = useState({ child: false, date: false });
   const invalidFieldTimers = useRef({ child: null, date: null });
+
+  const weekRange = useMemo(() => {
+    if (!weekFilterAnchor) return null;
+
+    const anchorDate = new Date(`${weekFilterAnchor}T00:00:00`);
+    if (Number.isNaN(anchorDate.getTime())) return null;
+
+    const day = anchorDate.getDay();
+    const mondayOffset = day === 0 ? -6 : 1 - day;
+
+    const monday = new Date(anchorDate);
+    monday.setDate(anchorDate.getDate() + mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+    friday.setHours(23, 59, 59, 999);
+
+    return { monday, friday };
+  }, [weekFilterAnchor]);
 
   // 1. Pobieranie danych
   const fetchData = async () => {
@@ -89,6 +113,19 @@ const DirectorAttendance = () => {
   };
 
   const filteredAbsences = absences.filter(absence => {
+    if (dayFilter && absence.date !== dayFilter) {
+      return false;
+    }
+
+    if (weekRange) {
+      const absenceDateObj = new Date(`${absence.date}T00:00:00`);
+      if (Number.isNaN(absenceDateObj.getTime())) return false;
+
+      if (absenceDateObj < weekRange.monday || absenceDateObj > weekRange.friday) {
+        return false;
+      }
+    }
+
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
 
@@ -135,13 +172,14 @@ const DirectorAttendance = () => {
 
   // 3. Otwieranie Modala
   const openModal = (absence = null) => {
+    const nextAbsence = absence && typeof absence === 'object' && 'id' in absence ? absence : null;
     setError('');
     setActionError('');
     setInvalidFields({ child: false, date: false });
     setRequiredFieldErrors({ child: false, date: false });
-    setEditingAbsence(absence);
-    if (absence) {
-      setFormData({ child: String(absence.child), date: absence.date });
+    setEditingAbsence(nextAbsence);
+    if (nextAbsence) {
+      setFormData({ child: String(nextAbsence.child), date: nextAbsence.date });
     } else {
       setFormData({ child: '', date: new Date().toISOString().split('T')[0] }); // Domyślnie dziś
     }
@@ -182,7 +220,7 @@ const DirectorAttendance = () => {
 
     setLoading(true);
     try {
-      if (editingAbsence) {
+      if (editingAbsence?.id) {
         await axios.patch(`http://127.0.0.1:8000/api/attendance/${editingAbsence.id}/`, formData, getAuthHeaders());
       } else {
         await axios.post('http://127.0.0.1:8000/api/attendance/', formData, getAuthHeaders());
@@ -240,7 +278,7 @@ const DirectorAttendance = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <button className="honey-btn" onClick={openModal}>
+        <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Nieobecność
         </button>
       </div>

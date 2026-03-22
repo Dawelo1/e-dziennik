@@ -1,6 +1,6 @@
 // frontend/src/director/DirectorMessages.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { getAuthHeaders, removeToken } from '../authUtils';
 import { getChatWebSocketUrl } from '../wsUtils';
@@ -24,6 +24,7 @@ const isSameParticipant = (left, right) => Number(left) === Number(right);
 
 const DirectorMessages = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -46,6 +47,7 @@ const DirectorMessages = () => {
   const MAX_RECONNECT_ATTEMPTS = 10;
   const BASE_RECONNECT_DELAY_MS = 1000;
   const MAX_RECONNECT_DELAY_MS = 30000;
+  const requestedParticipantId = Number(searchParams.get('participant')) || null;
 
   useEffect(() => {
     activeConversationRef.current = activeConversation;
@@ -380,6 +382,26 @@ const DirectorMessages = () => {
     }
   }, [activeConversation, markActiveConversationRead]);
 
+  useEffect(() => {
+    if (!requestedParticipantId || !conversations.length) return;
+
+    const targetConversation = conversations.find(conv => (
+      isSameParticipant(conv.participantId, requestedParticipantId)
+    ));
+
+    if (!targetConversation) return;
+    if (isSameParticipant(activeConversation?.participantId, requestedParticipantId)) return;
+
+    setActiveConversation(targetConversation);
+  }, [requestedParticipantId, conversations, activeConversation]);
+
+  const clearParticipantQuery = useCallback(() => {
+    if (!searchParams.get('participant')) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('participant');
+    setSearchParams(nextParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   
   const handleScroll = () => {
@@ -454,6 +476,7 @@ const DirectorMessages = () => {
                   key={conv.participantId}
                   className={`conv-item ${activeConversation?.participantId === conv.participantId ? 'active' : ''} ${hasUnread ? 'unread-conv' : ''}`}
                   onClick={() => {
+                    clearParticipantQuery();
                     setActiveConversation(conv);
                   }}
                 >

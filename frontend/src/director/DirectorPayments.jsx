@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css';
@@ -219,6 +220,9 @@ const RecurringTemplatesTable = ({ items, onEdit, onDelete, recurringSortField, 
 };
 
 const DirectorPayments = () => {
+  const [searchParams] = useSearchParams();
+  const debtMode = searchParams.get('debt') === '1';
+
 	const initialOneTimeForm = {
 		child: '',
 		amount: '',
@@ -243,8 +247,8 @@ const DirectorPayments = () => {
 	const [submitting, setSubmitting] = useState(false);
 	const [viewMode, setViewMode] = useState('one-time');
 	const [searchQuery, setSearchQuery] = useState('');
-	const [sortField, setSortField] = useState('added');
-	const [sortDirection, setSortDirection] = useState('desc');
+	const [sortField, setSortField] = useState(debtMode ? 'paid' : 'added');
+	const [sortDirection, setSortDirection] = useState(debtMode ? 'asc' : 'desc');
 	const [recurringSortField, setRecurringSortField] = useState('next_payment_date');
 	const [recurringSortDirection, setRecurringSortDirection] = useState('asc');
 
@@ -302,6 +306,13 @@ const DirectorPayments = () => {
 
 		loadInitialData();
 	}, []);
+
+	useEffect(() => {
+		if (!debtMode) return;
+		setViewMode('one-time');
+		setSortField('paid');
+		setSortDirection('asc');
+	}, [debtMode]);
 
 	const oneTimePayments = useMemo(() => payments, [payments]);
 	const visibleItems = isRecurringView ? recurringTemplates : oneTimePayments;
@@ -407,8 +418,8 @@ const DirectorPayments = () => {
 				const paidB = getTime(b.payment_date);
 
 				if (paidA === null && paidB === null) return 0;
-				if (paidA === null) return 1;
-				if (paidB === null) return -1;
+				if (paidA === null) return debtMode ? -1 : 1;
+				if (paidB === null) return debtMode ? 1 : -1;
 
 				const byPaid = paidA - paidB;
 				return sortDirection === 'asc' ? byPaid : -byPaid;
@@ -419,6 +430,7 @@ const DirectorPayments = () => {
 
 		return sorted;
 	}, [
+		debtMode,
 		filteredVisibleItems,
 		isRecurringView,
 		recurringSortDirection,
@@ -480,6 +492,7 @@ const DirectorPayments = () => {
 	const getAllChildrenIds = () => children.map((child) => child.id);
 
 	const handleToggleView = () => {
+		if (debtMode) return;
 		setViewMode((prev) => (prev === 'one-time' ? 'recurring' : 'one-time'));
 		setFormError('');
 		setActionError('');
@@ -643,8 +656,9 @@ const DirectorPayments = () => {
 						type="button"
 						className="payments-title-toggle"
 						onClick={handleToggleView}
-						title={isRecurringView ? 'Pokaż płatności jednorazowe' : 'Pokaż płatności cykliczne'}
-						aria-label={isRecurringView ? 'Pokaż płatności jednorazowe' : 'Pokaż płatności cykliczne'}
+						title={debtMode ? 'Tryb zaległości: płatności jednorazowe' : (isRecurringView ? 'Pokaż płatności jednorazowe' : 'Pokaż płatności cykliczne')}
+						aria-label={debtMode ? 'Tryb zaległości: płatności jednorazowe' : (isRecurringView ? 'Pokaż płatności jednorazowe' : 'Pokaż płatności cykliczne')}
+						disabled={debtMode}
 					>
 						<h3 className="settings-main-title" style={{ marginBottom: '12px' }}>
 							<span key={viewMode} className="payments-toggle-icon">
@@ -654,7 +668,9 @@ const DirectorPayments = () => {
 						</h3>
 					</button>
 					<p className="sub-text" style={{ marginTop: 0 }}>
-						Kliknij ikonę przy tytule, aby przełączyć widok.
+						{debtMode
+							? 'Tryb zaległości: najpierw nieopłacone (bez daty opłacenia), opłacone na końcu.'
+							: 'Kliknij ikonę przy tytule, aby przełączyć widok.'}
 					</p>
 				</div>
 				<div key={viewMode} className="payments-view-animated">
