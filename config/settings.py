@@ -29,6 +29,7 @@ def get_list_env(name, default=None):
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIST_DIR = BASE_DIR / 'frontend' / 'dist'
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,6 +45,8 @@ SECRET_KEY = os.getenv(
 DEBUG = get_bool_env('DJANGO_DEBUG', True)
 
 ALLOWED_HOSTS = get_list_env('DJANGO_ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
+if not DEBUG and '.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.onrender.com')
 
 DJANGO_REST_PASSWORDRESET_TOKEN_EXPIRY_TIME = 24 # Token ważny przez 24 godziny
 
@@ -103,6 +106,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', #dodane
     'django.middleware.common.CommonMiddleware', #dodane
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -140,6 +144,9 @@ TEMPLATES = [
         },
     },
 ]
+
+if FRONTEND_DIST_DIR.exists():
+    TEMPLATES[0]['DIRS'] = [FRONTEND_DIST_DIR]
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -191,6 +198,19 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+if (FRONTEND_DIST_DIR / 'assets').exists():
+    STATICFILES_DIRS = [FRONTEND_DIST_DIR / 'assets']
+else:
+    STATICFILES_DIRS = []
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
