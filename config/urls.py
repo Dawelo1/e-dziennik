@@ -21,7 +21,7 @@ urlpatterns = [
     path('api/communication/', include('communication.urls')),
     path('api/users/', include('users.urls')), 
     path('api-token-auth/', CustomAuthToken.as_view(), name='api_token_auth'),
-    re_path(r'^(?!api/|admin/|static/|media/).*$', TemplateView.as_view(template_name='index.html'), name='spa-fallback'),
+    re_path(r'^(?!api/|admin/|static/|media/|assets/).*$', TemplateView.as_view(template_name='index.html'), name='spa-fallback'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
