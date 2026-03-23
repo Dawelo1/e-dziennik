@@ -19,6 +19,8 @@ services:
         value: ""
       - key: DJANGO_SECRET_KEY
         sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: BOOTSTRAP_DIRECTOR_USERNAME
         sync: false
       - key: BOOTSTRAP_DIRECTOR_PASSWORD
