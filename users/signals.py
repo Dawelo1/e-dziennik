@@ -7,7 +7,6 @@ from django.db.models.signals import post_delete, pre_save
 from rest_framework.authtoken.models import Token
 from django.core.cache import cache
 from .models import User
-import os
 
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
@@ -62,8 +61,7 @@ def on_token_delete(sender, instance, **kwargs):
 @receiver(post_delete, sender=User)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
     if instance.avatar:
-        if os.path.isfile(instance.avatar.path):
-            os.remove(instance.avatar.path)
+        instance.avatar.delete(save=False)
 
 # 2. Usuń STARY plik, gdy wgrywany jest NOWY (lub avatara usunięto)
 @receiver(pre_save, sender=User)
@@ -80,5 +78,4 @@ def auto_delete_file_on_change(sender, instance, **kwargs):
     
     # Jeśli stare zdjęcie istnieje, a nowe jest inne (lub go nie ma) -> usuń stare
     if old_avatar and old_avatar != new_avatar:
-        if os.path.isfile(old_avatar.path):
-            os.remove(old_avatar.path)
+        old_avatar.delete(save=False)

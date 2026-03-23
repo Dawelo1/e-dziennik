@@ -7,6 +7,8 @@ from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 from PIL import Image
 import os
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 class Group(models.Model):
     GROUP_COLOR_CHOICES = [
@@ -214,11 +216,28 @@ class Post(models.Model):
         super().save(*args, **kwargs)
         
         if self.image:
-            img = Image.open(self.image.path)
+            self.image.open('rb')
+            img = Image.open(self.image)
             if img.height > 1200 or img.width > 1200:
                 output_size = (1200, 1200)
                 img.thumbnail(output_size)
-                img.save(self.image.path, quality=80, optimize=True)
+
+                buffer = BytesIO()
+                image_format = (img.format or 'JPEG').upper()
+
+                if image_format in {'JPEG', 'JPG'} and img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+
+                save_kwargs = {'optimize': True}
+                if image_format in {'JPEG', 'JPG'}:
+                    save_kwargs['quality'] = 80
+
+                img.save(buffer, format=image_format, **save_kwargs)
+                buffer.seek(0)
+
+                self.image.save(self.image.name, ContentFile(buffer.read()), save=False)
+                super().save(update_fields=['image'])
+            self.image.close()
     
     # Data dodania - automatycznie ustawi się "teraz"
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Data publikacji")
@@ -421,16 +440,27 @@ class GalleryImage(models.Model):
         super().save(*args, **kwargs) # Najpierw zapisz oryginał
 
         if self.image:
-            img_path = self.image.path
-            
-            # Otwórz zdjęcie
-            img = Image.open(img_path)
+            self.image.open('rb')
+            img = Image.open(self.image)
             
             # Jeśli zdjęcie jest bardzo duże (szerokość lub wysokość > 1200px)
             if img.height > 1200 or img.width > 1200:
                 output_size = (1200, 1200)
                 img.thumbnail(output_size) # Zmniejsz zachowując proporcje
-                
-                # Zapisz ponownie (nadpisz) z optymalizacją
-                # quality=70 znacznie zmniejsza wagę, a oko nie widzi różnicy
-                img.save(img_path, quality=80, optimize=True)
+
+                buffer = BytesIO()
+                image_format = (img.format or 'JPEG').upper()
+
+                if image_format in {'JPEG', 'JPG'} and img.mode in ('RGBA', 'P'):
+                    img = img.convert('RGB')
+
+                save_kwargs = {'optimize': True}
+                if image_format in {'JPEG', 'JPG'}:
+                    save_kwargs['quality'] = 80
+
+                img.save(buffer, format=image_format, **save_kwargs)
+                buffer.seek(0)
+
+                self.image.save(self.image.name, ContentFile(buffer.read()), save=False)
+                super().save(update_fields=['image'])
+            self.image.close()
