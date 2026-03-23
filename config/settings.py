@@ -48,6 +48,8 @@ ALLOWED_HOSTS = get_list_env('DJANGO_ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 if not DEBUG and '.onrender.com' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('.onrender.com')
 
+USE_CLOUDINARY = get_bool_env('USE_CLOUDINARY', False)
+
 DJANGO_REST_PASSWORDRESET_TOKEN_EXPIRY_TIME = 24 # Token ważny przez 24 godziny
 
 # Application definition
@@ -73,6 +75,9 @@ INSTALLED_APPS = [
     'communication', #dodane
      'django_rest_passwordreset', #reset hasła
 ]
+
+if USE_CLOUDINARY:
+    INSTALLED_APPS += ['cloudinary_storage', 'cloudinary']
 
 ASGI_APPLICATION = 'config.asgi.application'
 
@@ -222,6 +227,14 @@ AUTH_USER_MODEL = 'users.User' #dodane
 # Ustawienia mediów
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+if USE_CLOUDINARY:
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+        'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
+        'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+    }
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 DJANGO_REST_PASSWORDRESET_SERIALIZER_CLASS = 'users.serializers.CustomPasswordResetSerializer'
 

@@ -25,3 +25,11 @@ services:
         sync: false
       - key: BOOTSTRAP_DIRECTOR_EMAIL
         sync: false
+      - key: USE_CLOUDINARY
+        value: "True"
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
