@@ -13,6 +13,20 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
+
+def get_bool_env(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def get_list_env(name, default=None):
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default or []
+    return [item.strip() for item in value.split(',') if item.strip()]
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,12 +35,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o5npka%@$1jsnr!^tnvd@najyupksk$^9=r7hr#tb5(k=o*-(x'
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-o5npka%@$1jsnr!^tnvd@najyupksk$^9=r7hr#tb5(k=o*-(x',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = get_bool_env('DJANGO_DEBUG', True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = get_list_env('DJANGO_ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 
 DJANGO_REST_PASSWORDRESET_TOKEN_EXPIRY_TIME = 24 # Token ważny przez 24 godziny
 
@@ -95,12 +112,17 @@ MIDDLEWARE = [
     'core.middleware.ActiveDirectorMiddleware', #dodane
 ]
 
-# Pozwól Reactowi (zazwyczaj port 3000) łączyć się z API
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",      # Stary React
-    "http://localhost:5173",      # Vite (Twój obecny React)
-    "http://127.0.0.1:5173",      # Dla pewności wersja z IP
-]
+# Pozwól Reactowi (zazwyczaj port 3000/5173) łączyć się z API
+CORS_ALLOWED_ORIGINS = get_list_env(
+    'DJANGO_CORS_ALLOWED_ORIGINS',
+    [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ],
+)
+
+CSRF_TRUSTED_ORIGINS = get_list_env('DJANGO_CSRF_TRUSTED_ORIGINS', [])
 
 ROOT_URLCONF = 'config.urls'
 
@@ -168,6 +190,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

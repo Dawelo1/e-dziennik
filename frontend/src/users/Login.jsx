@@ -34,7 +34,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api-token-auth/', {
+      const response = await axios.post('/api-token-auth/', {
         username: username,
         password: password
       });
@@ -47,7 +47,7 @@ const Login = () => {
         navigate('/director/dashboard');
       } else {
         try {
-          const meRes = await axios.get('http://127.0.0.1:8000/api/users/me/', {
+          const meRes = await axios.get('/api/users/me/', {
             headers: { Authorization: `Token ${token}` },
           });
 

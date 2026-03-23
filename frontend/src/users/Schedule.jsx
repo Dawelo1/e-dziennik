@@ -49,7 +49,7 @@ const Schedule = () => {
     const markSeen = async () => {
       try {
         await axios.post(
-          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
+          '/api/users/notifications/mark-seen/',
           { section: 'schedule' },
           getAuthHeaders()
         );
@@ -66,7 +66,7 @@ const Schedule = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders());
+        const res = await axios.get('/api/calendar/activities/', getAuthHeaders());
         setActivities(res.data);
       } catch (err) {
         console.error("Błąd pobierania planu:", err);

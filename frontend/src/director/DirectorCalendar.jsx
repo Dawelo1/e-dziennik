@@ -27,7 +27,7 @@ const DirectorCalendar = () => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders());
+      const res = await axios.get('/api/calendar/closures/', getAuthHeaders());
       setClosures(res.data);
     } catch (err) { console.error(err); } 
     finally { setLoading(false); }
@@ -87,9 +87,9 @@ const DirectorCalendar = () => {
     setLoading(true);
     try {
       if (editingClosure) {
-        await axios.patch(`http://127.0.0.1:8000/api/calendar/closures/${editingClosure.id}/`, formData, getAuthHeaders());
+        await axios.patch(`/api/calendar/closures/${editingClosure.id}/`, formData, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/calendar/closures/', formData, getAuthHeaders());
+        await axios.post('/api/calendar/closures/', formData, getAuthHeaders());
       }
       setIsModalOpen(false);
       setClosureImpactTarget(null);
@@ -113,7 +113,7 @@ const DirectorCalendar = () => {
 
     try {
       if (!editingClosure) {
-        const attendanceRes = await axios.get('http://127.0.0.1:8000/api/attendance/', getAuthHeaders());
+        const attendanceRes = await axios.get('/api/attendance/', getAuthHeaders());
         const absencesForSelectedDate = attendanceRes.data.filter(
           (entry) => entry.date === formData.date
         ).length;
@@ -143,7 +143,7 @@ const DirectorCalendar = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/calendar/closures/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/calendar/closures/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {

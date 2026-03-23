@@ -85,7 +85,7 @@ const DirectorUsers = () => {
     if (users.length === 0) setLoading(true); 
 
     try {
-      const url = `http://127.0.0.1:8000/api/users/manage/?search=${searchQuery}`;
+      const url = `/api/users/manage/?search=${searchQuery}`;
       const res = await axios.get(url, getAuthHeaders());
       setUsers(res.data);
     } catch (err) {
@@ -181,7 +181,7 @@ const DirectorUsers = () => {
 
     try {
       const res = await axios.get(
-        'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
+        '/api/users/manage/generate-credentials/',
         getAuthHeaders()
       );
 
@@ -212,7 +212,7 @@ const DirectorUsers = () => {
 
     try {
       const res = await axios.get(
-        'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
+        '/api/users/manage/generate-credentials/',
         getAuthHeaders()
       );
 
@@ -310,13 +310,13 @@ const DirectorUsers = () => {
     try {
       if (editingUser) {
         await axios.patch(
-          `http://127.0.0.1:8000/api/users/manage/${editingUser.id}/`, 
+          `/api/users/manage/${editingUser.id}/`, 
           payload, 
           getAuthHeaders()
         );
       } else {
         await axios.post(
-          'http://127.0.0.1:8000/api/users/manage/', 
+          '/api/users/manage/', 
           payload, 
           getAuthHeaders()
         );
@@ -341,7 +341,7 @@ const DirectorUsers = () => {
     
     setLoading(true); // Pszczółka podczas usuwania
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/users/manage/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/users/manage/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       fetchUsers();
     } catch (err) {
@@ -356,7 +356,7 @@ const DirectorUsers = () => {
 
     try {
       const res = await axios.get(
-        `http://127.0.0.1:8000/api/users/manage/${user.id}/password-preview/`,
+        `/api/users/manage/${user.id}/password-preview/`,
         getAuthHeaders()
       );
 

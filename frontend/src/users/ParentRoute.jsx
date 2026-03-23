@@ -16,7 +16,7 @@ const ParentRoute = () => {
     }
 
     axios
-      .get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
+      .get('/api/users/me/', getAuthHeaders())
       .then((res) => {
         const user = res.data;
 

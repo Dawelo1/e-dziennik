@@ -41,7 +41,7 @@ const ResetPassword = () => {
 
     try {
       // 2. Wysłanie do Django
-      const response = await axios.post('http://127.0.0.1:8000/api/users/password_reset/confirm/', {
+      const response = await axios.post('/api/users/password_reset/confirm/', {
         token: token,
         password: password
       });

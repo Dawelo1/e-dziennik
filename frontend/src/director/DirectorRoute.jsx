@@ -11,7 +11,7 @@ const DirectorRoute = () => {
 
   useEffect(() => {
     // Sprawdzamy uprawnienia w API
-    axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
+    axios.get('/api/users/me/', getAuthHeaders())
       .then(res => {
         setIsDirector(res.data.is_director);
       })

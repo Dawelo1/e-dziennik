@@ -47,8 +47,8 @@ const DirectorPosts = () => {
   const fetchData = async () => {
     try {
       const [postsRes, groupsRes] = await Promise.all([
-        axios.get('http://127.0.0.1:8000/api/newsfeed/', getAuthHeaders()),
-        axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders())
+        axios.get('/api/newsfeed/', getAuthHeaders()),
+        axios.get('/api/groups/', getAuthHeaders())
       ]);
       // Sortowanie: Najnowsze na górze
       setPosts(postsRes.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
@@ -194,14 +194,14 @@ const DirectorPosts = () => {
 
     try {
       if (editingPost) {
-        await axios.patch(`http://127.0.0.1:8000/api/newsfeed/${editingPost.id}/`, dataToSend, {
+        await axios.patch(`/api/newsfeed/${editingPost.id}/`, dataToSend, {
           headers: { 
              ...getAuthHeaders().headers,
              'Content-Type': 'multipart/form-data'
           }
         });
       } else {
-        await axios.post('http://127.0.0.1:8000/api/newsfeed/', dataToSend, {
+        await axios.post('/api/newsfeed/', dataToSend, {
           headers: { 
              ...getAuthHeaders().headers,
              'Content-Type': 'multipart/form-data'
@@ -223,7 +223,7 @@ const DirectorPosts = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/newsfeed/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/newsfeed/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {

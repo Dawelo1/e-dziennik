@@ -16,14 +16,14 @@ const Gallery = () => {
   const getAvatarUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return `${url}`;
   };
 
   useEffect(() => {
     const markSeen = async () => {
       try {
         await axios.post(
-          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
+          '/api/users/notifications/mark-seen/',
           { section: 'gallery' },
           getAuthHeaders()
         );
@@ -40,8 +40,8 @@ const Gallery = () => {
     const fetchAlbums = async () => {
       try {
         const [res, directorStatusRes] = await Promise.all([
-          axios.get('http://127.0.0.1:8000/api/gallery/', getAuthHeaders()),
-          axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders())
+          axios.get('/api/gallery/', getAuthHeaders()),
+          axios.get('/api/users/director-status/', getAuthHeaders())
         ]);
         
         // Filtrujemy puste albumy
@@ -74,7 +74,7 @@ const Gallery = () => {
 
     // 2. Strzał do API
     try {
-      await axios.post(`http://127.0.0.1:8000/api/gallery/${albumId}/like/`, {}, getAuthHeaders());
+      await axios.post(`/api/gallery/${albumId}/like/`, {}, getAuthHeaders());
     } catch (err) {
       console.error("Błąd lajkowania:", err);
       // Opcjonalnie: Cofnij zmianę w razie błędu

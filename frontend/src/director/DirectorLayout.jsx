@@ -28,7 +28,7 @@ const DirectorLayout = () => {
 
   useEffect(() => {
     // 1. Sprawdzenie usera
-    axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
+    axios.get('/api/users/me/', getAuthHeaders())
       .then(response => setUser(response.data))
       .catch(() => {
         removeToken();
@@ -111,7 +111,7 @@ const DirectorLayout = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://127.0.0.1:8000/api/users/logout/', {}, getAuthHeaders());
+      await axios.post('/api/users/logout/', {}, getAuthHeaders());
     } catch (e) { console.log(e); }
     removeToken();
     navigate('/');
@@ -120,7 +120,7 @@ const DirectorLayout = () => {
   const getAvatarUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return `${url}`;
   };
 
   if (!user) return null;

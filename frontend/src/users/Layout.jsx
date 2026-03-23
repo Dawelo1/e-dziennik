@@ -30,7 +30,7 @@ const Layout = () => {
 
   const fetchNotificationSummary = useCallback(async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/users/notifications/summary/', getAuthHeaders());
+      const response = await axios.get('/api/users/notifications/summary/', getAuthHeaders());
       setNotificationCounts({
         schedule: Number(response.data.schedule) || 0,
         gallery: Number(response.data.gallery) || 0,
@@ -52,7 +52,7 @@ const Layout = () => {
     const config = getAuthHeaders();
 
     // 1. Pobierz dane usera
-    axios.get('http://127.0.0.1:8000/api/users/me/', config)
+    axios.get('/api/users/me/', config)
       .then(response => setUser(response.data))
       .catch(() => {
         localStorage.removeItem('token');
@@ -136,7 +136,7 @@ const Layout = () => {
   const getAvatarUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return `${url}`;
   };
 
   const handleLogout = async () => {
@@ -149,7 +149,7 @@ const Layout = () => {
     // 2. Próbujemy powiadomić serwer (fire and forget)
     if (token) {
       try {
-        await axios.post('http://127.0.0.1:8000/api/users/logout/', {}, {
+        await axios.post('/api/users/logout/', {}, {
           headers: { Authorization: `Token ${token}` }
         });
       } catch (error) { 

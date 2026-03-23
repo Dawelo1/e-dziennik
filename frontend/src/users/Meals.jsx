@@ -80,7 +80,7 @@ const Meals = () => {
         const end = formatDateAPI(friday);
 
         const res = await axios.get(
-          `http://127.0.0.1:8000/api/menu/?start_date=${start}&end_date=${end}`,
+          `/api/menu/?start_date=${start}&end_date=${end}`,
           getAuthHeaders()
         );
         setMenuData(res.data);
