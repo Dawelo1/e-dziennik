@@ -18,6 +18,7 @@ import Schedule from './Schedule';
 import Calendar from './Calendar';
 import Messages from './Messages';
 import Gallery from './Gallery';
+import { ParentChildProvider } from './ParentChildContext';
 
 // --- NOWE IMPORTY DLA DYREKTORA ---
 import DirectorRoute from '../director/DirectorRoute';
@@ -52,7 +53,7 @@ function App() {
         {/* ==========================
             STREFA RODZICA (Chroniona)
            ========================== */}
-        <Route element={<Layout />}>
+        <Route element={<ParentChildProvider><Layout /></ParentChildProvider>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/attendance" element={<Attendance />} />

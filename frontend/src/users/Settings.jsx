@@ -6,6 +6,7 @@ import './Settings.css';
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
 import { toAbsoluteMediaUrl } from '../apiConfig';
+import { useParentChild } from './ParentChildContext';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
   FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
@@ -13,6 +14,7 @@ import {
 from 'react-icons/fa';
 
 const Settings = () => {
+  const { children: parentChildren, selectedChild } = useParentChild();
   const [currentData, setCurrentData] = useState({
     email: '', phone_number: '', username: '', first_name: '', last_name: '', avatar: null
   });
@@ -57,12 +59,14 @@ const Settings = () => {
       })
       .catch(err => console.error(err));
 
-    axios.get('/api/children/', getAuthHeaders())
-      .then(res => setChildren(res.data))
-      .catch(err => console.error(err));
   };
 
   useEffect(() => { fetchUserData(); }, []);
+  useEffect(() => { setChildren(parentChildren); }, [parentChildren]);
+  const visibleChildren = selectedChild
+    ? children.filter((child) => child.id === selectedChild.id)
+    : children;
+
 
   // 1. WYBÓR PLIKU I OTWARCIE CROPPERA
   const handleFileChange = async (e) => {
@@ -396,7 +400,7 @@ const Settings = () => {
 
         {/* DZIECI */}
         <div className="settings-column">
-          {children.map(child => (
+          {visibleChildren.map(child => (
             <div key={child.id} className="settings-wide-card medical-card">
                <div className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
                  <FaNotesMedical color="#e0245e"/> {child.first_name} {child.last_name}

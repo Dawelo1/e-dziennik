@@ -7,6 +7,8 @@ from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure
 from drf_writable_nested import WritableNestedModelSerializer
 
 class ChildSerializer(serializers.ModelSerializer):
+    group_name = serializers.CharField(source='group.name', read_only=True)
+
     # Automatyczne rozszyfrowanie medical_info przy odczycie
     class Meta:
         model = Child

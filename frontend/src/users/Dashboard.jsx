@@ -21,6 +21,7 @@ import {
 from 'react-icons/fa';
 import { formatDateWithDots } from '../dateUtils';
 import { toAbsoluteMediaUrl } from '../apiConfig';
+import { useParentChild } from './ParentChildContext';
 
 const POSTS_REFRESH_MS = 60 * 1000;
 const EVENTS_PAYMENTS_REFRESH_MS = 5 * 60 * 1000;
@@ -28,6 +29,7 @@ const PROFILE_REFRESH_MS = 15 * 60 * 1000;
 const POLL_TICK_MS = 30 * 1000;
 
 const Dashboard = () => {
+  const { selectedChildId } = useParentChild();
   const [posts, setPosts] = useState([]);
   const [events, setEvents] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -158,6 +160,7 @@ const Dashboard = () => {
     });
 
     payments.forEach(pay => {
+      if (selectedChildId && Number(pay.child) !== Number(selectedChildId)) return;
       if (!pay.is_paid) {
         const createDate = new Date(pay.created_at);
         const dueDate = new Date(createDate);

@@ -37,6 +37,7 @@ const Login = () => {
 
       // Zapisujemy token (używając funkcji z authUtils)
       setToken(token, rememberMe);
+      localStorage.removeItem('activeChildId');
       
       // Logika przekierowania zależna od roli:
       if (is_director) {

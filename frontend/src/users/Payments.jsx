@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import './Payments.css';
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import { useParentChild } from './ParentChildContext';
 import { 
   FaMoneyBillWave, 
   FaCopy, 
@@ -16,6 +17,7 @@ import {
 from 'react-icons/fa';
 
 const Payments = () => {
+  const { selectedChildId } = useParentChild();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
@@ -71,9 +73,14 @@ const Payments = () => {
     setTimeout(() => setCopiedIban(false), 2000);
   };
 
+  const filteredPayments = useMemo(() => {
+    if (!selectedChildId) return payments;
+    return payments.filter((payment) => Number(payment.child) === Number(selectedChildId));
+  }, [payments, selectedChildId]);
+
   // Filtrowanie płatności
-  const unpaidPayments = payments.filter(p => !p.is_paid);
-  const paidPayments = payments.filter(p => p.is_paid);
+  const unpaidPayments = filteredPayments.filter(p => !p.is_paid);
+  const paidPayments = filteredPayments.filter(p => p.is_paid);
 
   // Suma do zapłaty
   const totalUnpaid = unpaidPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);

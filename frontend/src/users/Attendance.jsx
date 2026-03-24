@@ -4,13 +4,13 @@ import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './Attendance.css';
-import { FaUserSlash, FaChild, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
+import { FaUserSlash, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import { useParentChild } from './ParentChildContext';
 
 const Attendance = () => {
-  const [children, setChildren] = useState([]);
-  const [selectedChild, setSelectedChild] = useState(null);
+  const { selectedChild, loadingChildren } = useParentChild();
   
   const [absencesMap, setAbsencesMap] = useState({});
   
@@ -27,10 +27,6 @@ const Attendance = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const childrenRes = await axios.get('/api/children/', getAuthHeaders());
-        setChildren(childrenRes.data);
-        if (childrenRes.data.length > 0) setSelectedChild(childrenRes.data[0].id);
-
         const closuresRes = await axios.get('/api/calendar/closures/', getAuthHeaders());
         
         // ZMIANA: Mapujemy listę na obiekt { data: powód }
@@ -54,7 +50,7 @@ const Attendance = () => {
       .then(res => {
         const map = {};
         res.data.forEach(record => {
-          if (record.child === selectedChild && record.status === 'absent') {
+          if (record.child === selectedChild?.id && record.status === 'absent') {
             map[record.date] = record.id;
           }
         });
@@ -121,8 +117,9 @@ const Attendance = () => {
 
     try {
       if (type === 'add') {
+        if (!selectedChild) return;
         await axios.post('/api/attendance/', {
-          child: selectedChild,
+          child: selectedChild.id,
           date: date
         }, getAuthHeaders());
         setMessage({ type: 'success', text: `Zgłoszono nieobecność na dzień ${formatDisplayDate(date)}.` });
@@ -175,30 +172,13 @@ const Attendance = () => {
     return null;
   };
 
-  if (loading) return <LoadingScreen message="Wczytywanie obecności..." />;
+  if (loading || loadingChildren) return <LoadingScreen message="Wczytywanie obecności..." />;
 
   return (
     <div className="attendance-container">
       <h2 className="page-title">
         <FaUserSlash /> Zgłoś Nieobecność
       </h2>
-
-      {children.length > 1 && (
-        <div className="child-selector">
-          <label>Wybierz dziecko:</label>
-          <div className="child-buttons">
-            {children.map(child => (
-              <button 
-                key={child.id}
-                className={`child-btn ${selectedChild === child.id ? 'active' : ''}`}
-                onClick={() => setSelectedChild(child.id)}
-              >
-                <FaChild /> {child.first_name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="attendance-grid">
         <div className="calendar-card">

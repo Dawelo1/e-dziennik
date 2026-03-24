@@ -7,11 +7,12 @@ import beeLogo from '../assets/bee.png';
 import { getToken, removeToken, getAuthHeaders } from '../authUtils';
 import { getChatWebSocketUrl } from '../wsUtils';
 import { toAbsoluteMediaUrl } from '../apiConfig';
+import { useParentChild } from './ParentChildContext';
 
 // Ikony
 import { 
   FaHome, FaEnvelope, FaUserSlash, FaCalendarAlt, FaCalendarDay, 
-  FaUtensils, FaMoneyBillWave, FaCog, FaSignOutAlt, FaInfoCircle, FaImages
+  FaUtensils, FaMoneyBillWave, FaCog, FaSignOutAlt, FaInfoCircle, FaImages, FaChild
 } from 'react-icons/fa';
 
 const Layout = () => {
@@ -28,6 +29,13 @@ const Layout = () => {
     calendar: 0,
     payments: 0,
   });
+  const {
+    children,
+    selectedChild,
+    selectChild,
+    loadingChildren,
+    hasMultipleChildren,
+  } = useParentChild();
 
   const fetchNotificationSummary = useCallback(async () => {
     try {
@@ -144,6 +152,7 @@ const Layout = () => {
     
     // 1. Najpierw czyścimy lokalnie i przekierowujemy
     removeToken();
+    localStorage.removeItem('activeChildId');
     navigate('/');
 
     // 2. Próbujemy powiadomić serwer (fire and forget)
@@ -160,9 +169,14 @@ const Layout = () => {
 
   if (!user) return null;
 
-  const parentGroupText = user.is_parent && Array.isArray(user.child_groups) && user.child_groups.length > 0
-    ? ` • GRUPA ${user.child_groups.join(', ')}`
+  const selectedChildName = selectedChild
+    ? `${selectedChild.first_name || ''} ${selectedChild.last_name || ''}`.trim()
     : '';
+  const selectedChildGroup = selectedChild?.group_name || '';
+
+  const parentDisplayName = selectedChildName || `${user.first_name} ${user.last_name}`;
+  const parentRoleText = selectedChildGroup ? `Rodzic • Grupa ${selectedChildGroup}` : 'Rodzic';
+  const requiresChildSelection = user.is_parent && hasMultipleChildren && !loadingChildren && !selectedChild;
 
   return (
     <div className="app-container">
@@ -195,8 +209,8 @@ const Layout = () => {
               )}
             </div>
             <div className="user-name-box">
-              <span className="user-name">{user.first_name} {user.last_name}</span>
-              <span className="user-role">{user.is_director ? 'Dyrektor' : `Rodzic${parentGroupText}`}</span>
+              <span className="user-name">{user.is_director ? `${user.first_name} ${user.last_name}` : parentDisplayName}</span>
+              <span className="user-role">{user.is_director ? 'Dyrektor' : parentRoleText}</span>
             </div>
           </div>
           
@@ -280,6 +294,26 @@ const Layout = () => {
           <Outlet />
         </main>
       </div>
+
+      {requiresChildSelection && (
+        <div className="child-pick-overlay">
+          <div className="child-pick-modal">
+            <h3>Wybierz dziecko</h3>
+            <p>Masz wiecej niz jedno dziecko. Wybierz aktywne dziecko, dla ktorego chcesz przegladac dane.</p>
+            <div className="child-pick-list">
+              {children.map((child) => (
+                <button
+                  key={child.id}
+                  className="child-pick-btn"
+                  onClick={() => selectChild(child.id)}
+                >
+                  <FaChild /> {child.first_name} {child.last_name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
