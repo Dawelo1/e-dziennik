@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import axios from 'axios';
-import { getAuthHeaders, getToken, removeToken } from '../authUtils';
+import { getActiveChildId, getAuthHeaders, getToken, removeToken, setActiveChildId } from '../authUtils';
 import LoadingScreen from './LoadingScreen';
 
 const ParentRoute = () => {
@@ -17,7 +17,7 @@ const ParentRoute = () => {
 
     axios
       .get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
-      .then((res) => {
+      .then(async (res) => {
         const user = res.data;
 
         if (user.is_director) {
@@ -30,6 +30,17 @@ const ParentRoute = () => {
           removeToken();
           setAccessState('missing-child');
           return;
+        }
+
+        if (user.is_parent) {
+          const childrenRes = await axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders());
+          const children = Array.isArray(childrenRes.data) ? childrenRes.data : [];
+          const activeChildId = getActiveChildId();
+          const activeChildExists = children.some((child) => child.id === activeChildId);
+
+          if (!activeChildExists && children.length > 0) {
+            setActiveChildId(children[0].id);
+          }
         }
 
         setAccessState('allowed');

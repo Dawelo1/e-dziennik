@@ -385,6 +385,8 @@ const DirectorUsers = () => {
       return <LoadingScreen message="Przetwarzanie danych..." />;
   }
 
+  const visibleUsers = users.filter((user) => !user.is_director);
+
   return (
     <div className="director-container">
       
@@ -421,10 +423,10 @@ const DirectorUsers = () => {
             </tr>
           </thead>
           <tbody>
-            {users.length === 0 ? (
+            {visibleUsers.length === 0 ? (
               <tr><td colSpan="5" className="text-center">Brak użytkowników spełniających kryteria.</td></tr>
             ) : (
-              users.map(user => (
+              visibleUsers.map(user => (
                 <tr key={user.id}>
                   <td>
                     <div className="user-cell">

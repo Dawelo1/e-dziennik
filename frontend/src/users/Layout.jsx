@@ -4,7 +4,14 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
 import beeLogo from '../assets/bee.png';
-import { getToken, removeToken, getAuthHeaders } from '../authUtils';
+import {
+  getToken,
+  removeToken,
+  getAuthHeaders,
+  getAuthConfigWithActiveChild,
+  getActiveChildId,
+  setActiveChildId,
+} from '../authUtils';
 import { getChatWebSocketUrl } from '../wsUtils';
 
 // Ikony
@@ -27,10 +34,11 @@ const Layout = () => {
     calendar: 0,
     payments: 0,
   });
+  const [activeChildGroupName, setActiveChildGroupName] = useState('');
 
   const fetchNotificationSummary = useCallback(async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/users/notifications/summary/', getAuthHeaders());
+      const response = await axios.get('http://127.0.0.1:8000/api/users/notifications/summary/', getAuthConfigWithActiveChild());
       setNotificationCounts({
         schedule: Number(response.data.schedule) || 0,
         gallery: Number(response.data.gallery) || 0,
@@ -53,7 +61,40 @@ const Layout = () => {
 
     // 1. Pobierz dane usera
     axios.get('http://127.0.0.1:8000/api/users/me/', config)
-      .then(response => setUser(response.data))
+      .then(async (response) => {
+        const me = response.data;
+        setUser(me);
+
+        if (!me.is_parent) return;
+
+        try {
+          const [childrenRes, groupsRes] = await Promise.all([
+            axios.get('http://127.0.0.1:8000/api/children/', config),
+            axios.get('http://127.0.0.1:8000/api/groups/', config),
+          ]);
+
+          const children = Array.isArray(childrenRes.data) ? childrenRes.data : [];
+          const groups = Array.isArray(groupsRes.data) ? groupsRes.data : [];
+
+          if (children.length === 0) {
+            setActiveChildGroupName('');
+            return;
+          }
+
+          const storedChildId = getActiveChildId();
+          const selectedChild = children.find((child) => child.id === storedChildId) || children[0];
+
+          if (selectedChild.id !== storedChildId) {
+            setActiveChildId(selectedChild.id);
+          }
+
+          const selectedGroup = groups.find((group) => group.id === selectedChild.group);
+          setActiveChildGroupName(selectedGroup?.name || '');
+        } catch (err) {
+          console.error('Błąd pobierania aktywnej grupy dziecka:', err);
+          setActiveChildGroupName('');
+        }
+      })
       .catch(() => {
         localStorage.removeItem('token');
         navigate('/');
@@ -160,8 +201,8 @@ const Layout = () => {
 
   if (!user) return null;
 
-  const parentGroupText = user.is_parent && Array.isArray(user.child_groups) && user.child_groups.length > 0
-    ? ` • GRUPA ${user.child_groups.join(', ')}`
+  const parentGroupText = user.is_parent && activeChildGroupName
+    ? ` • GRUPA ${activeChildGroupName}`
     : '';
 
   return (

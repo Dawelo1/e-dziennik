@@ -5,7 +5,7 @@ import './Gallery.css';
 import ImageGrid from './ImageGrid';
 import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp, FaUserTie } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from '../authUtils';
+import { getAuthConfigWithActiveChild, getAuthHeaders } from '../authUtils';
 import { formatDateWithDots } from '../dateUtils';
 
 const Gallery = () => {
@@ -40,7 +40,7 @@ const Gallery = () => {
     const fetchAlbums = async () => {
       try {
         const [res, directorStatusRes] = await Promise.all([
-          axios.get('http://127.0.0.1:8000/api/gallery/', getAuthHeaders()),
+          axios.get('http://127.0.0.1:8000/api/gallery/', getAuthConfigWithActiveChild()),
           axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders())
         ]);
         

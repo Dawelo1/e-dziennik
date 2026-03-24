@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Schedule.css';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from '../authUtils';
+import { getAuthConfigWithActiveChild, getAuthHeaders } from '../authUtils';
 import { 
   FaCalendarDay, 
   FaChevronLeft, 
@@ -66,7 +66,7 @@ const Schedule = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthHeaders());
+        const res = await axios.get('http://127.0.0.1:8000/api/calendar/activities/', getAuthConfigWithActiveChild());
         setActivities(res.data);
       } catch (err) {
         console.error("Błąd pobierania planu:", err);

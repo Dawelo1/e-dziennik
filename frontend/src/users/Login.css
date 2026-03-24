@@ -196,6 +196,58 @@
   animation: shake 0.5s; /* Opcjonalnie: animacja potrząśnięcia */
 }
 
+.child-login-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.child-login-selector h2 {
+  margin: 0;
+  color: #5d4037;
+  font-size: 28px;
+}
+
+.child-login-selector p {
+  margin: 0 0 8px;
+  color: #6b6b6b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.child-login-list {
+  display: grid;
+  gap: 10px;
+}
+
+.child-login-btn {
+  border: 1px solid #e7d18a;
+  background: #fff9e7;
+  color: #4b352a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.child-login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(139, 96, 34, 0.14);
+}
+
+.child-login-back {
+  margin-top: 8px;
+  border: none;
+  background: transparent;
+  color: #7a7a7a;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 13px;
+}
+
 /* Animacja potrząśnięcia przy błędzie */
 @keyframes shake {
   0% { transform: translateX(0); }
