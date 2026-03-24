@@ -177,7 +177,7 @@ const DirectorDashboard = () => {
         </div>
 
         <div className="attendance-chart-card">
-          <div className="attendance-chart">
+          <div className={attendanceRange === 'month' ? 'attendance-chart is-month' : 'attendance-chart'}>
             {attendanceSeries.map(point => (
               <div key={point.date} className="attendance-bar-item" title={`${point.label}: ${point.present}/${point.total} (${point.attendance_rate}%)`}>
                 <div className="attendance-bar-track">

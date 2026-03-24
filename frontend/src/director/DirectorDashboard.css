@@ -223,12 +223,27 @@
   box-shadow: 0 5px 20px rgba(0,0,0,0.05);
 }
 
+.attendance-chart-card {
+  overflow: hidden;
+}
+
 .attendance-chart {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
   min-height: 220px;
+}
+
+.attendance-chart.is-month {
+  justify-content: space-between;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+}
+
+.attendance-chart.is-month .attendance-bar-item {
+  flex: 1 0 28px;
 }
 
 .attendance-bar-item {
