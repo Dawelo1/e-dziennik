@@ -361,3 +361,54 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             'username': user.username,
             'password': user.director_password_preview,
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='set-parent-lock')
+    def set_parent_lock(self, request, pk=None):
+        user = self.get_object()
+
+        if not user.is_parent or user.is_teacher or user.is_director:
+            return Response(
+                {'detail': 'Blokowanie/odblokowanie jest dostępne tylko dla kont rodzica.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        lock_raw = request.data.get('lock', None)
+
+        if isinstance(lock_raw, bool):
+            should_lock = lock_raw
+        elif isinstance(lock_raw, str):
+            normalized = lock_raw.strip().lower()
+            if normalized in {'true', '1', 'tak', 'yes'}:
+                should_lock = True
+            elif normalized in {'false', '0', 'nie', 'no'}:
+                should_lock = False
+            else:
+                return Response(
+                    {'detail': 'Nieprawidłowa wartość pola "lock". Użyj true/false.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        elif isinstance(lock_raw, int):
+            if lock_raw in (0, 1):
+                should_lock = bool(lock_raw)
+            else:
+                return Response(
+                    {'detail': 'Nieprawidłowa wartość pola "lock". Użyj true/false.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {'detail': 'Pole "lock" jest wymagane (true/false).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.is_active = not should_lock
+        user.save(update_fields=['is_active'])
+
+        return Response(
+            {
+                'id': user.id,
+                'is_active': user.is_active,
+                'locked': not user.is_active,
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -10,7 +10,7 @@ import LoadingScreen from '../users/LoadingScreen';
 // Ikony
 import { 
   FaUsers, FaSearch, FaPlus, FaEdit, FaTrash, 
-  FaUserTie, FaUser, FaChalkboardTeacher, FaKey, FaSave, FaExclamationTriangle, FaTrashAlt, FaEye
+  FaUserTie, FaUser, FaChalkboardTeacher, FaKey, FaSave, FaExclamationTriangle, FaTrashAlt, FaEye, FaLock, FaLockOpen
 } from 'react-icons/fa';
 
 const DirectorUsers = () => {
@@ -35,8 +35,10 @@ const DirectorUsers = () => {
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [lockTarget, setLockTarget] = useState(null);
   const [previewData, setPreviewData] = useState(null);
   const [previewLoadingUserId, setPreviewLoadingUserId] = useState(null);
+  const [lockLoadingUserId, setLockLoadingUserId] = useState(null);
   const [generatingCredentials, setGeneratingCredentials] = useState(false);
   const [generatingPassword, setGeneratingPassword] = useState(false);
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
@@ -375,6 +377,45 @@ const DirectorUsers = () => {
     }
   };
 
+  const handleToggleParentLock = (user) => {
+    if (!user?.is_parent || user?.is_teacher || user?.is_director) return;
+    setActionError('');
+    setLockTarget(user);
+  };
+
+  const handleConfirmToggleParentLock = async () => {
+    if (!lockTarget) return;
+
+    setActionError('');
+    setLockLoadingUserId(lockTarget.id);
+
+    const shouldLock = Boolean(lockTarget.is_active);
+
+    try {
+      const res = await axios.post(
+        `http://127.0.0.1:8000/api/users/manage/${lockTarget.id}/set-parent-lock/`,
+        { lock: shouldLock },
+        getAuthHeaders()
+      );
+
+      const nextIsActive = typeof res.data?.is_active === 'boolean'
+        ? res.data.is_active
+        : !shouldLock;
+
+      setUsers((prev) =>
+        prev.map((item) =>
+          item.id === lockTarget.id ? { ...item, is_active: nextIsActive } : item
+        )
+      );
+      setLockTarget(null);
+    } catch (err) {
+      const apiDetail = err.response?.data?.detail;
+      setActionError(apiDetail || 'Nie udało się zaktualizować statusu konta. Spróbuj ponownie później.');
+    } finally {
+      setLockLoadingUserId(null);
+    }
+  };
+
   // --- ZMIANA: EKRAN ŁADOWANIA ---
   // Wyświetlamy go, gdy trwa pobieranie danych LUB zapisywanie
   if (loading && users.length === 0) {
@@ -479,6 +520,16 @@ const DirectorUsers = () => {
                     <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(user); }} title="Usuń">
                       <FaTrash />
                     </button>
+                    {user.is_parent && !user.is_teacher && !user.is_director && (
+                      <button
+                        className={`action-icon-btn lock-toggle ${user.is_active ? 'block' : 'unblock'}`}
+                        onClick={() => handleToggleParentLock(user)}
+                        title={user.is_active ? 'Zablokuj konto rodzica' : 'Odblokuj konto rodzica'}
+                        disabled={lockLoadingUserId === user.id}
+                      >
+                        {user.is_active ? <FaLockOpen /> : <FaLock />}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -715,6 +766,35 @@ const DirectorUsers = () => {
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lockTarget && (
+        <div className="modal-overlay">
+          <div className="delete-modal-content">
+            <div className="warning-icon">
+              {lockTarget.is_active ? <FaLock /> : <FaLockOpen />}
+            </div>
+            <h3>{lockTarget.is_active ? 'Zablokować konto rodzica?' : 'Odblokować konto rodzica?'}</h3>
+            <p>
+              Czy na pewno chcesz
+              {lockTarget.is_active ? ' zablokować ' : ' odblokować '}
+              konto użytkownika
+              {` "${lockTarget.first_name || ''} ${lockTarget.last_name || ''}"`.trim()}
+              ?
+            </p>
+            {actionError && <div className="form-error">{actionError}</div>}
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => { setActionError(''); setLockTarget(null); }}>Anuluj</button>
+              <button
+                className={`modal-btn confirm ${lockTarget.is_active ? 'danger' : 'success'}`}
+                onClick={handleConfirmToggleParentLock}
+                disabled={lockLoadingUserId === lockTarget.id}
+              >
+                {lockTarget.is_active ? <FaLock /> : <FaLockOpen />} {lockTarget.is_active ? 'Zablokuj' : 'Odblokuj'}
+              </button>
             </div>
           </div>
         </div>

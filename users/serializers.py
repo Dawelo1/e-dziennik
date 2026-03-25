@@ -85,7 +85,7 @@ class UserManagementSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_director', 'is_parent', 'is_teacher', 'avatar', 'avatar_url', 'password', 'password_generated', 'can_preview_password', 'last_login']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_active', 'is_director', 'is_parent', 'is_teacher', 'avatar', 'avatar_url', 'password', 'password_generated', 'can_preview_password', 'last_login']
         read_only_fields = ['last_login']
         extra_kwargs = {'password': {'write_only': True, 'required': False}} # Hasło write-only
 

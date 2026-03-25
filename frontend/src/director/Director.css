@@ -477,6 +477,8 @@
 .action-icon-btn.preview:hover { color: #f2c94c; }
 .action-icon-btn.download:hover { color: #4a90e2; }
 .action-icon-btn.delete:hover { color: #e57373; }
+.action-icon-btn.lock-toggle.block:hover { color: #ef5350; }
+.action-icon-btn.lock-toggle.unblock:hover { color: #43a047; }
 
 .action-icon-btn:disabled {
   color: #c8c8c8;
