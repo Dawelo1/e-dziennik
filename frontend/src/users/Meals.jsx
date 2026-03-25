@@ -33,7 +33,7 @@ const Meals = () => {
   const currentRealMonday = getMonday(todayReal);
 
   const minAllowedDate = new Date(currentRealMonday);
-  minAllowedDate.setDate(minAllowedDate.getDate() - 14);
+  minAllowedDate.setDate(minAllowedDate.getDate() - 21);
 
   const isPrevDisabled = monday <= minAllowedDate;
 

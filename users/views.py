@@ -209,12 +209,22 @@ class NotificationSummaryView(APIView):
         latest_id = int(latest_id or 0)
 
         if selected_child is None:
-            user.last_seen_payment_id = latest_id
-            user.save(update_fields=['last_seen_payment_id'])
+            # Keep the global cursor monotonic so fallback queries stay stable.
+            current_global = int(user.last_seen_payment_id or 0)
+            next_global = max(current_global, latest_id)
+            if next_global != current_global:
+                user.last_seen_payment_id = next_global
+                user.save(update_fields=['last_seen_payment_id'])
             return
 
         cache_key = self._payments_seen_cache_key(user.id, selected_child.id)
         cache.set(cache_key, latest_id, timeout=self.PAYMENT_SEEN_CACHE_TIMEOUT)
+
+        # Persist fallback cursor across sessions/logins when child-scoped cache is missing.
+        current_global = int(user.last_seen_payment_id or 0)
+        if latest_id > current_global:
+            user.last_seen_payment_id = latest_id
+            user.save(update_fields=['last_seen_payment_id'])
 
     def get(self, request):
         user = request.user

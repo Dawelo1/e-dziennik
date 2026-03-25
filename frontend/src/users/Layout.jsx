@@ -65,7 +65,10 @@ const Layout = () => {
         const me = response.data;
         setUser(me);
 
-        if (!me.is_parent) return;
+        if (!me.is_parent) {
+          fetchNotificationSummary();
+          return;
+        }
 
         try {
           const [childrenRes, groupsRes] = await Promise.all([
@@ -78,6 +81,7 @@ const Layout = () => {
 
           if (children.length === 0) {
             setActiveChildGroupName('');
+            fetchNotificationSummary();
             return;
           }
 
@@ -90,17 +94,17 @@ const Layout = () => {
 
           const selectedGroup = groups.find((group) => group.id === selectedChild.group);
           setActiveChildGroupName(selectedGroup?.name || '');
+          fetchNotificationSummary();
         } catch (err) {
           console.error('Błąd pobierania aktywnej grupy dziecka:', err);
           setActiveChildGroupName('');
+          fetchNotificationSummary();
         }
       })
       .catch(() => {
         localStorage.removeItem('token');
         navigate('/');
       });
-
-    fetchNotificationSummary();
 
     const summaryInterval = setInterval(fetchNotificationSummary, 30000);
     const onNotificationsUpdated = () => fetchNotificationSummary();
