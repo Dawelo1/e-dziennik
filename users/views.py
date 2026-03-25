@@ -238,7 +238,7 @@ class NotificationSummaryView(APIView):
             'schedule': schedule_qs.filter(id__gt=user.last_seen_schedule_activity_id).count() + schedule_extra_changes,
             'gallery': gallery_qs.filter(id__gt=user.last_seen_gallery_item_id).count(),
             'calendar': calendar_qs.filter(id__gt=user.last_seen_calendar_closure_id).count(),
-            'payments': payments_qs.filter(id__gt=payments_seen_cursor).count(),
+            'payments': payments_qs.filter(id__gt=payments_seen_cursor, is_paid=False).count(),
         }
 
         return Response(counts)
@@ -271,7 +271,7 @@ class MarkNotificationSeenView(NotificationSummaryView):
         elif section == 'calendar':
             latest_id = FacilityClosure.objects.order_by('-id').values_list('id', flat=True).first() or 0
         else:
-            latest_id = self._payments_queryset_for_user(user, selected_child=selected_child).order_by('-id').values_list('id', flat=True).first() or 0
+            latest_id = self._payments_queryset_for_user(user, selected_child=selected_child).filter(is_paid=False).order_by('-id').values_list('id', flat=True).first() or 0
 
         if section == 'payments':
             self._set_payments_seen_cursor(user, latest_id, selected_child=selected_child)
