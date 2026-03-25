@@ -5,7 +5,7 @@ import './Gallery.css';
 import ImageGrid from './ImageGrid';
 import { FaImages, FaRegClock, FaThumbsUp, FaRegThumbsUp, FaUserTie } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from '../authUtils';
+import { getAuthConfigWithActiveChild, getAuthHeaders } from '../authUtils';
 import { formatDateWithDots } from '../dateUtils';
 
 const Gallery = () => {
@@ -16,14 +16,14 @@ const Gallery = () => {
   const getAvatarUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `${url}`;
+    return `http://127.0.0.1:8000${url}`;
   };
 
   useEffect(() => {
     const markSeen = async () => {
       try {
         await axios.post(
-          '/api/users/notifications/mark-seen/',
+          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
           { section: 'gallery' },
           getAuthHeaders()
         );
@@ -40,8 +40,8 @@ const Gallery = () => {
     const fetchAlbums = async () => {
       try {
         const [res, directorStatusRes] = await Promise.all([
-          axios.get('/api/gallery/', getAuthHeaders()),
-          axios.get('/api/users/director-status/', getAuthHeaders())
+          axios.get('http://127.0.0.1:8000/api/gallery/', getAuthConfigWithActiveChild()),
+          axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders())
         ]);
         
         // Filtrujemy puste albumy
@@ -74,7 +74,7 @@ const Gallery = () => {
 
     // 2. Strzał do API
     try {
-      await axios.post(`/api/gallery/${albumId}/like/`, {}, getAuthHeaders());
+      await axios.post(`http://127.0.0.1:8000/api/gallery/${albumId}/like/`, {}, getAuthHeaders());
     } catch (err) {
       console.error("Błąd lajkowania:", err);
       // Opcjonalnie: Cofnij zmianę w razie błędu

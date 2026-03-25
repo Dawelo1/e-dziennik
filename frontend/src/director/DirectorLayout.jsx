@@ -125,13 +125,15 @@ const DirectorLayout = () => {
 
   if (!user) return null;
 
+  const isTeacher = Boolean(user.is_teacher);
+
   return (
     <div className="app-container director-theme"> 
       <header className="top-header" style={{ borderBottom: '3px solid #e0245e' }}> 
         <div className="header-logo-section">
           <img src={beeLogo} alt="Logo" className="header-logo" />
           <div className="header-title">
-            <span>Panel Dyrektora</span>
+            <span>{isTeacher ? 'Panel Nauczyciela' : 'Panel Dyrektora'}</span>
             <span>PSZCZÓŁKA MAJA</span>
           </div>
         </div>
@@ -151,7 +153,7 @@ const DirectorLayout = () => {
             </div>
             <div className="user-name-box">
               <span className="user-name">{user.first_name} {user.last_name}</span>
-              <span className="user-role">Administrator</span>
+              <span className="user-role">{isTeacher ? 'Nauczyciel' : 'Administrator'}</span>
             </div>
           </div>
           <div className="logout-icon-btn" onClick={handleLogout} title="Wyloguj się">
@@ -163,12 +165,13 @@ const DirectorLayout = () => {
       <div className="content-wrapper">
         <aside className="sidebar-card">
           <ul className="sidebar-menu">
-            
-            <li>
-              <NavLink to="/director/dashboard" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaChartLine /></span> Pulpit
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/dashboard" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaChartLine /></span> Pulpit
+                </NavLink>
+              </li>
+            )}
 
             <li>
               <NavLink to="/director/posts" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
@@ -176,24 +179,25 @@ const DirectorLayout = () => {
               </NavLink>
             </li>
 
-            {/* --- ZAKŁADKA WIADOMOŚCI Z LICZNIKIEM --- */}
-            <li>
-              <NavLink to="/director/messages" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaEnvelope /></span> 
-                Wiadomości
-                
-                {/* Wyświetl kropkę tylko, jeśli jest coś nowego */}
-                {unreadCount > 0 && (
-                   <span className="menu-badge">{unreadCount}</span>
-                )}
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/messages" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaEnvelope /></span>
+                  Wiadomości
+                  {unreadCount > 0 && (
+                     <span className="menu-badge">{unreadCount}</span>
+                  )}
+                </NavLink>
+              </li>
+            )}
 
-            <li>
-              <NavLink to="/director/attendance" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaUserSlash /></span> Nieobecności
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/attendance" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaUserSlash /></span> Nieobecności
+                </NavLink>
+              </li>
+            )}
 
             <li>
               <NavLink to="/director/schedule" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
@@ -201,11 +205,13 @@ const DirectorLayout = () => {
               </NavLink>
             </li>
 
-            <li>
-              <NavLink to="/director/menu" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaUtensils /></span> Jadłospis
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/menu" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaUtensils /></span> Jadłospis
+                </NavLink>
+              </li>
+            )}
 
             <li>
               <NavLink to="/director/gallery" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
@@ -219,37 +225,47 @@ const DirectorLayout = () => {
               </NavLink>
             </li>
 
-            <li>
-              <NavLink to="/director/payments" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaMoneyBillWave /></span> Płatności
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/payments" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaMoneyBillWave /></span> Płatności
+                </NavLink>
+              </li>
+            )}
 
-            <hr style={{border: '0', borderTop: '1px solid #eee', margin: '10px 20px'}}/>
+            {!isTeacher && <hr style={{border: '0', borderTop: '1px solid #eee', margin: '10px 20px'}}/>}
 
-            <li>
-              <NavLink to="/director/groups" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaLayerGroup /></span> Grupy
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/groups" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaLayerGroup /></span> Grupy
+                </NavLink>
+              </li>
+            )}
 
-            <li>
-              <NavLink to="/director/children" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaChild /></span> Dzieci
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/children" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaChild /></span> Dzieci
+                </NavLink>
+              </li>
+            )}
 
-            <li>
-              <NavLink to="/director/users" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaUsers /></span> Użytkownicy
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li>
+                <NavLink to="/director/users" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaUsers /></span> Użytkownicy
+                </NavLink>
+              </li>
+            )}
 
-            <li style={{ marginTop: 'auto' }}>
-              <NavLink to="/director/settings" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
-                <span className="menu-icon"><FaCog /></span> Ustawienia Konta
-              </NavLink>
-            </li>
+            {!isTeacher && (
+              <li style={{ marginTop: 'auto' }}>
+                <NavLink to="/director/settings" className={({ isActive }) => isActive ? "menu-link active" : "menu-link"}>
+                  <span className="menu-icon"><FaCog /></span> Ustawienia Konta
+                </NavLink>
+              </li>
+            )}
 
           </ul>
         </aside>

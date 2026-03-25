@@ -18,6 +18,7 @@ class CustomUserCreationForm(forms.ModelForm):
     # 2. NOWOŚĆ: Wybór roli (Zamiast checkboxa is_parent)
     ROLE_CHOICES = [
         ('parent', 'Rodzic (Domyślnie)'),
+        ('teacher', 'Nauczyciel'),
         ('director', 'Dyrektor / Administrator'),
     ]
     role = forms.ChoiceField(
@@ -99,11 +100,19 @@ class CustomUserCreationForm(forms.ModelForm):
         role = self.cleaned_data.get('role')
         if role == 'director':
             user.is_director = True
+            user.is_teacher = False
             user.is_parent = False
             user.is_staff = True      # Dajemy dostęp do panelu admina
             user.is_superuser = True  # Dajemy pełne prawa (opcjonalnie, zależnie jak chcesz)
+        elif role == 'teacher':
+            user.is_director = False
+            user.is_teacher = True
+            user.is_parent = False
+            user.is_staff = True
+            user.is_superuser = False
         else:
             user.is_director = False
+            user.is_teacher = False
             user.is_parent = True
             user.is_staff = False
             user.is_superuser = False
@@ -119,6 +128,7 @@ class CustomUserChangeForm(UserChangeForm): # <--- 2. ZMIEŃ DZIEDZICZENIE (był
     """
     ROLE_CHOICES = [
         ('parent', 'Rodzic'),
+        ('teacher', 'Nauczyciel'),
         ('director', 'Dyrektor / Administrator'),
     ]
     role = forms.ChoiceField(
@@ -138,6 +148,8 @@ class CustomUserChangeForm(UserChangeForm): # <--- 2. ZMIEŃ DZIEDZICZENIE (był
         if self.instance.pk:
             if self.instance.is_director:
                 self.fields['role'].initial = 'director'
+            elif self.instance.is_teacher:
+                self.fields['role'].initial = 'teacher'
             else:
                 self.fields['role'].initial = 'parent'
 
@@ -148,11 +160,19 @@ class CustomUserChangeForm(UserChangeForm): # <--- 2. ZMIEŃ DZIEDZICZENIE (był
         role = self.cleaned_data.get('role')
         if role == 'director':
             user.is_director = True
+            user.is_teacher = False
             user.is_parent = False
             user.is_staff = True
             user.is_superuser = True
+        elif role == 'teacher':
+            user.is_director = False
+            user.is_teacher = True
+            user.is_parent = False
+            user.is_staff = True
+            user.is_superuser = False
         elif role == 'parent':
             user.is_director = False
+            user.is_teacher = False
             user.is_parent = True
             user.is_staff = False
             user.is_superuser = False

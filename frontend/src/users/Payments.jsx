@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Payments.css';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from '../authUtils';
+import { getAuthConfigWithActiveChild } from '../authUtils';
 import { 
   FaMoneyBillWave, 
   FaCopy, 
@@ -30,9 +30,9 @@ const Payments = () => {
     const markSeen = async () => {
       try {
         await axios.post(
-          '/api/users/notifications/mark-seen/',
+          'http://127.0.0.1:8000/api/users/notifications/mark-seen/',
           { section: 'payments' },
-          getAuthHeaders()
+          getAuthConfigWithActiveChild()
         );
         window.dispatchEvent(new Event('notifications-updated'));
       } catch (err) {
@@ -46,7 +46,7 @@ const Payments = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get('/api/payments/', getAuthHeaders());
+        const res = await axios.get('http://127.0.0.1:8000/api/payments/', getAuthConfigWithActiveChild());
         // Sortowanie: najnowsze na górze
         const sorted = res.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setPayments(sorted);

@@ -1,8 +1,7 @@
 from rest_framework import serializers
-import re
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
-from datetime import time
+from datetime import time, timedelta
 from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group, RecurringPayment
 from drf_writable_nested import WritableNestedModelSerializer
 
@@ -181,30 +180,25 @@ class SpecialActivitySerializer(serializers.ModelSerializer):
         return attrs
 
 class DailyMenuSerializer(serializers.ModelSerializer):
-    # Dodajemy dzień tygodnia, żeby frontendowi było łatwiej (np. "Poniedziałek")
-    day_of_week = serializers.SerializerMethodField()
+    week_end_date = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = DailyMenu
-        fields = '__all__'
+        fields = ['id', 'week_start_date', 'week_end_date', 'image']
 
-    def get_day_of_week(self, obj):
-        # Zwraca numer dnia (1=Poniedziałek, 7=Niedziela)
-        # Frontend sobie to zamieni na nazwę
-        return obj.date.isoweekday()
+    def get_week_end_date(self, obj):
+        return (obj.week_start_date + timedelta(days=4)).isoformat()
 
-    def validate_allergens(self, value):
-        if not value:
-            return value
+    def validate(self, attrs):
+        start_date = attrs.get('week_start_date', getattr(self.instance, 'week_start_date', None))
 
-        normalized = value.strip()
-        if not normalized:
-            return ''
+        if not start_date:
+            raise serializers.ValidationError({'week_start_date': 'Data rozpoczęcia tygodnia jest wymagana.'})
 
-        if not re.fullmatch(r'\d+(\s*,\s*\d+)*', normalized):
-            raise serializers.ValidationError('Pole "Alergeny" może zawierać tylko liczby (np. 1, 3, 7).')
+        if start_date.weekday() != 0:
+            raise serializers.ValidationError({'week_start_date': 'Jadłospis tygodniowy musi zaczynać się w poniedziałek.'})
 
-        return normalized
+        return attrs
 
 # Warto też poprawić to w wiadomościach, jeśli tam jest podobnie:
 class MessageSerializer(serializers.ModelSerializer):

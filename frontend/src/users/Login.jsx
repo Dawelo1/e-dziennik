@@ -7,7 +7,7 @@ import LoadingScreen from './LoadingScreen';
 import bgImage from '../assets/bg.png';
 import BeeIcon from '../assets/bee-icon.png';
 import padlockIcon from '../assets/padlock-icon.png';
-import { setToken, removeToken } from '../authUtils';
+import { setToken, removeToken, setActiveChildId } from '../authUtils';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -17,6 +17,7 @@ const Login = () => {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [childrenToSelect, setChildrenToSelect] = useState([]);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,12 +40,12 @@ const Login = () => {
         password: password
       });
 
-      const { token, is_director } = response.data;
+      const { token, is_director, is_teacher } = response.data;
 
       setToken(token, rememberMe);
 
-      if (is_director) {
-        navigate('/director/dashboard');
+      if (is_director || is_teacher) {
+        navigate(is_teacher ? '/director/posts' : '/director/dashboard');
       } else {
         try {
           const meRes = await axios.get('/api/users/me/', {
@@ -56,7 +57,25 @@ const Login = () => {
             removeToken();
             setError('To konto nie ma przypisanego dziecka. Skontaktuj sie z dyrektorem przedszkola.');
           } else {
-            navigate('/dashboard');
+            const childrenRes = await axios.get('http://127.0.0.1:8000/api/children/', {
+              headers: { Authorization: `Token ${token}` },
+            });
+
+            const children = Array.isArray(childrenRes.data) ? childrenRes.data : [];
+
+            if (children.length === 0) {
+              removeToken();
+              setError('To konto nie ma przypisanego dziecka. Skontaktuj sie z dyrektorem przedszkola.');
+              return;
+            }
+
+            if (children.length === 1) {
+              setActiveChildId(children[0].id);
+              navigate('/dashboard');
+              return;
+            }
+
+            setChildrenToSelect(children);
           }
         } catch (profileErr) {
           navigate('/dashboard');
@@ -76,6 +95,43 @@ const Login = () => {
   return (
     <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>
       <div className="login-card">
+
+        {childrenToSelect.length > 1 ? (
+          <div className="child-login-selector">
+            <h2>Wybierz dziecko</h2>
+            <p>To konto ma więcej niż jedno dziecko. Wybierz, na które chcesz wejść do panelu.</p>
+
+            <div className="child-login-list">
+              {childrenToSelect.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  className="child-login-btn"
+                  onClick={() => {
+                    setActiveChildId(child.id);
+                    navigate('/dashboard');
+                  }}
+                >
+                  {child.first_name} {child.last_name}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="child-login-back"
+              onClick={() => {
+                removeToken();
+                setChildrenToSelect([]);
+                setPassword('');
+                setError('');
+              }}
+            >
+              Wróć do logowania
+            </button>
+          </div>
+        ) : (
+          <>
         
         <div className="logo-section">
           <div className="bee-logo"></div>
@@ -138,6 +194,8 @@ const Login = () => {
           <Link to="/regulamin" style={{ color: '#999', textDecoration: 'none' }}>Regulamin</Link>
           <Link to="/polityka-prywatnosci" style={{ color: '#999', textDecoration: 'none' }}>Polityka Prywatności</Link>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

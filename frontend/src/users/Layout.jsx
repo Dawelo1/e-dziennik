@@ -4,7 +4,14 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Layout.css';
 import beeLogo from '../assets/bee.png';
-import { getToken, removeToken, getAuthHeaders } from '../authUtils';
+import {
+  getToken,
+  removeToken,
+  getAuthHeaders,
+  getAuthConfigWithActiveChild,
+  getActiveChildId,
+  setActiveChildId,
+} from '../authUtils';
 import { getChatWebSocketUrl } from '../wsUtils';
 
 // Ikony
@@ -27,10 +34,11 @@ const Layout = () => {
     calendar: 0,
     payments: 0,
   });
+  const [activeChildGroupName, setActiveChildGroupName] = useState('');
 
   const fetchNotificationSummary = useCallback(async () => {
     try {
-      const response = await axios.get('/api/users/notifications/summary/', getAuthHeaders());
+      const response = await axios.get('http://127.0.0.1:8000/api/users/notifications/summary/', getAuthConfigWithActiveChild());
       setNotificationCounts({
         schedule: Number(response.data.schedule) || 0,
         gallery: Number(response.data.gallery) || 0,
@@ -52,14 +60,51 @@ const Layout = () => {
     const config = getAuthHeaders();
 
     // 1. Pobierz dane usera
-    axios.get('/api/users/me/', config)
-      .then(response => setUser(response.data))
+    axios.get('http://127.0.0.1:8000/api/users/me/', config)
+      .then(async (response) => {
+        const me = response.data;
+        setUser(me);
+
+        if (!me.is_parent) {
+          fetchNotificationSummary();
+          return;
+        }
+
+        try {
+          const [childrenRes, groupsRes] = await Promise.all([
+            axios.get('http://127.0.0.1:8000/api/children/', config),
+            axios.get('http://127.0.0.1:8000/api/groups/', config),
+          ]);
+
+          const children = Array.isArray(childrenRes.data) ? childrenRes.data : [];
+          const groups = Array.isArray(groupsRes.data) ? groupsRes.data : [];
+
+          if (children.length === 0) {
+            setActiveChildGroupName('');
+            fetchNotificationSummary();
+            return;
+          }
+
+          const storedChildId = getActiveChildId();
+          const selectedChild = children.find((child) => child.id === storedChildId) || children[0];
+
+          if (selectedChild.id !== storedChildId) {
+            setActiveChildId(selectedChild.id);
+          }
+
+          const selectedGroup = groups.find((group) => group.id === selectedChild.group);
+          setActiveChildGroupName(selectedGroup?.name || '');
+          fetchNotificationSummary();
+        } catch (err) {
+          console.error('Błąd pobierania aktywnej grupy dziecka:', err);
+          setActiveChildGroupName('');
+          fetchNotificationSummary();
+        }
+      })
       .catch(() => {
         localStorage.removeItem('token');
         navigate('/');
       });
-
-    fetchNotificationSummary();
 
     const summaryInterval = setInterval(fetchNotificationSummary, 30000);
     const onNotificationsUpdated = () => fetchNotificationSummary();
@@ -136,7 +181,7 @@ const Layout = () => {
   const getAvatarUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `${url}`;
+    return `http://127.0.0.1:8000${url}`;
   };
 
   const handleLogout = async () => {
@@ -149,7 +194,7 @@ const Layout = () => {
     // 2. Próbujemy powiadomić serwer (fire and forget)
     if (token) {
       try {
-        await axios.post('/api/users/logout/', {}, {
+        await axios.post('http://127.0.0.1:8000/api/users/logout/', {}, {
           headers: { Authorization: `Token ${token}` }
         });
       } catch (error) { 
@@ -160,8 +205,8 @@ const Layout = () => {
 
   if (!user) return null;
 
-  const parentGroupText = user.is_parent && Array.isArray(user.child_groups) && user.child_groups.length > 0
-    ? ` • GRUPA ${user.child_groups.join(', ')}`
+  const parentGroupText = user.is_parent && activeChildGroupName
+    ? ` • GRUPA ${activeChildGroupName}`
     : '';
 
   return (

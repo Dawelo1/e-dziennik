@@ -9,7 +9,7 @@ from django.core.cache import cache
 from django.contrib.auth.models import update_last_login
 from django.db.models import Q
 from users.models import User
-from core.models import SpecialActivity, GalleryItem, FacilityClosure, Payment
+from core.models import Child, SpecialActivity, GalleryItem, FacilityClosure, Payment
 from .permissions import IsDirector
 from .serializers import UserManagementSerializer
 from .utils import generate_unique_username, generate_secure_password
@@ -104,7 +104,8 @@ class CustomAuthToken(ObtainAuthToken):
             'token': token.key,
             'user_id': user.pk,
             'email': user.email,
-            'is_director': user.is_director
+            'is_director': user.is_director,
+            'is_teacher': user.is_teacher,
         })
     
 class DirectorStatusView(APIView):
@@ -130,12 +131,32 @@ class DirectorStatusView(APIView):
 class NotificationSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
+    PAYMENT_SEEN_CACHE_TIMEOUT = 60 * 60 * 24 * 30
+
+    def _payments_seen_cache_key(self, user_id, child_id):
+        return f'notification_payments_seen_user_{int(user_id)}_child_{int(child_id)}'
+
+    def _resolve_selected_child(self, user, child_id_raw):
+        if not child_id_raw:
+            return None
+
+        try:
+            child_id = int(child_id_raw)
+        except (TypeError, ValueError):
+            return None
+
+        queryset = Child.objects.filter(id=child_id)
+        if not user.is_director:
+            queryset = queryset.filter(parents=user)
+
+        return queryset.first()
+
     def _get_parent_groups(self, user):
         children = user.child.all()
         return [child.group for child in children]
 
     def _schedule_queryset_for_user(self, user):
-        if user.is_director:
+        if user.is_director or user.is_teacher:
             return SpecialActivity.objects.all()
 
         parent_groups = self._get_parent_groups(user)
@@ -144,7 +165,7 @@ class NotificationSummaryView(APIView):
         return SpecialActivity.objects.filter(groups__in=parent_groups).distinct()
 
     def _gallery_queryset_for_user(self, user):
-        if user.is_director:
+        if user.is_director or user.is_teacher:
             return GalleryItem.objects.all()
 
         parent_groups = self._get_parent_groups(user)
@@ -155,25 +176,80 @@ class NotificationSummaryView(APIView):
             Q(target_group__isnull=True) | Q(target_group__in=parent_groups)
         ).distinct()
 
-    def _payments_queryset_for_user(self, user):
+    def _payments_queryset_for_user(self, user, selected_child=None):
         if user.is_director:
-            return Payment.objects.all()
-        return Payment.objects.filter(child__parents=user)
+            queryset = Payment.objects.all()
+        else:
+            queryset = Payment.objects.filter(child__parents=user)
+
+        if selected_child is not None:
+            queryset = queryset.filter(child=selected_child)
+
+        return queryset
+
+    def _get_payments_seen_cursor(self, user, selected_child=None):
+        if selected_child is None:
+            return int(user.last_seen_payment_id or 0)
+
+        cache_key = self._payments_seen_cache_key(user.id, selected_child.id)
+        cached_value = cache.get(cache_key)
+
+        if cached_value is None:
+            fallback_value = int(user.last_seen_payment_id or 0)
+            cache.set(cache_key, fallback_value, timeout=self.PAYMENT_SEEN_CACHE_TIMEOUT)
+            return fallback_value
+
+        try:
+            return int(cached_value)
+        except (TypeError, ValueError):
+            fallback_value = int(user.last_seen_payment_id or 0)
+            cache.set(cache_key, fallback_value, timeout=self.PAYMENT_SEEN_CACHE_TIMEOUT)
+            return fallback_value
+
+    def _set_payments_seen_cursor(self, user, latest_id, selected_child=None):
+        latest_id = int(latest_id or 0)
+
+        if selected_child is None:
+            # Keep the global cursor monotonic so fallback queries stay stable.
+            current_global = int(user.last_seen_payment_id or 0)
+            next_global = max(current_global, latest_id)
+            if next_global != current_global:
+                user.last_seen_payment_id = next_global
+                user.save(update_fields=['last_seen_payment_id'])
+            return
+
+        cache_key = self._payments_seen_cache_key(user.id, selected_child.id)
+        cache.set(cache_key, latest_id, timeout=self.PAYMENT_SEEN_CACHE_TIMEOUT)
+
+        # Persist fallback cursor across sessions/logins when child-scoped cache is missing.
+        current_global = int(user.last_seen_payment_id or 0)
+        if latest_id > current_global:
+            user.last_seen_payment_id = latest_id
+            user.save(update_fields=['last_seen_payment_id'])
 
     def get(self, request):
         user = request.user
+        selected_child_raw = request.query_params.get('child_id')
+        selected_child = self._resolve_selected_child(user, selected_child_raw)
 
         schedule_qs = self._schedule_queryset_for_user(user)
         gallery_qs = self._gallery_queryset_for_user(user)
         calendar_qs = FacilityClosure.objects.all()
-        payments_qs = self._payments_queryset_for_user(user)
+
+        if selected_child_raw and selected_child is None:
+            payments_qs = Payment.objects.none()
+            payments_seen_cursor = 0
+        else:
+            payments_qs = self._payments_queryset_for_user(user, selected_child=selected_child)
+            payments_seen_cursor = self._get_payments_seen_cursor(user, selected_child=selected_child)
+
         schedule_extra_changes = int(cache.get(f'notification_schedule_extra_{user.id}', 0) or 0)
 
         counts = {
             'schedule': schedule_qs.filter(id__gt=user.last_seen_schedule_activity_id).count() + schedule_extra_changes,
             'gallery': gallery_qs.filter(id__gt=user.last_seen_gallery_item_id).count(),
             'calendar': calendar_qs.filter(id__gt=user.last_seen_calendar_closure_id).count(),
-            'payments': payments_qs.filter(id__gt=user.last_seen_payment_id).count(),
+            'payments': payments_qs.filter(id__gt=payments_seen_cursor, is_paid=False).count(),
         }
 
         return Response(counts)
@@ -190,9 +266,14 @@ class MarkNotificationSeenView(NotificationSummaryView):
     def post(self, request):
         user = request.user
         section = request.data.get('section')
+        selected_child_raw = request.data.get('child_id') or request.query_params.get('child_id')
+        selected_child = self._resolve_selected_child(user, selected_child_raw)
 
         if section not in self.section_to_field:
             return Response({'error': 'Nieprawidłowa sekcja.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if section == 'payments' and selected_child_raw and selected_child is None:
+            return Response({'error': 'Nieprawidłowe child_id.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if section == 'schedule':
             latest_id = self._schedule_queryset_for_user(user).order_by('-id').values_list('id', flat=True).first() or 0
@@ -201,11 +282,14 @@ class MarkNotificationSeenView(NotificationSummaryView):
         elif section == 'calendar':
             latest_id = FacilityClosure.objects.order_by('-id').values_list('id', flat=True).first() or 0
         else:
-            latest_id = self._payments_queryset_for_user(user).order_by('-id').values_list('id', flat=True).first() or 0
+            latest_id = self._payments_queryset_for_user(user, selected_child=selected_child).filter(is_paid=False).order_by('-id').values_list('id', flat=True).first() or 0
 
-        field_name = self.section_to_field[section]
-        setattr(user, field_name, int(latest_id))
-        user.save(update_fields=[field_name])
+        if section == 'payments':
+            self._set_payments_seen_cursor(user, latest_id, selected_child=selected_child)
+        else:
+            field_name = self.section_to_field[section]
+            setattr(user, field_name, int(latest_id))
+            user.save(update_fields=[field_name])
 
         if section == 'schedule':
             cache.set(f'notification_schedule_extra_{user.id}', 0, timeout=60 * 60 * 24 * 30)
@@ -248,6 +332,24 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     def password_preview(self, request, pk=None):
         user = self.get_object()
 
+        if user.is_teacher:
+            if not user.director_password_preview:
+                generated_password = generate_secure_password()
+                user.set_password(generated_password)
+                user.director_password_preview = generated_password
+                user.director_password_preview_active = True
+                user.save(update_fields=['password', 'director_password_preview', 'director_password_preview_active'])
+
+            if not user.director_password_preview_active:
+                user.director_password_preview_active = True
+                user.save(update_fields=['director_password_preview_active'])
+
+            return Response({
+                'id': user.id,
+                'username': user.username,
+                'password': user.director_password_preview,
+            }, status=status.HTTP_200_OK)
+
         if not user.director_password_preview_active or not user.director_password_preview:
             return Response(
                 {'detail': 'Podgląd hasła nie jest dostępny dla tego konta.'},
@@ -259,3 +361,54 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             'username': user.username,
             'password': user.director_password_preview,
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='set-parent-lock')
+    def set_parent_lock(self, request, pk=None):
+        user = self.get_object()
+
+        if not user.is_parent or user.is_teacher or user.is_director:
+            return Response(
+                {'detail': 'Blokowanie/odblokowanie jest dostępne tylko dla kont rodzica.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        lock_raw = request.data.get('lock', None)
+
+        if isinstance(lock_raw, bool):
+            should_lock = lock_raw
+        elif isinstance(lock_raw, str):
+            normalized = lock_raw.strip().lower()
+            if normalized in {'true', '1', 'tak', 'yes'}:
+                should_lock = True
+            elif normalized in {'false', '0', 'nie', 'no'}:
+                should_lock = False
+            else:
+                return Response(
+                    {'detail': 'Nieprawidłowa wartość pola "lock". Użyj true/false.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        elif isinstance(lock_raw, int):
+            if lock_raw in (0, 1):
+                should_lock = bool(lock_raw)
+            else:
+                return Response(
+                    {'detail': 'Nieprawidłowa wartość pola "lock". Użyj true/false.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            return Response(
+                {'detail': 'Pole "lock" jest wymagane (true/false).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.is_active = not should_lock
+        user.save(update_fields=['is_active'])
+
+        return Response(
+            {
+                'id': user.id,
+                'is_active': user.is_active,
+                'locked': not user.is_active,
+            },
+            status=status.HTTP_200_OK,
+        )

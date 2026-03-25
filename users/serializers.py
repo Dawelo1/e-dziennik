@@ -63,8 +63,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # Zwracamy to, co potrzebne frontendowi do działania
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number', 'avatar', 'avatar_url', 'child_groups']
-        read_only_fields = ['id', 'username', 'is_director', 'is_parent']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'is_teacher', 'phone_number', 'avatar', 'avatar_url', 'child_groups']
+        read_only_fields = ['id', 'username', 'is_director', 'is_parent', 'is_teacher']
 
 class UserManagementSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
@@ -79,23 +79,83 @@ class UserManagementSerializer(serializers.ModelSerializer):
         return request.build_absolute_uri(avatar_url) if request else avatar_url
 
     def get_can_preview_password(self, obj):
+        if obj.is_teacher:
+            return True
         return bool(obj.director_password_preview_active and obj.director_password_preview)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_director', 'is_parent', 'avatar', 'avatar_url', 'password', 'password_generated', 'can_preview_password', 'last_login']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'is_active', 'is_director', 'is_parent', 'is_teacher', 'avatar', 'avatar_url', 'password', 'password_generated', 'can_preview_password', 'last_login']
         read_only_fields = ['last_login']
         extra_kwargs = {'password': {'write_only': True, 'required': False}} # Hasło write-only
+
+    def validate(self, attrs):
+        requested_teacher = bool(attrs.get('is_teacher', getattr(self.instance, 'is_teacher', False)))
+        requested_director = bool(attrs.get('is_director', getattr(self.instance, 'is_director', False)))
+        requested_parent = bool(attrs.get('is_parent', getattr(self.instance, 'is_parent', True)))
+
+        if requested_teacher and (self.instance is None or not getattr(self.instance, 'is_teacher', False)):
+            raise serializers.ValidationError({'is_teacher': 'Dyrektor nie może dodać nowego nauczyciela.'})
+
+        if requested_teacher and requested_director:
+            raise serializers.ValidationError({'is_teacher': 'Konto nie może być jednocześnie nauczycielem i dyrektorem.'})
+
+        if requested_teacher and requested_parent:
+            raise serializers.ValidationError({'is_teacher': 'Konto nauczyciela nie może mieć roli rodzica.'})
+
+        if requested_teacher:
+            teacher_qs = User.objects.filter(is_teacher=True)
+            if self.instance:
+                teacher_qs = teacher_qs.exclude(pk=self.instance.pk)
+            if teacher_qs.exists():
+                raise serializers.ValidationError({'is_teacher': 'W systemie może istnieć maksymalnie 1 nauczyciel.'})
+
+        return attrs
+
+    def _normalize_role_flags(self, validated_data, instance=None):
+        is_director = bool(validated_data.get('is_director', getattr(instance, 'is_director', False)))
+        is_teacher = bool(validated_data.get('is_teacher', getattr(instance, 'is_teacher', False)))
+
+        if instance is None:
+            is_teacher = False
+        elif not getattr(instance, 'is_teacher', False):
+            is_teacher = False
+
+        if is_director:
+            validated_data['is_director'] = True
+            validated_data['is_teacher'] = False
+            validated_data['is_parent'] = False
+            validated_data['is_staff'] = True
+            validated_data['is_superuser'] = True
+            return
+
+        if is_teacher:
+            validated_data['is_director'] = False
+            validated_data['is_teacher'] = True
+            validated_data['is_parent'] = False
+            validated_data['is_staff'] = True
+            validated_data['is_superuser'] = False
+            return
+
+        validated_data['is_director'] = False
+        validated_data['is_teacher'] = False
+        validated_data['is_parent'] = True
+        validated_data['is_staff'] = False
+        validated_data['is_superuser'] = False
 
     def create(self, validated_data):
         # Wyciągamy hasło, żeby je zahaszować
         password = validated_data.pop('password', None)
         password_generated = validated_data.pop('password_generated', False)
+        self._normalize_role_flags(validated_data)
         user = User(**validated_data)
         
         if password:
             user.set_password(password)
-            if password_generated:
+            if user.is_teacher:
+                user.director_password_preview = password
+                user.director_password_preview_active = True
+            elif password_generated:
                 user.director_password_preview = password
                 user.director_password_preview_active = True
             else:
@@ -113,17 +173,24 @@ class UserManagementSerializer(serializers.ModelSerializer):
         # Przy edycji też musimy uważać na hasło
         password = validated_data.pop('password', None)
         password_generated = validated_data.pop('password_generated', False)
+        self._normalize_role_flags(validated_data, instance=instance)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
             
         if password:
             instance.set_password(password)
-            if password_generated:
+            if instance.is_teacher:
+                instance.director_password_preview = password
+                instance.director_password_preview_active = True
+            elif password_generated:
                 instance.director_password_preview = password
                 instance.director_password_preview_active = True
             else:
                 instance.director_password_preview = None
                 instance.director_password_preview_active = False
+
+        if instance.is_teacher and instance.director_password_preview and not instance.director_password_preview_active:
+            instance.director_password_preview_active = True
             
         instance.save()
         return instance

@@ -12,6 +12,11 @@ class User(AbstractUser):
         default=True,                 # <--- Automatycznie zaznaczone jako Rodzic
         verbose_name="Rodzic"         # <--- Spolszczenie
     )
+
+    is_teacher = models.BooleanField(
+        default=False,
+        verbose_name="Nauczyciel"
+    )
     
     phone_number = models.CharField(
         max_length=15, 
@@ -54,9 +59,21 @@ class User(AbstractUser):
     class Meta:
         verbose_name = "Użytkownik"
         verbose_name_plural = "Użytkownicy"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['is_teacher'],
+                condition=models.Q(is_teacher=True),
+                name='users_single_teacher',
+            ),
+        ]
 
     def __str__(self):
         # Wyświetlamy ładnie imię i nazwisko lub nazwę użytkownika
-        role = "Dyrektor" if self.is_director else "Rodzic"
+        if self.is_director:
+            role = "Dyrektor"
+        elif self.is_teacher:
+            role = "Nauczyciel"
+        else:
+            role = "Rodzic"
         name = f"{self.first_name} {self.last_name}" if self.first_name else self.username
         return f"{name} ({role})"

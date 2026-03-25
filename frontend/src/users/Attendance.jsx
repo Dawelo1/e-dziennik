@@ -4,9 +4,9 @@ import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './Attendance.css';
-import { FaUserSlash, FaChild, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
+import { FaUserSlash, FaExclamationTriangle, FaCheckCircle, FaTrashAlt, FaCalendarPlus } from 'react-icons/fa';
 import LoadingScreen from './LoadingScreen';
-import { getAuthHeaders } from '../authUtils';
+import { getActiveChildId, getAuthConfigWithActiveChild, getAuthHeaders, setActiveChildId } from '../authUtils';
 
 const Attendance = () => {
   const [children, setChildren] = useState([]);
@@ -27,11 +27,20 @@ const Attendance = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const childrenRes = await axios.get('/api/children/', getAuthHeaders());
+        const childrenRes = await axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders());
         setChildren(childrenRes.data);
-        if (childrenRes.data.length > 0) setSelectedChild(childrenRes.data[0].id);
 
-        const closuresRes = await axios.get('/api/calendar/closures/', getAuthHeaders());
+        const persistedChildId = getActiveChildId();
+        const hasPersistedChild = childrenRes.data.some((child) => child.id === persistedChildId);
+
+        if (hasPersistedChild) {
+          setSelectedChild(persistedChildId);
+        } else if (childrenRes.data.length > 0) {
+          setSelectedChild(childrenRes.data[0].id);
+          setActiveChildId(childrenRes.data[0].id);
+        }
+
+        const closuresRes = await axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders());
         
         // ZMIANA: Mapujemy listę na obiekt { data: powód }
         const map = {};
@@ -55,7 +64,7 @@ const Attendance = () => {
   }, [selectedChild]);
 
   const fetchAttendance = () => {
-    axios.get('/api/attendance/', getAuthHeaders())
+    axios.get('http://127.0.0.1:8000/api/attendance/', getAuthConfigWithActiveChild())
       .then(res => {
         const map = {};
         res.data.forEach(record => {
@@ -121,14 +130,14 @@ const Attendance = () => {
 
     try {
       if (type === 'add') {
-        await axios.post('/api/attendance/', {
+        await axios.post('http://127.0.0.1:8000/api/attendance/', {
           child: selectedChild,
           date: date
         }, getAuthHeaders());
         setMessage({ type: 'success', text: `Zgłoszono nieobecność na dzień ${formatDisplayDate(date)}.` });
       } 
       else if (type === 'remove') {
-        await axios.delete(`/api/attendance/${recordId}/`, getAuthHeaders());
+        await axios.delete(`http://127.0.0.1:8000/api/attendance/${recordId}/`, getAuthHeaders());
         setMessage({ type: 'info', text: `Cofnięto zgłoszenie na dzień ${formatDisplayDate(date)}.` });
       }
       fetchAttendance();
@@ -182,23 +191,6 @@ const Attendance = () => {
       <h2 className="page-title">
         <FaUserSlash /> Zgłoś Nieobecność
       </h2>
-
-      {children.length > 1 && (
-        <div className="child-selector">
-          <label>Wybierz dziecko:</label>
-          <div className="child-buttons">
-            {children.map(child => (
-              <button 
-                key={child.id}
-                className={`child-btn ${selectedChild === child.id ? 'active' : ''}`}
-                onClick={() => setSelectedChild(child.id)}
-              >
-                <FaChild /> {child.first_name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="attendance-grid">
         <div className="calendar-card">

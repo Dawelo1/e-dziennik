@@ -8,11 +8,11 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment
 from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer
-from users.permissions import IsDirector
+from users.permissions import IsDirector, IsDirectorOrTeacher
 from users.models import User
 from rest_framework.views import APIView
 from communication.models import Message
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 
@@ -87,9 +87,18 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        child_id = self.request.query_params.get('child_id')
+
         if user.is_director:
-            return Payment.objects.all()
-        return Payment.objects.filter(child__parents=user)
+            queryset = Payment.objects.all()
+            if child_id:
+                queryset = queryset.filter(child_id=child_id)
+            return queryset
+
+        queryset = Payment.objects.filter(child__parents=user)
+        if child_id:
+            queryset = queryset.filter(child_id=child_id)
+        return queryset
         
     def perform_update(self, serializer):
         # Zabezpieczenie: tylko dyrektor może zmienić status i datę opłacenia
@@ -142,20 +151,28 @@ class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast
     def get_permissions(self):
         """
         Dynamiczne przydzielanie uprawnień:
-        - Edycja/Usuwanie/Tworzenie -> Tylko Dyrektor.
+        - Edycja/Usuwanie/Tworzenie -> Dyrektor lub Nauczyciel.
         - Czytanie/Lajkowanie/Komentowanie -> Każdy zalogowany.
         """
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     # --- TWOJA ORYGINALNA LOGIKA FILTROWANIA (BEZ ZMIAN) ---
     def get_queryset(self):
         user = self.request.user
+        child_id = self.request.query_params.get('child_id')
         
         # 1. Jeśli to Dyrektor -> widzi wszystko
-        if user.is_director:
-            return Post.objects.all()
+        if user.is_director or user.is_teacher:
+            queryset = Post.objects.all()
+            if child_id:
+                try:
+                    child = Child.objects.get(id=child_id)
+                    return queryset.filter(Q(target_group__isnull=True) | Q(target_group=child.group)).distinct()
+                except Child.DoesNotExist:
+                    return queryset.none()
+            return queryset
         
         # 2. Jeśli to Rodzic -> pobieramy wszystkie jego dzieci
         children = user.child.all()
@@ -163,6 +180,14 @@ class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast
         # Jeśli rodzic nie ma przypisanych dzieci, widzi tylko posty ogólne
         if not children.exists():
             return Post.objects.filter(target_group__isnull=True)
+
+        if child_id:
+            selected_child = children.filter(id=child_id).first()
+            if not selected_child:
+                return Post.objects.none()
+            return Post.objects.filter(
+                Q(target_group__isnull=True) | Q(target_group=selected_child.group)
+            ).distinct()
 
         # 3. Zbieramy grupy wszystkich dzieci rodzica do jednej listy
         parent_groups = [child.group for child in children]
@@ -245,12 +270,19 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        child_id = self.request.query_params.get('child_id')
         
         # Dyrektor widzi listę dla całego przedszkola
         if user.is_director:
-            return Attendance.objects.all()
+            queryset = Attendance.objects.all()
+            if child_id:
+                queryset = queryset.filter(child_id=child_id)
+            return queryset
             
-        return Attendance.objects.filter(child__parents=user)
+        queryset = Attendance.objects.filter(child__parents=user)
+        if child_id:
+            queryset = queryset.filter(child_id=child_id)
+        return queryset
     
 class FacilityClosureViewSet(viewsets.ModelViewSet):
     """
@@ -261,9 +293,9 @@ class FacilityClosureViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-        # Tylko dyrektor może edytować
+        # Dyrektor i nauczyciel mogą edytować
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     def perform_create(self, serializer):
@@ -280,22 +312,36 @@ class SpecialActivityViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-        # Tylko dyrektor może edytować
+        # Dyrektor i nauczyciel mogą edytować
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     def get_queryset(self):
         user = self.request.user
+        child_id = self.request.query_params.get('child_id')
         
         # Dyrektor widzi cały kalendarz
-        if user.is_director:
-            return SpecialActivity.objects.all()
+        if user.is_director or user.is_teacher:
+            queryset = SpecialActivity.objects.all()
+            if child_id:
+                try:
+                    child = Child.objects.get(id=child_id)
+                    return queryset.filter(groups=child.group).distinct()
+                except Child.DoesNotExist:
+                    return queryset.none()
+            return queryset
         
         # Rodzic: pobieramy grupy jego dzieci
         children = user.child.all()
         if not children.exists():
             return SpecialActivity.objects.none()
+
+        if child_id:
+            selected_child = children.filter(id=child_id).first()
+            if not selected_child:
+                return SpecialActivity.objects.none()
+            return SpecialActivity.objects.filter(groups=selected_child.group).distinct()
             
         parent_groups = [child.group for child in children]
         
@@ -341,7 +387,7 @@ class DailyMenuViewSet(viewsets.ModelViewSet):
     Zwraca jadłospis.
     Można filtrować po dacie, np. ?date__gte=2025-11-01&date__lte=2025-11-07
     """
-    queryset = DailyMenu.objects.all().order_by('-date')
+    queryset = DailyMenu.objects.all().order_by('-week_start_date')
     serializer_class = DailyMenuSerializer
     permission_classes = [permissions.IsAuthenticated]
     
@@ -351,14 +397,25 @@ class DailyMenuViewSet(viewsets.ModelViewSet):
             return [IsDirector()]
         return super().get_permissions()
     
-    # Dodajemy proste filtrowanie, żeby React mógł pobrać np. tylko ten tydzień
+    # Filtrowanie po zakresie dat (zwraca jadłospisy, które nachodzą na podany zakres)
     def get_queryset(self):
         queryset = super().get_queryset()
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         
         if start_date and end_date:
-            return queryset.filter(date__range=[start_date, end_date])
+            try:
+                range_start = date.fromisoformat(start_date)
+                range_end = date.fromisoformat(end_date)
+            except ValueError:
+                return queryset.none()
+
+            latest_possible_week_start = range_end
+            earliest_possible_week_start = range_start - timedelta(days=4)
+            return queryset.filter(
+                week_start_date__lte=latest_possible_week_start,
+                week_start_date__gte=earliest_possible_week_start,
+            )
         return queryset
     
 class GalleryViewSet(viewsets.ModelViewSet):
@@ -371,20 +428,38 @@ class GalleryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-        # Tylko dyrektor może tworzyć/edytować/usuwać albumy
+        # Dyrektor i nauczyciel mogą tworzyć/edytować/usuwać albumy
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     def get_queryset(self):
         user = self.request.user
+        child_id = self.request.query_params.get('child_id')
         
-        if user.is_director:
-            return GalleryItem.objects.all()
+        if user.is_director or user.is_teacher:
+            queryset = GalleryItem.objects.all()
+            if child_id:
+                try:
+                    child = Child.objects.get(id=child_id)
+                    return queryset.filter(
+                        Q(target_group__isnull=True) | Q(target_group=child.group)
+                    ).distinct()
+                except Child.DoesNotExist:
+                    return queryset.none()
+            return queryset
         
         children = user.child.all()
         if not children.exists():
             return GalleryItem.objects.filter(target_group__isnull=True)
+
+        if child_id:
+            selected_child = children.filter(id=child_id).first()
+            if not selected_child:
+                return GalleryItem.objects.none()
+            return GalleryItem.objects.filter(
+                Q(target_group__isnull=True) | Q(target_group=selected_child.group)
+            ).distinct()
 
         parent_groups = [child.group for child in children]
         
