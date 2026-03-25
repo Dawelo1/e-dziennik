@@ -10,7 +10,7 @@ import LoadingScreen from '../users/LoadingScreen';
 // Ikony
 import { 
   FaUsers, FaSearch, FaPlus, FaEdit, FaTrash, 
-  FaUserTie, FaUser, FaKey, FaSave, FaExclamationTriangle, FaTrashAlt, FaEye
+  FaUserTie, FaUser, FaChalkboardTeacher, FaKey, FaSave, FaExclamationTriangle, FaTrashAlt, FaEye
 } from 'react-icons/fa';
 
 const DirectorUsers = () => {
@@ -236,6 +236,8 @@ const DirectorUsers = () => {
     e.preventDefault();
     setError('');
 
+    const isTeacherRole = Boolean(editingUser?.is_teacher);
+
     const trimmedUsername = formData.username.trim();
     const trimmedFirstName = formData.first_name.trim();
     const trimmedLastName = formData.last_name.trim();
@@ -244,14 +246,14 @@ const DirectorUsers = () => {
     const trimmedPassword = formData.password.trim();
 
     const missingUsername = !trimmedUsername;
-    const missingFirstName = !trimmedFirstName;
-    const missingLastName = !trimmedLastName;
-    const missingEmail = !trimmedEmail;
-    const missingPhoneNumber = !trimmedPhoneNumber;
+    const missingFirstName = !isTeacherRole && !trimmedFirstName;
+    const missingLastName = !isTeacherRole && !trimmedLastName;
+    const missingEmail = !isTeacherRole && !trimmedEmail;
+    const missingPhoneNumber = !isTeacherRole && !trimmedPhoneNumber;
     const missingPassword = !editingUser && !trimmedPassword;
 
-    const invalidEmail = !missingEmail && !isValidEmail(trimmedEmail);
-    const invalidPhoneNumber = !missingPhoneNumber && !isValidPhoneNumber(trimmedPhoneNumber);
+    const invalidEmail = !isTeacherRole && !missingEmail && !isValidEmail(trimmedEmail);
+    const invalidPhoneNumber = !isTeacherRole && !missingPhoneNumber && !isValidPhoneNumber(trimmedPhoneNumber);
 
     setRequiredFieldErrors({
       username: missingUsername,
@@ -300,7 +302,8 @@ const DirectorUsers = () => {
       password: trimmedPassword,
       password_generated: passwordWasGenerated && !!trimmedPassword,
       is_director: false,
-      is_parent: true
+      is_parent: !isTeacherRole,
+      is_teacher: isTeacherRole,
     };
 
     if (editingUser && !payload.password) {
@@ -365,7 +368,8 @@ const DirectorUsers = () => {
         password: res.data?.password || '',
       });
     } catch (err) {
-      setActionError('Podgląd hasła nie jest dostępny dla tego konta.');
+      const apiDetail = err.response?.data?.detail;
+      setActionError(apiDetail || 'Podgląd hasła nie jest dostępny dla tego konta.');
     } finally {
       setPreviewLoadingUserId(null);
     }
@@ -384,6 +388,8 @@ const DirectorUsers = () => {
   if (loading) {
       return <LoadingScreen message="Przetwarzanie danych..." />;
   }
+
+  const isEditingTeacher = Boolean(editingUser?.is_teacher);
 
   const visibleUsers = users.filter((user) => !user.is_director);
 
@@ -411,6 +417,12 @@ const DirectorUsers = () => {
         </button>
       </div>
 
+      {actionError && (
+        <div className="form-error" style={{ marginBottom: '12px' }}>
+          {actionError}
+        </div>
+      )}
+
       <div className="table-card">
         <table className="custom-table">
           <thead>
@@ -430,22 +442,24 @@ const DirectorUsers = () => {
                 <tr key={user.id}>
                   <td>
                     <div className="user-cell">
-                      <div className={`avatar-circle ${user.is_director ? 'director' : 'parent'}`}>
+                      <div className={`avatar-circle ${user.is_teacher ? 'teacher' : (user.is_director ? 'director' : 'parent')}`}>
                         {user.first_name ? user.first_name[0] : user.username[0].toUpperCase()}
                       </div>
                       <span className="username-text">{user.username}</span>
                     </div>
                   </td>
-                  <td>{user.first_name} {user.last_name}</td>
+                  <td>{`${user.first_name || ''} ${user.last_name || ''}`.trim() || '-'}</td>
                   <td>
                     <div className="contact-info">
-                      <span>{user.email}</span>
-                      <span className="sub-text">{user.phone_number}</span>
+                      <span>{user.email || '-'}</span>
+                      <span className="sub-text">{user.phone_number || '-'}</span>
                     </div>
                   </td>
                   <td>
                     {user.is_director ? (
                       <span className="role-badge director"><FaUserTie/> Dyrektor</span>
+                    ) : user.is_teacher ? (
+                      <span className="role-badge teacher"><FaChalkboardTeacher/> Nauczyciel</span>
                     ) : (
                       <span className="role-badge parent"><FaUser/> Rodzic</span>
                     )}
@@ -513,7 +527,6 @@ const DirectorUsers = () => {
                       setRequiredFieldErrors((prev) => ({ ...prev, username: false }));
                     }
                   }}
-                  disabled={!!editingUser}
                   className={invalidFields.username ? 'invalid-bounce' : ''}
                 />
                 {requiredFieldErrors.username && (
@@ -521,6 +534,7 @@ const DirectorUsers = () => {
                 )}
               </div>
 
+              {!isEditingTeacher && (
               <div className="form-group">
                 <label>Imię <span className="required-asterisk">*</span></label>
                 <input
@@ -540,7 +554,9 @@ const DirectorUsers = () => {
                   <div className="field-required-message">To pole jest wymagane.</div>
                 )}
               </div>
+              )}
 
+              {!isEditingTeacher && (
               <div className="form-group">
                 <label>Nazwisko <span className="required-asterisk">*</span></label>
                 <input
@@ -560,7 +576,9 @@ const DirectorUsers = () => {
                   <div className="field-required-message">To pole jest wymagane.</div>
                 )}
               </div>
+              )}
 
+              {!isEditingTeacher && (
               <div className="form-group">
                 <label>E-mail <span className="required-asterisk">*</span></label>
                 <input
@@ -585,7 +603,9 @@ const DirectorUsers = () => {
                   <div className="field-required-message">Podaj poprawny adres e-mail (np. nazwa@domena.pl).</div>
                 )}
               </div>
+              )}
 
+              {!isEditingTeacher && (
               <div className="form-group">
                 <label>Telefon <span className="required-asterisk">*</span></label>
                 <input
@@ -610,6 +630,7 @@ const DirectorUsers = () => {
                   <div className="field-required-message">Podaj poprawny numer telefonu (np. 123456789 lub +48 123 456 789).</div>
                 )}
               </div>
+              )}
 
               <div className="form-group full-width">
                 <label>

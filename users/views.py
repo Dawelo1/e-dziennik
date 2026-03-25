@@ -104,7 +104,8 @@ class CustomAuthToken(ObtainAuthToken):
             'token': token.key,
             'user_id': user.pk,
             'email': user.email,
-            'is_director': user.is_director
+            'is_director': user.is_director,
+            'is_teacher': user.is_teacher,
         })
     
 class DirectorStatusView(APIView):
@@ -155,7 +156,7 @@ class NotificationSummaryView(APIView):
         return [child.group for child in children]
 
     def _schedule_queryset_for_user(self, user):
-        if user.is_director:
+        if user.is_director or user.is_teacher:
             return SpecialActivity.objects.all()
 
         parent_groups = self._get_parent_groups(user)
@@ -164,7 +165,7 @@ class NotificationSummaryView(APIView):
         return SpecialActivity.objects.filter(groups__in=parent_groups).distinct()
 
     def _gallery_queryset_for_user(self, user):
-        if user.is_director:
+        if user.is_director or user.is_teacher:
             return GalleryItem.objects.all()
 
         parent_groups = self._get_parent_groups(user)
@@ -330,6 +331,24 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='password-preview')
     def password_preview(self, request, pk=None):
         user = self.get_object()
+
+        if user.is_teacher:
+            if not user.director_password_preview:
+                generated_password = generate_secure_password()
+                user.set_password(generated_password)
+                user.director_password_preview = generated_password
+                user.director_password_preview_active = True
+                user.save(update_fields=['password', 'director_password_preview', 'director_password_preview_active'])
+
+            if not user.director_password_preview_active:
+                user.director_password_preview_active = True
+                user.save(update_fields=['director_password_preview_active'])
+
+            return Response({
+                'id': user.id,
+                'username': user.username,
+                'password': user.director_password_preview,
+            }, status=status.HTTP_200_OK)
 
         if not user.director_password_preview_active or not user.director_password_preview:
             return Response(

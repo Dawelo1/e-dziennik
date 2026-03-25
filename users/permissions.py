@@ -7,3 +7,15 @@ class IsDirector(permissions.BasePermission):
     """
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.is_director)
+
+
+class IsDirectorOrTeacher(permissions.BasePermission):
+    """
+    Pozwala na dostęp dyrektorowi lub nauczycielowi.
+    """
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (request.user.is_director or request.user.is_teacher)
+        )

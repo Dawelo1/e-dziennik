@@ -44,7 +44,7 @@ class CustomUserAdmin(UserAdmin):
     )
 
     # Lista kolumn w widoku wszystkich użytkowników (też warto dodać telefon i imiona)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_director', 'is_parent', 'phone_number')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_director', 'is_teacher', 'is_parent', 'phone_number')
 
     # --- MAGIA KOMUNIKATÓW ---
     def response_add(self, request, obj, post_url_continue=None):

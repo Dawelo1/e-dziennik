@@ -8,7 +8,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment
 from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer
-from users.permissions import IsDirector
+from users.permissions import IsDirector, IsDirectorOrTeacher
 from users.models import User
 from rest_framework.views import APIView
 from communication.models import Message
@@ -151,11 +151,11 @@ class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast
     def get_permissions(self):
         """
         Dynamiczne przydzielanie uprawnień:
-        - Edycja/Usuwanie/Tworzenie -> Tylko Dyrektor.
+        - Edycja/Usuwanie/Tworzenie -> Dyrektor lub Nauczyciel.
         - Czytanie/Lajkowanie/Komentowanie -> Każdy zalogowany.
         """
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     # --- TWOJA ORYGINALNA LOGIKA FILTROWANIA (BEZ ZMIAN) ---
@@ -164,7 +164,7 @@ class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast
         child_id = self.request.query_params.get('child_id')
         
         # 1. Jeśli to Dyrektor -> widzi wszystko
-        if user.is_director:
+        if user.is_director or user.is_teacher:
             queryset = Post.objects.all()
             if child_id:
                 try:
@@ -293,9 +293,9 @@ class FacilityClosureViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-        # Tylko dyrektor może edytować
+        # Dyrektor i nauczyciel mogą edytować
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     def perform_create(self, serializer):
@@ -312,9 +312,9 @@ class SpecialActivityViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-        # Tylko dyrektor może edytować
+        # Dyrektor i nauczyciel mogą edytować
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     def get_queryset(self):
@@ -322,7 +322,7 @@ class SpecialActivityViewSet(viewsets.ModelViewSet):
         child_id = self.request.query_params.get('child_id')
         
         # Dyrektor widzi cały kalendarz
-        if user.is_director:
+        if user.is_director or user.is_teacher:
             queryset = SpecialActivity.objects.all()
             if child_id:
                 try:
@@ -428,16 +428,16 @@ class GalleryViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-        # Tylko dyrektor może tworzyć/edytować/usuwać albumy
+        # Dyrektor i nauczyciel mogą tworzyć/edytować/usuwać albumy
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [IsDirector()]
+            return [IsDirectorOrTeacher()]
         return super().get_permissions()
 
     def get_queryset(self):
         user = self.request.user
         child_id = self.request.query_params.get('child_id')
         
-        if user.is_director:
+        if user.is_director or user.is_teacher:
             queryset = GalleryItem.objects.all()
             if child_id:
                 try:

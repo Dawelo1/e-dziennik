@@ -40,12 +40,12 @@ const Login = () => {
         password: password
       });
 
-      const { token, is_director } = response.data;
+      const { token, is_director, is_teacher } = response.data;
 
       setToken(token, rememberMe);
 
-      if (is_director) {
-        navigate('/director/dashboard');
+      if (is_director || is_teacher) {
+        navigate(is_teacher ? '/director/posts' : '/director/dashboard');
       } else {
         try {
           const meRes = await axios.get('http://127.0.0.1:8000/api/users/me/', {

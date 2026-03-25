@@ -359,6 +359,7 @@
 }
 .avatar-circle.director { background-color: #e0245e; } /* Różowy dla dyrekcji */
 .avatar-circle.parent { background-color: #f2c94c; }   /* Żółty dla rodzica */
+.avatar-circle.teacher { background-color: #1e88e5; }  /* Niebieski dla nauczyciela */
 
 .username-text { font-weight: 600; }
 
@@ -373,6 +374,7 @@
 }
 .role-badge.director { background-color: #fce4ec; color: #ad1457; }
 .role-badge.parent { background-color: #fff8e1; color: #f57f17; }
+.role-badge.teacher { background-color: #e3f2fd; color: #0d47a1; }
 
 .role-badge.meal-yes {
   color: #1b9624;
