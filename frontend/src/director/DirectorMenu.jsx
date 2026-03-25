@@ -55,6 +55,87 @@ const formatMenuDate = (value) => {
   return `${day}.${month}.${year}`;
 };
 
+const parseIsoDate = (value) => {
+  const [year, month, day] = String(value).split('-').map(Number);
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+};
+
+const parseSearchDate = (value) => {
+  const query = String(value).trim();
+  if (!query) return null;
+
+  let match = query.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})$/);
+  if (match) {
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const date = new Date(year, month - 1, day);
+
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    ) {
+      return date;
+    }
+  }
+
+  match = query.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(year, month - 1, day);
+
+    if (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    ) {
+      return date;
+    }
+  }
+
+  return null;
+};
+
+const parseSearchDayMonth = (value) => {
+  const query = String(value).trim();
+  if (!query) return null;
+
+  const match = query.match(/^(\d{1,2})[.\-/](\d{1,2})$/);
+  if (!match) return null;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return { day, month };
+};
+
+const isDayMonthWithinRange = (startDate, endDate, day, month) => {
+  if (!(startDate instanceof Date) || !(endDate instanceof Date)) return false;
+
+  const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  while (cursor <= endDate) {
+    if (cursor.getDate() === day && cursor.getMonth() + 1 === month) return true;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return false;
+};
+
 const DirectorMenu = () => {
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -95,14 +176,37 @@ const DirectorMenu = () => {
 
   const filteredMenus = menus
     .filter((menu) => {
-      const query = searchQuery.toLowerCase().trim();
+      const query = searchQuery.trim();
       if (!query) return true;
 
-      const normalizedQuery = normalizeDateSearch(query);
+      const searchedDate = parseSearchDate(query);
+      const searchedDayMonth = parseSearchDayMonth(query);
+      if (searchedDate) {
+        const startDate = parseIsoDate(menu.week_start_date);
+        const endDate = parseIsoDate(menu.week_end_date);
+
+        if (startDate && endDate) {
+          return searchedDate >= startDate && searchedDate <= endDate;
+        }
+      }
+
+      if (searchedDayMonth) {
+        const startDate = parseIsoDate(menu.week_start_date);
+        const endDate = parseIsoDate(menu.week_end_date);
+
+        if (startDate && endDate) {
+          return isDayMonthWithinRange(startDate, endDate, searchedDayMonth.day, searchedDayMonth.month);
+        }
+      }
+
+      const normalizedQuery = normalizeDateSearch(query.toLowerCase());
       const values = [
         menu.week_start_date,
         menu.week_end_date,
-        `${menu.week_start_date} ${menu.week_end_date}`
+        formatMenuDate(menu.week_start_date),
+        formatMenuDate(menu.week_end_date),
+        `${menu.week_start_date} ${menu.week_end_date}`,
+        `${formatMenuDate(menu.week_start_date)} ${formatMenuDate(menu.week_end_date)}`
       ];
 
       return values.some((value) => normalizeDateSearch(value).includes(normalizedQuery));
@@ -226,11 +330,6 @@ const DirectorMenu = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          {searchQuery && (
-            <button className="clear-date-btn" onClick={() => setSearchQuery('')}>
-              &times;
-            </button>
-          )}
         </div>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Zdjęcie Jadłospisu
