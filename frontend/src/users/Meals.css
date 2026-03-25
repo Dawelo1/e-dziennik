@@ -68,6 +68,10 @@
   margin: 0 auto; 
 }
 
+.meals-grid.meals-grid-single {
+  grid-template-columns: 1fr;
+}
+
 .allergens-toggle-tile {
   display: flex;
   align-items: flex-start;
@@ -115,8 +119,8 @@
 }
 
 .meal-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transform: none;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
 }
 
 /* Karta dzisiejsza */
@@ -169,15 +173,6 @@
   border: 1px solid #ececec;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   object-fit: cover;
-}
-
-.meal-photo-caption {
-  margin-top: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #666;
 }
 
 .meal-row {

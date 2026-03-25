@@ -7,7 +7,6 @@ import {
   FaUtensils,
   FaChevronLeft,
   FaChevronRight,
-  FaImage,
   FaInfoCircle
 }
 from 'react-icons/fa';
@@ -78,22 +77,12 @@ const Meals = () => {
     setCurrentDate(newDate);
   };
 
-  const formatDayHeader = (dateObj) => {
-    const options = { weekday: 'long', day: 'numeric', month: 'numeric' };
-    return dateObj.toLocaleDateString('pl-PL', options);
-  };
-
-  const daysOfWeek = [];
-  for (let i = 0; i < 5; i++) {
-    const day = new Date(monday);
-    day.setDate(monday.getDate() + i);
-    daysOfWeek.push(day);
-  }
-
-  const getMenuForDay = (dateObj) => {
-    const dateStr = formatDateAPI(dateObj);
-    return menuData.find((m) => m.week_start_date <= dateStr && m.week_end_date >= dateStr);
-  };
+  const mondayStr = formatDateAPI(monday);
+  const fridayStr = formatDateAPI(friday);
+  const weekMenu =
+    menuData.find((m) => m.week_start_date <= mondayStr && m.week_end_date >= fridayStr)
+    || menuData[0]
+    || null;
 
   if (loading) return <LoadingScreen message="Wczytywanie jadłospisu..." />;
 
@@ -125,45 +114,30 @@ const Meals = () => {
         </button>
       </div>
 
-      <div className="meals-grid">
-        {daysOfWeek.map((day) => {
-          const menu = getMenuForDay(day);
-          const isToday = formatDateAPI(new Date()) === formatDateAPI(day);
-
-          return (
-            <div key={day.toISOString()} className={`meal-card ${isToday ? 'today-card' : ''}`}>
-              <div className="meal-card-header">
-                <span className="day-name">{formatDayHeader(day)}</span>
-                {isToday && <span className="today-badge">DZIŚ</span>}
-              </div>
-
-              {!menu ? (
-                <div className="no-menu-info">
-                  <FaInfoCircle /> Brak zaplanowanego jadłospisu.
-                </div>
+      <div className="meals-grid meals-grid-single">
+        <div className="meal-card">
+          {!weekMenu ? (
+            <div className="no-menu-info">
+              <FaInfoCircle /> Brak zaplanowanego jadłospisu na ten tydzień.
+            </div>
+          ) : (
+            <div className="meal-image-wrapper">
+              {weekMenu.image ? (
+                <>
+                  <img
+                    src={weekMenu.image}
+                    alt={`Jadłospis tygodniowy ${weekMenu.week_start_date} - ${weekMenu.week_end_date}`}
+                    className="meal-photo"
+                  />
+                </>
               ) : (
-                <div className="meal-image-wrapper">
-                  {menu.image ? (
-                    <>
-                      <img
-                        src={menu.image}
-                        alt={`Jadłospis tygodniowy ${menu.week_start_date} - ${menu.week_end_date}`}
-                        className="meal-photo"
-                      />
-                      <div className="meal-photo-caption">
-                        <FaImage /> Tygodniowa rozpiska posiłków
-                      </div>
-                    </>
-                  ) : (
-                    <div className="no-menu-info">
-                      <FaInfoCircle /> Brak dodanego zdjęcia dla tego dnia.
-                    </div>
-                  )}
+                <div className="no-menu-info">
+                  <FaInfoCircle /> Brak dodanego zdjęcia jadłospisu na ten tydzień.
                 </div>
               )}
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
     </div>
   );
