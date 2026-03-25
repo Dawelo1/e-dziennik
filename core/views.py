@@ -12,7 +12,7 @@ from users.permissions import IsDirector
 from users.models import User
 from rest_framework.views import APIView
 from communication.models import Message
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 
@@ -387,7 +387,7 @@ class DailyMenuViewSet(viewsets.ModelViewSet):
     Zwraca jadłospis.
     Można filtrować po dacie, np. ?date__gte=2025-11-01&date__lte=2025-11-07
     """
-    queryset = DailyMenu.objects.all().order_by('-date')
+    queryset = DailyMenu.objects.all().order_by('-week_start_date')
     serializer_class = DailyMenuSerializer
     permission_classes = [permissions.IsAuthenticated]
     
@@ -397,14 +397,25 @@ class DailyMenuViewSet(viewsets.ModelViewSet):
             return [IsDirector()]
         return super().get_permissions()
     
-    # Dodajemy proste filtrowanie, żeby React mógł pobrać np. tylko ten tydzień
+    # Filtrowanie po zakresie dat (zwraca jadłospisy, które nachodzą na podany zakres)
     def get_queryset(self):
         queryset = super().get_queryset()
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         
         if start_date and end_date:
-            return queryset.filter(date__range=[start_date, end_date])
+            try:
+                range_start = date.fromisoformat(start_date)
+                range_end = date.fromisoformat(end_date)
+            except ValueError:
+                return queryset.none()
+
+            latest_possible_week_start = range_end
+            earliest_possible_week_start = range_start - timedelta(days=4)
+            return queryset.filter(
+                week_start_date__lte=latest_possible_week_start,
+                week_start_date__gte=earliest_possible_week_start,
+            )
         return queryset
     
 class GalleryViewSet(viewsets.ModelViewSet):

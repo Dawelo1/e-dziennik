@@ -109,50 +109,17 @@ admin.site.register(FacilityClosure)
 admin.site.register(SpecialActivity, SpecialActivityAdmin)
 
 class DailyMenuAdmin(admin.ModelAdmin):
-    # Aktualizujemy listę kolumn (breakfast_short musi być poprawione)
-    list_display = ('date', 'day_name', 'breakfast_main_short', 'lunch_main_short')
-    list_filter = ('date',)
-    date_hierarchy = 'date'
-    
-    # Układ pól w formularzu edycji
-    fieldsets = (
-        ('Data', {'fields': ('date',)}),
-        
-        # Sekcja Śniadanie - identyczny układ jak Obiad
-        ('Śniadanie', {
-            'fields': (
-                ('breakfast_soup', 'breakfast_beverage'), # W jednym wierszu
-                'breakfast_main_course',
-                'breakfast_fruit'
-            )
-        }),
-        
-        # Sekcja Obiad
-        ('Obiad', {
-            'fields': (
-                ('lunch_soup', 'lunch_beverage'), # W jednym wierszu
-                'lunch_main_course',
-                'lunch_fruit'
-            )
-        }),
-        
-        ('Przerwa na owoce', {'fields': ('fruit_break',)}),
-        ('Inne', {'fields': ('allergens',)}),
-    )
+    list_display = ('week_start_date', 'week_end_date', 'image')
+    list_filter = ('week_start_date',)
+    date_hierarchy = 'week_start_date'
+    fields = ('week_start_date', 'week_end_date_display', 'image')
+    readonly_fields = ('week_end_date_display',)
 
-    def day_name(self, obj):
-        days = {1: 'Poniedziałek', 2: 'Wtorek', 3: 'Środa', 4: 'Czwartek', 5: 'Piątek', 6: 'Sobota', 7: 'Niedziela'}
-        return days[obj.date.isoweekday()]
-    day_name.short_description = "Dzień"
-
-    # Poprawiona metoda wyświetlania skrótu śniadania na liście
-    def breakfast_main_short(self, obj):
-        return obj.breakfast_main_course[:50] + "..." if obj.breakfast_main_course else "-"
-    breakfast_main_short.short_description = "Śniadanie (Danie)"
-
-    def lunch_main_short(self, obj):
-        return obj.lunch_main_course[:50] + "..." if obj.lunch_main_course else "-"
-    lunch_main_short.short_description = "Obiad (Danie)"
+    def week_end_date_display(self, obj):
+        if not obj or not obj.week_start_date:
+            return '-'
+        return obj.week_end_date
+    week_end_date_display.short_description = 'Data zakończenia tygodnia'
 
 admin.site.register(DailyMenu, DailyMenuAdmin)
 

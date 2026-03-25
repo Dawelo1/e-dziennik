@@ -7,36 +7,15 @@ import {
   FaUtensils,
   FaChevronLeft,
   FaChevronRight,
-  FaCoffee,
-  FaDrumstickBite,
-  FaAppleAlt,
-  FaLeaf,
+  FaImage,
   FaInfoCircle
 }
 from 'react-icons/fa';
-
-const ALLERGEN_CATALOG = [
-  { name: 'Ziarna zbóż zawierające gluten', details: 'pszenica, żyto, jęczmień, owies, orkisz' },
-  { name: 'Skorupiaki', details: 'krewetki, kraby, homary' },
-  { name: 'Jaja i produkty pochodne' },
-  { name: 'Ryby i produkty pochodne' },
-  { name: 'Orzeszki ziemne', details: 'arachidowe' },
-  { name: 'Soja i produkty pochodne' },
-  { name: 'Mleko i produkty pochodne', details: 'łącznie z laktozą' },
-  { name: 'Orzechy', details: 'migdały, orzechy włoskie, laskowe, nerkowca, pistacje' },
-  { name: 'Seler i produkty pochodne' },
-  { name: 'Gorczyca i produkty pochodne' },
-  { name: 'Nasiona sezamu i produkty pochodne' },
-  { name: 'Dwutlenek siarki i siarczyny', details: 'stężenia > 10mg/kg' },
-  { name: 'Łubin i produkty pochodne' },
-  { name: 'Mięczaki', details: 'małże, ostrygi, ślimaki' }
-];
 
 const Meals = () => {
   const [menuData, setMenuData] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
-  const [showAllergens, setShowAllergens] = useState(false);
 
   const getMonday = (d) => {
     const date = new Date(d);
@@ -93,28 +72,6 @@ const Meals = () => {
     fetchData();
   }, [currentDate]);
 
-  useEffect(() => {
-    document.body.style.overflow = showAllergens ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [showAllergens]);
-
-  useEffect(() => {
-    if (!showAllergens) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        setShowAllergens(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showAllergens]);
-
   const changeWeek = (weeks) => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + (weeks * 7));
@@ -135,7 +92,7 @@ const Meals = () => {
 
   const getMenuForDay = (dateObj) => {
     const dateStr = formatDateAPI(dateObj);
-    return menuData.find((m) => m.date === dateStr);
+    return menuData.find((m) => m.week_start_date <= dateStr && m.week_end_date >= dateStr);
   };
 
   if (loading) return <LoadingScreen message="Wczytywanie jadłospisu..." />;
@@ -185,40 +142,21 @@ const Meals = () => {
                   <FaInfoCircle /> Brak zaplanowanego jadłospisu.
                 </div>
               ) : (
-                <div className="meal-sections">
-                  <div className="meal-row breakfast">
-                    <div className="meal-icon"><FaCoffee /></div>
-                    <div className="meal-details">
-                      <div className="meal-label">Śniadanie</div>
-                      {menu.breakfast_soup && <div>🥣 {menu.breakfast_soup}</div>}
-                      {menu.breakfast_main_course && <div>🥪 {menu.breakfast_main_course}</div>}
-                      {menu.breakfast_beverage && <div className="beverage">☕ {menu.breakfast_beverage}</div>}
-                      {menu.breakfast_fruit && <div className="fruit">🍎 {menu.breakfast_fruit}</div>}
-                    </div>
-                  </div>
-
-                  <div className="meal-row lunch">
-                    <div className="meal-icon"><FaDrumstickBite /></div>
-                    <div className="meal-details">
-                      <div className="meal-label">Obiad</div>
-                      {menu.lunch_soup && <div>🥣 {menu.lunch_soup}</div>}
-                      {menu.lunch_main_course && <div>🍽️ {menu.lunch_main_course}</div>}
-                      {menu.lunch_beverage && <div className="beverage">🥤 {menu.lunch_beverage}</div>}
-                      {menu.lunch_fruit && <div className="fruit">🍌 {menu.lunch_fruit}</div>}
-                    </div>
-                  </div>
-
-                  <div className="meal-row snack">
-                    <div className="meal-icon"><FaAppleAlt /></div>
-                    <div className="meal-details">
-                      <div className="meal-label">Podwieczorek</div>
-                      <div>{menu.fruit_break || '-'}</div>
-                    </div>
-                  </div>
-
-                  {menu.allergens && (
-                    <div className="allergens-box">
-                      <FaLeaf /> <strong>Alergeny:</strong> {menu.allergens}
+                <div className="meal-image-wrapper">
+                  {menu.image ? (
+                    <>
+                      <img
+                        src={menu.image}
+                        alt={`Jadłospis tygodniowy ${menu.week_start_date} - ${menu.week_end_date}`}
+                        className="meal-photo"
+                      />
+                      <div className="meal-photo-caption">
+                        <FaImage /> Tygodniowa rozpiska posiłków
+                      </div>
+                    </>
+                  ) : (
+                    <div className="no-menu-info">
+                      <FaInfoCircle /> Brak dodanego zdjęcia dla tego dnia.
                     </div>
                   )}
                 </div>
@@ -226,45 +164,7 @@ const Meals = () => {
             </div>
           );
         })}
-
-        <div className="allergens-toggle-tile">
-          <button
-            type="button"
-            className="allergens-toggle-btn"
-            onClick={() => setShowAllergens(true)}
-          >
-            <FaLeaf /> Spis alergenów
-          </button>
-        </div>
       </div>
-
-      {showAllergens && (
-        <div className="allergen-overlay" onClick={() => setShowAllergens(false)}>
-          <div className="allergen-overlay-content" onClick={(event) => event.stopPropagation()}>
-            <div className="allergen-overlay-header">
-              <h3 className="allergen-catalog-title">
-                <FaLeaf /> Spis alergenów
-              </h3>
-              <button
-                type="button"
-                className="allergen-close-btn"
-                onClick={() => setShowAllergens(false)}
-              >
-                Zamknij
-              </button>
-            </div>
-
-            <ol className="allergen-catalog-list">
-              {ALLERGEN_CATALOG.map((allergen) => (
-                <li key={allergen.name}>
-                  <span className="allergen-name">{allergen.name}</span>
-                  {allergen.details ? ` (${allergen.details}).` : '.'}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

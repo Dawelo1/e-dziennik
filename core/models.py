@@ -293,32 +293,20 @@ class SpecialActivity(models.Model):
 # core/models.py
 
 class DailyMenu(models.Model):
-    date = models.DateField(unique=True, verbose_name="Data")
-    
-    # 1. ŚNIADANIE (Podział analogiczny do obiadu)
-    breakfast_soup = models.CharField(max_length=200, verbose_name="Zupa / Zupa mleczna", blank=True, null=True)
-    breakfast_main_course = models.TextField(verbose_name="Drugie danie / Kanapki", blank=True, null=True)
-    breakfast_beverage = models.CharField(max_length=100, verbose_name="Napój", blank=True, null=True)
-    breakfast_fruit = models.CharField(max_length=100, verbose_name="Owoc / Dodatek", blank=True, null=True)
-    
-    # 2. OBIAD (Zmienione nazwy - bez prefiksu "Obiad:")
-    lunch_soup = models.CharField(max_length=200, verbose_name="Zupa", blank=True, null=True)
-    lunch_main_course = models.TextField(verbose_name="Drugie danie", blank=True, null=True)
-    lunch_beverage = models.CharField(max_length=100, verbose_name="Napój", blank=True, null=True)
-    lunch_fruit = models.CharField(max_length=100, verbose_name="Owoc / Deser", blank=True, null=True)
-    
-    # 3. PODWIECZOREK
-    fruit_break = models.TextField(verbose_name="Podwieczorek / Owoce", blank=True)
-    
-    allergens = models.CharField(max_length=200, verbose_name="Alergeny (numery)", blank=True, help_text="np. 1, 3, 7")
+    week_start_date = models.DateField(unique=True, verbose_name="Data rozpoczęcia tygodnia")
+    image = models.ImageField(upload_to='menu/%Y/%m/', verbose_name="Zdjęcie jadłospisu", blank=True, null=True)
 
     class Meta:
-        verbose_name = "Jadłospis dzienny"
+        verbose_name = "Jadłospis (zdjęcie)"
         verbose_name_plural = "Jadłospis"
-        ordering = ['-date']
+        ordering = ['-week_start_date']
 
     def __str__(self):
-        return f"Jadłospis: {self.date}"
+        return f"Jadłospis: {self.week_start_date} - {self.week_end_date}"
+
+    @property
+    def week_end_date(self):
+        return self.week_start_date + relativedelta(days=4)
     
 class PostComment(models.Model):
     post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='comments')
