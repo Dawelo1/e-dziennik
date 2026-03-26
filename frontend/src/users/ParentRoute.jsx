@@ -16,7 +16,7 @@ const ParentRoute = () => {
     }
 
     axios
-      .get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders())
+      .get('/api/users/me/', getAuthHeaders())
       .then(async (res) => {
         const user = res.data;
 
@@ -33,7 +33,7 @@ const ParentRoute = () => {
         }
 
         if (user.is_parent) {
-          const childrenRes = await axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders());
+          const childrenRes = await axios.get('/api/children/', getAuthHeaders());
           const children = Array.isArray(childrenRes.data) ? childrenRes.data : [];
           const activeChildId = getActiveChildId();
           const activeChildExists = children.some((child) => child.id === activeChildId);

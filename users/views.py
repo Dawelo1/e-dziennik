@@ -1,6 +1,6 @@
 from rest_framework import status, generics, viewsets, filters
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from django.contrib.auth import update_session_auth_hash
 from rest_framework.views import APIView
@@ -84,6 +84,9 @@ class CustomAuthToken(ObtainAuthToken):
     2. Aktualizuje datę logowania.
     3. Ustawia status ONLINE dla dyrektora.
     """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data,
                                            context={'request': request})

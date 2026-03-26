@@ -393,7 +393,7 @@ const DirectorUsers = () => {
 
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/api/users/manage/${lockTarget.id}/set-parent-lock/`,
+        `/api/users/manage/${lockTarget.id}/set-parent-lock/`,
         { lock: shouldLock },
         getAuthHeaders()
       );

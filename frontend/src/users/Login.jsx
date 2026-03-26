@@ -57,7 +57,7 @@ const Login = () => {
             removeToken();
             setError('To konto nie ma przypisanego dziecka. Skontaktuj sie z dyrektorem przedszkola.');
           } else {
-            const childrenRes = await axios.get('http://127.0.0.1:8000/api/children/', {
+            const childrenRes = await axios.get('/api/children/', {
               headers: { Authorization: `Token ${token}` },
             });
 

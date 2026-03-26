@@ -27,7 +27,7 @@ const Attendance = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const childrenRes = await axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders());
+        const childrenRes = await axios.get('/api/children/', getAuthHeaders());
         setChildren(childrenRes.data);
 
         const persistedChildId = getActiveChildId();
@@ -40,7 +40,7 @@ const Attendance = () => {
           setActiveChildId(childrenRes.data[0].id);
         }
 
-        const closuresRes = await axios.get('http://127.0.0.1:8000/api/calendar/closures/', getAuthHeaders());
+        const closuresRes = await axios.get('/api/calendar/closures/', getAuthHeaders());
         
         // ZMIANA: Mapujemy listę na obiekt { data: powód }
         const map = {};
@@ -64,7 +64,7 @@ const Attendance = () => {
   }, [selectedChild]);
 
   const fetchAttendance = () => {
-    axios.get('http://127.0.0.1:8000/api/attendance/', getAuthConfigWithActiveChild())
+    axios.get('/api/attendance/', getAuthConfigWithActiveChild())
       .then(res => {
         const map = {};
         res.data.forEach(record => {
@@ -130,14 +130,14 @@ const Attendance = () => {
 
     try {
       if (type === 'add') {
-        await axios.post('http://127.0.0.1:8000/api/attendance/', {
+        await axios.post('/api/attendance/', {
           child: selectedChild,
           date: date
         }, getAuthHeaders());
         setMessage({ type: 'success', text: `Zgłoszono nieobecność na dzień ${formatDisplayDate(date)}.` });
       } 
       else if (type === 'remove') {
-        await axios.delete(`http://127.0.0.1:8000/api/attendance/${recordId}/`, getAuthHeaders());
+        await axios.delete(`/api/attendance/${recordId}/`, getAuthHeaders());
         setMessage({ type: 'info', text: `Cofnięto zgłoszenie na dzień ${formatDisplayDate(date)}.` });
       }
       fetchAttendance();

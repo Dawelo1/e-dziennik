@@ -48,7 +48,7 @@ const Dashboard = () => {
   const getAvatarUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://127.0.0.1:8000${url}`;
+    return `${url}`;
   };
 
   const fetchData = useCallback(async ({ force = false } = {}) => {
@@ -69,11 +69,11 @@ const Dashboard = () => {
       const childScopedConfig = getAuthConfigWithActiveChild();
 
       const [postsRes, eventsRes, paymentsRes, userRes, directorStatusRes] = await Promise.all([
-        shouldFetchPosts ? axios.get('http://127.0.0.1:8000/api/newsfeed/', childScopedConfig) : Promise.resolve(null),
-        shouldFetchEventsPayments ? axios.get('http://127.0.0.1:8000/api/calendar/activities/', childScopedConfig) : Promise.resolve(null),
-        shouldFetchEventsPayments ? axios.get('http://127.0.0.1:8000/api/payments/', childScopedConfig) : Promise.resolve(null),
-        shouldFetchProfile ? axios.get('http://127.0.0.1:8000/api/users/me/', getAuthHeaders()) : Promise.resolve(null),
-        shouldFetchProfile ? axios.get('http://127.0.0.1:8000/api/users/director-status/', getAuthHeaders()) : Promise.resolve(null)
+        shouldFetchPosts ? axios.get('/api/newsfeed/', childScopedConfig) : Promise.resolve(null),
+        shouldFetchEventsPayments ? axios.get('/api/calendar/activities/', childScopedConfig) : Promise.resolve(null),
+        shouldFetchEventsPayments ? axios.get('/api/payments/', childScopedConfig) : Promise.resolve(null),
+        shouldFetchProfile ? axios.get('/api/users/me/', getAuthHeaders()) : Promise.resolve(null),
+        shouldFetchProfile ? axios.get('/api/users/director-status/', getAuthHeaders()) : Promise.resolve(null)
       ]);
 
       if (postsRes) {
@@ -206,7 +206,7 @@ const Dashboard = () => {
     }));
 
     try {
-      await axios.post(`http://127.0.0.1:8000/api/newsfeed/${postId}/like/`, {}, getAuthHeaders());
+      await axios.post(`/api/newsfeed/${postId}/like/`, {}, getAuthHeaders());
     } catch (err) {
       console.error("Błąd lajkowania:", err);
     }
@@ -241,7 +241,7 @@ const handleLikeComment = async (postId, commentId) => {
 
     // 2. Wysłanie żądania do API w tle
     try {
-      await axios.post(`http://127.0.0.1:8000/api/comments/${commentId}/like/`, {}, getAuthHeaders());
+      await axios.post(`/api/comments/${commentId}/like/`, {}, getAuthHeaders());
     } catch (err) {
       console.error("Błąd lajkowania komentarza:", err);
       // Opcjonalnie: Tu można dodać logikę cofania zmian w razie błędu serwera
@@ -258,7 +258,7 @@ const handleLikeComment = async (postId, commentId) => {
 
     try {
       const res = await axios.post(
-        `http://127.0.0.1:8000/api/newsfeed/${postId}/comment/`, 
+        `/api/newsfeed/${postId}/comment/`, 
         { content: content }, 
         getAuthHeaders()
       );

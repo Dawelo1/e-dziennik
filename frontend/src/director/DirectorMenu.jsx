@@ -156,7 +156,7 @@ const DirectorMenu = () => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get('http://127.0.0.1:8000/api/menu/', getAuthHeaders());
+      const res = await axios.get('/api/menu/', getAuthHeaders());
       setMenus(res.data);
     } catch (err) {
       console.error(err);
@@ -282,9 +282,9 @@ const DirectorMenu = () => {
     setLoading(true);
     try {
       if (editingMenu) {
-        await axios.patch(`http://127.0.0.1:8000/api/menu/${editingMenu.id}/`, payload, getAuthHeaders());
+        await axios.patch(`/api/menu/${editingMenu.id}/`, payload, getAuthHeaders());
       } else {
-        await axios.post('http://127.0.0.1:8000/api/menu/', payload, getAuthHeaders());
+        await axios.post('/api/menu/', payload, getAuthHeaders());
       }
       closeModal();
       await fetchData();
@@ -299,7 +299,7 @@ const DirectorMenu = () => {
     setActionError('');
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/menu/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(`/api/menu/${deleteTarget.id}/`, getAuthHeaders());
       setDeleteTarget(null);
       await fetchData();
     } catch (err) {
