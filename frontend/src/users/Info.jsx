@@ -50,6 +50,13 @@ const Info = () => {
               <span>ul. Kąty Grodziskie 56, 03-289 Warszawa (Białołęka)</span>
             </div>
           </div>
+          <div className="info-row">
+            <div className="icon-wrapper"><FaInfoCircle /></div>
+            <div>
+              <strong>Email:</strong>
+              <span>kontakt@pszczolkamaja.edu.pl</span>
+            </div>
+          </div>
         </div>
 
         <div className="info-columns">
@@ -73,7 +80,6 @@ const Info = () => {
               <span className="group-badge group-robaczki">🐛 Robaczki</span>
               <span className="group-badge group-misie">🐻 Misie</span>
               <span className="group-badge group-zajaczki">🐰 Zajączki</span>
-              <span className="group-badge group-liski">🦊 Liski (Zerówka)</span>
             </div>
           </div>
 

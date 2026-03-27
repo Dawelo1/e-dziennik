@@ -6,14 +6,15 @@ from django.db.models import Q, Count, F, Case, When, IntegerField
 from rest_framework.decorators import action
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment
-from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer
+from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment, Preschool
+from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer, PreschoolSerializer
 from users.permissions import IsDirector, IsDirectorOrTeacher
 from users.models import User
 from rest_framework.views import APIView
 from communication.models import Message
 from datetime import date, timedelta
 from decimal import Decimal
+from rest_framework.permissions import AllowAny
 
 
 def broadcast_notification_summary_changed(user_ids=None):
@@ -827,3 +828,11 @@ class DirectorStatsView(APIView):
         }
         
         return Response(stats)
+
+class PreschoolInfoView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        preschool = Preschool.objects.first()
+        if not preschool:
+            return Response({}, status=404)
+        return Response(PreschoolSerializer(preschool).data)

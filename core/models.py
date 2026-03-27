@@ -8,6 +8,35 @@ from dateutil.relativedelta import relativedelta
 from PIL import Image
 import os
 
+
+# Model przechowujący informacje o przedszkolu
+class Preschool(models.Model):
+    opening_time_from = models.TimeField(verbose_name="Godzina otwarcia (od)")
+    opening_time_to = models.TimeField(verbose_name="Godzina zamknięcia (do)")
+    phone_number = models.CharField(max_length=32, verbose_name="Numer telefonu")
+    email = models.EmailField(verbose_name="Adres email")
+    street = models.CharField(max_length=128, verbose_name="Ulica")
+    postal_code = models.CharField(max_length=16, verbose_name="Kod pocztowy")
+    city = models.CharField(max_length=64, verbose_name="Miejscowość")
+    bank_account_number = models.CharField(max_length=64, verbose_name="Numer konta bankowego")
+    bank_name = models.CharField(max_length=128, verbose_name="Nazwa banku", blank=True)
+    directors = models.JSONField(verbose_name="Imiona i nazwiska dyrekcji (lista)")
+
+    def clean(self):
+        super().clean()
+        if self.directors and len(self.directors) > 10:
+            from django.core.exceptions import ValidationError
+            raise ValidationError({
+                'directors': 'Możesz dodać maksymalnie 10 dyrektorów.'
+            })
+
+    class Meta:
+        verbose_name = "Dane przedszkola"
+        verbose_name_plural = "Dane przedszkola"
+
+    def __str__(self):
+        return f"Przedszkole: {self.city}, {self.street}"
+
 class Group(models.Model):
     GROUP_COLOR_CHOICES = [
         ('red', 'Czerwony'),

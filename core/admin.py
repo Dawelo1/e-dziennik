@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu, PostComment, RecurringPayment, GalleryItem, GalleryImage
+from .models import Group, Child, Payment, Post, Attendance, FacilityClosure, SpecialActivity, DailyMenu, PostComment, RecurringPayment, GalleryItem, GalleryImage, Preschool
 
 
 # Prosta rejestracja - pozwoli dodawać/edytować elementy
@@ -164,3 +164,19 @@ class GalleryItemAdmin(admin.ModelAdmin):
 
 # Rejestracja w panelu
 admin.site.register(GalleryItem, GalleryItemAdmin)
+
+class PreschoolAdmin(admin.ModelAdmin):
+    verbose_name = "Dane przedszkola"
+    verbose_name_plural = "Dane przedszkola"
+    list_display = (
+        'city', 'street', 'postal_code', 'opening_time_from', 'opening_time_to',
+        'phone_number', 'email', 'bank_account_number', 'bank_name', 'get_directors'
+    )
+
+    def get_directors(self, obj):
+        if not obj.directors:
+            return ""
+        return ", ".join(obj.directors)
+    get_directors.short_description = "Dyrekcja"
+
+admin.site.register(Preschool, PreschoolAdmin)
