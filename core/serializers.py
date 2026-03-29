@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from datetime import time, timedelta
-from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group, RecurringPayment, Preschool
+from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group, RecurringPayment
 from drf_writable_nested import WritableNestedModelSerializer
 
 class ChildSerializer(serializers.ModelSerializer):
@@ -322,8 +322,3 @@ class GroupSerializer(serializers.ModelSerializer):
             return super().create(validated_data)
         except DjangoValidationError as exc:
             raise serializers.ValidationError({'detail': exc.messages[0] if exc.messages else str(exc)})
-
-class PreschoolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Preschool
-        exclude = ['bank_account_number', 'bank_name']
