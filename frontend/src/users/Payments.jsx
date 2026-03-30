@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Payments.css';
 import LoadingScreen from './LoadingScreen';
-import { getAuthConfigWithActiveChild } from '../authUtils';
+import { getAuthConfigWithActiveChild, getAuthHeaders } from '../authUtils';
 import { 
   FaMoneyBillWave, 
   FaCopy, 
@@ -24,7 +24,19 @@ const Payments = () => {
   // Nowy stan do ukrywania/pokazywania historii
   const [showHistory, setShowHistory] = useState(false);
 
-  const ibanNumber = 'PL 12 3456 0000 1111 2222 3333 4444';
+  const [preschool, setPreschool] = useState(null);
+  const ibanNumber = preschool?.bank_account_number || '';
+  useEffect(() => {
+    const fetchPreschool = async () => {
+      try {
+        const res = await axios.get('http://127.0.0.1:8000/api/preschool/', getAuthHeaders());
+        setPreschool(Array.isArray(res.data) ? res.data[0] : res.data);
+      } catch (err) {
+        // Możesz dodać obsługę błędu jeśli chcesz
+      }
+    };
+    fetchPreschool();
+  }, []);
 
   useEffect(() => {
     const markSeen = async () => {
@@ -105,14 +117,14 @@ const Payments = () => {
 
         {/* PRAWA STRONA: DANE DO PRZELEWU */}
         <div className="info-section-right">
-          <h4 className="bank-title">Dane do przelewu:</h4>
-          <p className="bank-name">Przedszkole "Pszczółka Maja"</p>
+          <h4 className="bank-title">Numer konta do przelewu:</h4>
+          <p className="bank-name">{preschool?.bank_name || 'Nazwa banku nieznana'}</p>
           <div 
             className="iban-box copyable" 
             onClick={handleCopyIban}
             title="Kliknij aby skopiować"
           >
-            <code>{ibanNumber}</code>
+            <code>{ibanNumber ? `PL ${ibanNumber}` : ''}</code>
             <span className="copy-icon">
               {copiedIban ? <FaCheckCircle color="green"/> : <FaCopy />}
             </span>

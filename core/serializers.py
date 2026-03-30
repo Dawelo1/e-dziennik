@@ -317,8 +317,17 @@ class GroupSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'teachers_info', 'color_key']
         read_only_fields = ['color_key']
 
+
     def create(self, validated_data):
         try:
             return super().create(validated_data)
         except DjangoValidationError as exc:
             raise serializers.ValidationError({'detail': exc.messages[0] if exc.messages else str(exc)})
+
+# --- SERIALIZER DLA PRZEDSZKOLA ---
+from .models import Preschool
+
+class PreschoolSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Preschool
+        fields = '__all__'

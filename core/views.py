@@ -6,8 +6,8 @@ from django.db.models import Q, Count, F, Case, When, IntegerField
 from rest_framework.decorators import action
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment
-from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer
+from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment, Preschool
+from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer, PreschoolSerializer
 from users.permissions import IsDirector, IsDirectorOrTeacher
 from users.models import User
 from rest_framework.views import APIView
@@ -827,3 +827,14 @@ class DirectorStatsView(APIView):
         }
         
         return Response(stats)
+
+from rest_framework.permissions import IsAuthenticated
+from .models import Preschool
+from .serializers import PreschoolSerializer
+
+class PreschoolViewSet(viewsets.ModelViewSet):
+    queryset = Preschool.objects.all()
+    serializer_class = PreschoolSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'put', 'patch']
+    # Odczyt i edycja (brak tworzenia/kasowania przez API)
