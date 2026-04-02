@@ -11,24 +11,30 @@ import {
   FaInfoCircle 
 } from 'react-icons/fa';
 
+
 const Info = () => {
   const [preschool, setPreschool] = useState(null);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchPreschool = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/preschool/', getAuthHeaders());
-        // Jeśli jest tylko jeden rekord, bierzemy pierwszy
-        setPreschool(Array.isArray(res.data) ? res.data[0] : res.data);
+        const [preschoolRes, groupsRes] = await Promise.all([
+          axios.get('http://127.0.0.1:8000/api/preschool/', getAuthHeaders()),
+          axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders()),
+        ]);
+        setPreschool(Array.isArray(preschoolRes.data) ? preschoolRes.data[0] : preschoolRes.data);
+        setGroups(Array.isArray(groupsRes.data) ? groupsRes.data : []);
       } catch (err) {
-        setError('Błąd pobierania danych przedszkola');
+        setError('Błąd pobierania danych przedszkola lub grup');
       } finally {
         setLoading(false);
       }
     };
-    fetchPreschool();
+    fetchData();
   }, []);
 
   if (loading) return <div className="info-page-container"><div className="info-card-main">Ładowanie danych…</div></div>;
@@ -97,10 +103,26 @@ const Info = () => {
           <div className="info-column">
             <h3><FaUsers /> Nasze Grupy</h3>
             <div className="groups-grid">
-              <span className="group-badge group-myszki">🐭 Myszki</span>
-              <span className="group-badge group-robaczki">🐛 Robaczki</span>
-              <span className="group-badge group-misie">🐻 Misie</span>
-              <span className="group-badge group-zajaczki">🐰 Zajączki</span>
+              {groups.length > 0 ? (
+                groups.map((group) => {
+                  // Wyciągnij emoji jeśli jest na początku nazwy
+                  const emojiMatch = group.name.match(/^([\p{Emoji}\p{So}\p{Sk}\p{P}\p{S}]{1,2})/u);
+                  const emoji = emojiMatch ? emojiMatch[1] : '';
+                  const cleanName = group.name.replace(/^([\p{Emoji}\p{So}\p{Sk}\p{P}\p{S}]{1,2})/u, '').trim();
+                  return (
+                    <span
+                      key={group.id}
+                      className={`group-badge group-color-${group.color_key || 'default'}`}
+                      title={group.name}
+                    >
+                      <span style={{fontSize: '1.3em', marginRight: cleanName ? 6 : 0}}>{emoji}</span>
+                      {cleanName}
+                    </span>
+                  );
+                })
+              ) : (
+                <span>Brak danych o grupach</span>
+              )}
             </div>
           </div>
         </div>

@@ -129,20 +129,37 @@
 }
 
 .group-badge {
-  padding: 8px 15px;
-  border-radius: 20px;
+  padding: 7px 14px;
+  border-radius: 16px;
   font-weight: 600;
-  font-size: 14px;
-  display: inline-block;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+  border: none;
+  min-width: 36px;
+  min-height: 24px;
+  transition: transform 0.13s;
+  cursor: default;
+  user-select: none;
+  background: #f7f7f7;
+  color: #333;
 }
 
-/* Kolory dla grup */
-.group-myszki { background-color: #e0f7fa; color: #006064; }
-.group-robaczki { background-color: #f1f8e9; color: #33691e; }
-.group-misie { background-color: #fff3e0; color: #e65100; }
-.group-zajaczki { background-color: #f3e5f5; color: #4a148c; }
-.group-liski { background-color: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; }
+/* Kolory wg color_key z bazy */
+.group-color-red    { background: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; }
+.group-color-yellow { background: #fffde7; color: #fbc02d; border: 1px solid #fff9c4; }
+.group-color-blue   { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+.group-color-green  { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+.group-color-orange { background: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+.group-color-purple { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; }
+.group-color-default { background: #ececec; color: #333; border: 1px solid #e0e0e0; }
+
+.group-badge:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+}
 
 /* Responsywność dla strony Info */
 @media (max-width: 768px) {
