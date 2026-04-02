@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getActiveChildId } from '../authUtils';
 import axios from 'axios';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../cropUtils';
@@ -63,7 +64,9 @@ const Settings = () => {
       .catch(err => console.error(err));
   };
 
-  useEffect(() => { fetchUserData(); }, []);
+  useEffect(() => { 
+    fetchUserData(); 
+  }, []);
 
   // 1. WYBÓR PLIKU I OTWARCIE CROPPERA
   const handleFileChange = async (e) => {
@@ -248,6 +251,11 @@ const Settings = () => {
       setChildren(prev => prev.map(c => c.id === id ? {...c, medical_info: val} : c));
   };
 
+
+  // Pobierz aktywne dziecko
+  const activeChildId = getActiveChildId();
+  const activeChild = children.find(child => child.id === activeChildId);
+
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
 
   return (
@@ -397,25 +405,27 @@ const Settings = () => {
 
         {/* DZIECI */}
         <div className="settings-column">
-          {children.map(child => (
-            <div key={child.id} className="settings-wide-card medical-card">
+          {activeChild ? (
+            <div className="settings-wide-card medical-card">
                <div className="card-title" style={{display:'flex', alignItems:'center', gap:10}}>
-                 <FaNotesMedical color="#e0245e"/> {child.first_name} {child.last_name}
+                 <FaNotesMedical color="#e0245e"/> {activeChild.first_name} {activeChild.last_name}
                </div>
                <div className="medical-info-section">
                   <p className="medical-label">Informacje medyczne/alergie:</p>
                   <textarea 
-                    className={`medical-textarea ${child.medical_info && child.medical_info.trim() ? 'filled' : ''}`}
-                    value={child.medical_info||''}
-                    onChange={e => handleMedicalChange(child.id, e.target.value)}
+                    className={`medical-textarea ${activeChild.medical_info && activeChild.medical_info.trim() ? 'filled' : ''}`}
+                    value={activeChild.medical_info||''}
+                    onChange={e => handleMedicalChange(activeChild.id, e.target.value)}
                   />
                   <div className="medical-footer">
                     <span className="medical-hint"><FaChild/> Widoczne dla dyrekcji.</span>
-                    <button className="honey-btn" onClick={() => handleMedicalUpdate(child.id, child.medical_info)}>Zapisz</button>
+                    <button className="honey-btn" onClick={() => handleMedicalUpdate(activeChild.id, activeChild.medical_info)}>Zapisz</button>
                   </div>
                </div>
             </div>
-          ))}
+          ) : (
+            <div className="settings-alert error">Nie znaleziono aktywnego dziecka.</div>
+          )}
         </div>
       </div>
 
