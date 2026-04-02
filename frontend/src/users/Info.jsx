@@ -115,7 +115,7 @@ const Info = () => {
                       className={`group-badge group-color-${group.color_key || 'default'}`}
                       title={group.name}
                     >
-                      <span style={{fontSize: '1.3em', marginRight: cleanName ? 6 : 0}}>{emoji}</span>
+                      <span style={{fontSize: '1.3em'}}>{emoji}</span>
                       {cleanName}
                     </span>
                   );
