@@ -8,7 +8,7 @@ import { getAuthHeaders } from '../authUtils';
 import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
-  FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
+  FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave, FaMapMarkerAlt, FaClock, FaUniversity
 } 
 from 'react-icons/fa';
 
@@ -16,12 +16,35 @@ const Settings = () => {
   const [currentData, setCurrentData] = useState({
     email: '', phone_number: '', username: '', first_name: '', last_name: '', avatar: null
   });
+  const [preschoolData, setPreschoolData] = useState({ id: null, street: '', postal_code: '', city: '' });
+  const [preschoolForm, setPreschoolForm] = useState({
+    email: '',
+    phone_number: '',
+    street: '',
+    postal_code: '',
+    city: '',
+    opening_time_from: '',
+    opening_time_to: '',
+    bank_account_number: '',
+    bank_name: '',
+    directors: ''
+  });
 
-  const [formData, setFormData] = useState({ new_email: '', new_phone: '', new_first_name: '', new_last_name: '' });
+  const [formData, setFormData] = useState({ new_first_name: '', new_last_name: '' });
   const [passwordData, setPasswordData] = useState({ old_password: '', new_password: '', confirm_password: '' });
   const [passwordErrors, setPasswordErrors] = useState({ old_password: '', new_password: '', confirm_password: '' });
   const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
-  const [contactErrors, setContactErrors] = useState({ email: '', phone: '' });
+  const [contactErrors, setContactErrors] = useState({
+    email: '',
+    phone_number: '',
+    street: '',
+    postal_code: '',
+    city: '',
+    opening_time_from: '',
+    opening_time_to: '',
+    bank_account_number: '',
+    directors: ''
+  });
   const [contactMessage, setContactMessage] = useState({ type: '', text: '' });
   const [personalErrors, setPersonalErrors] = useState({ first_name: '', last_name: '' });
   const [personalMessage, setPersonalMessage] = useState({ type: '', text: '' });
@@ -61,7 +84,39 @@ const Settings = () => {
       .catch(err => console.error(err));
   };
 
-  useEffect(() => { fetchUserData(); }, []);
+  const fetchPreschoolData = () => {
+    axios.get('http://127.0.0.1:8000/api/preschool/', getAuthHeaders())
+      .then((res) => {
+        const preschool = Array.isArray(res.data) ? res.data[0] : res.data;
+        if (!preschool) return;
+
+        setPreschoolData({
+          id: preschool.id,
+          street: preschool.street || '',
+          postal_code: preschool.postal_code || '',
+          city: preschool.city || ''
+        });
+
+        setPreschoolForm({
+          email: preschool.email || '',
+          phone_number: preschool.phone_number || '',
+          street: preschool.street || '',
+          postal_code: preschool.postal_code || '',
+          city: preschool.city || '',
+          opening_time_from: preschool.opening_time_from ? preschool.opening_time_from.slice(0, 5) : '',
+          opening_time_to: preschool.opening_time_to ? preschool.opening_time_to.slice(0, 5) : '',
+          bank_account_number: preschool.bank_account_number || '',
+          bank_name: preschool.bank_name || '',
+          directors: Array.isArray(preschool.directors) ? preschool.directors.join(', ') : ''
+        });
+      })
+      .catch(err => console.error(err));
+  };
+
+  useEffect(() => {
+    fetchUserData();
+    fetchPreschoolData();
+  }, []);
 
   // 1. WYBÓR PLIKU I OTWARCIE CROPPERA
   const handleFileChange = async (e) => {
@@ -160,34 +215,53 @@ const Settings = () => {
     return /^\+?\d{9,15}$/.test(normalizedPhone);
   };
 
-  const handleContactUpdate = async (type) => {
+  const handlePreschoolFormChange = (key, value) => {
+    setPreschoolForm((prev) => ({ ...prev, [key]: value }));
+    setContactErrors((prev) => ({ ...prev, [key]: '' }));
+  };
+
+  const handleContactUpdate = async () => {
     setMessage({ type: '', text: '' });
     setPasswordMessage({ type: '', text: '' });
     setPasswordErrors({ old_password: '', new_password: '', confirm_password: '' });
 
-    const nextContactErrors = { email: '', phone: '' };
-    let payload = {};
+    const nextContactErrors = {
+      email: '',
+      phone_number: '',
+      street: '',
+      postal_code: '',
+      city: '',
+      opening_time_from: '',
+      opening_time_to: '',
+      bank_account_number: '',
+      directors: ''
+    };
 
-    if (type === 'email') {
-      const emailValue = formData.new_email.trim();
-      if (!emailValue) {
-        nextContactErrors.email = 'Podaj nowy adres email.';
-      } else if (!isValidEmail(emailValue)) {
-        nextContactErrors.email = 'Podaj poprawny adres email.';
-      } else {
-        payload.email = emailValue;
-      }
+    if (!preschoolData.id) {
+      setContactMessage({ type: 'error', text: 'Brak danych przedszkola do aktualizacji.' });
+      return;
     }
 
-    if (type === 'phone') {
-      const phoneValue = formData.new_phone.trim();
-      if (!phoneValue) {
-        nextContactErrors.phone = 'Podaj nowy numer telefonu.';
-      } else if (!isValidPhone(phoneValue)) {
-        nextContactErrors.phone = 'Podaj poprawny numer telefonu (9-15 cyfr).';
-      } else {
-        payload.phone_number = phoneValue;
-      }
+    if (!preschoolForm.email.trim()) nextContactErrors.email = 'Podaj adres email.';
+    else if (!isValidEmail(preschoolForm.email.trim())) nextContactErrors.email = 'Podaj poprawny adres email.';
+
+    if (!preschoolForm.phone_number.trim()) nextContactErrors.phone_number = 'Podaj numer telefonu.';
+    else if (!isValidPhone(preschoolForm.phone_number.trim())) nextContactErrors.phone_number = 'Podaj poprawny numer telefonu (9-15 cyfr).';
+
+    if (!preschoolForm.street.trim()) nextContactErrors.street = 'Podaj ulicę.';
+    if (!preschoolForm.postal_code.trim()) nextContactErrors.postal_code = 'Podaj kod pocztowy.';
+    if (!preschoolForm.city.trim()) nextContactErrors.city = 'Podaj miejscowość.';
+    if (!preschoolForm.opening_time_from.trim()) nextContactErrors.opening_time_from = 'Podaj godzinę otwarcia.';
+    if (!preschoolForm.opening_time_to.trim()) nextContactErrors.opening_time_to = 'Podaj godzinę zamknięcia.';
+    if (!preschoolForm.bank_account_number.trim()) nextContactErrors.bank_account_number = 'Podaj numer konta.';
+
+    const directorsList = preschoolForm.directors
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean);
+
+    if (directorsList.length === 0) {
+      nextContactErrors.directors = 'Podaj co najmniej jedną osobę z dyrekcji.';
     }
 
     setContactErrors(nextContactErrors);
@@ -201,11 +275,23 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      await axios.patch('http://127.0.0.1:8000/api/users/me/', payload, getAuthHeaders());
-      setContactMessage({ type: 'success', text: 'Dane kontaktowe zostały zapisane.' });
-      fetchUserData();
-      setFormData((prev) => ({ ...prev, new_email: type === 'email' ? '' : prev.new_email, new_phone: type === 'phone' ? '' : prev.new_phone }));
-    } catch (err) { setContactMessage({ type: 'error', text: 'Nie udało się zapisać danych kontaktowych.' }); } finally { setLoading(false); }
+      const payload = {
+        email: preschoolForm.email.trim(),
+        phone_number: preschoolForm.phone_number.trim(),
+        street: preschoolForm.street.trim(),
+        postal_code: preschoolForm.postal_code.trim(),
+        city: preschoolForm.city.trim(),
+        opening_time_from: `${preschoolForm.opening_time_from.trim()}:00`,
+        opening_time_to: `${preschoolForm.opening_time_to.trim()}:00`,
+        bank_account_number: preschoolForm.bank_account_number.trim(),
+        bank_name: preschoolForm.bank_name.trim(),
+        directors: directorsList
+      };
+
+      await axios.patch(`http://127.0.0.1:8000/api/preschool/${preschoolData.id}/`, payload, getAuthHeaders());
+      setContactMessage({ type: 'success', text: 'Dane przedszkola zostały zapisane.' });
+      fetchPreschoolData();
+    } catch (err) { setContactMessage({ type: 'error', text: 'Nie udało się zapisać danych przedszkola.' }); } finally { setLoading(false); }
   };
 
   const handlePersonalUpdate = async () => {
@@ -383,54 +469,7 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* DANE KONTAKTOWE */}
-          <div className="settings-wide-card">
-             <div className="card-title">Dane Kontaktowe</div>
-             {contactMessage.text && <div className={`settings-alert ${contactMessage.type}`}>{contactMessage.text}</div>}
-             <div className="inputs-grid-2col">
-                 <div className="input-box read-only"><FaEnvelope className="field-icon"/><input value={currentData.email} disabled/></div>
-                 <div className="input-box">
-                  <FaEnvelope className="field-icon"/>
-                  <input
-                    className={contactErrors.email ? 'input-invalid' : ''}
-                    placeholder="Nowy Email"
-                    value={formData.new_email}
-                    onChange={(e) => {
-                      setFormData({ ...formData, new_email: e.target.value });
-                      setContactErrors((prev) => ({ ...prev, email: '' }));
-                    }}
-                  />
-                  {contactErrors.email && <div className="field-required-message">{contactErrors.email}</div>}
-                </div>
-             </div>
-             <div className="button-container-right">
-                <button className="honey-btn" onClick={() => handleContactUpdate('email')}>Zapisz Email</button>
-             </div>
-             <div className="spacer-20" style={{height: '30px'}}></div>
-             <div className="inputs-grid-2col">
-                 <div className="input-box read-only"><FaPhoneAlt className="field-icon"/><input value={getMaskedPhone(currentData.phone_number)} disabled/></div>
-                 <div className="input-box">
-                  <FaPhoneAlt className="field-icon"/>
-                  <input
-                    className={contactErrors.phone ? 'input-invalid' : ''}
-                    placeholder="Nowy Telefon"
-                    value={formData.new_phone}
-                    onChange={(e) => {
-                      setFormData({ ...formData, new_phone: e.target.value });
-                      setContactErrors((prev) => ({ ...prev, phone: '' }));
-                    }}
-                  />
-                  {contactErrors.phone && <div className="field-required-message">{contactErrors.phone}</div>}
-                </div>
-             </div>
-             <div className="button-container-right">
-                <button className="honey-btn" onClick={() => handleContactUpdate('phone')}>Zapisz Telefon</button>
-             </div>
-          </div>
-        </div>
-
-        {/* DANE OSOBOWE */}
-        <div className="settings-column">
+          {/* DANE OSOBOWE */}
           <div className="settings-wide-card">
             <div className="card-title">Dane Osobowe</div>
             {personalMessage.text && <div className={`settings-alert ${personalMessage.type}`}>{personalMessage.text}</div>}
@@ -450,7 +489,7 @@ const Settings = () => {
                 {personalErrors.first_name && <div className="field-required-message">{personalErrors.first_name}</div>}
               </div>
             </div>
-            <div className="spacer-20" style={{height: '20px'}}></div>
+            <div className="section-gap"></div>
             <div className="inputs-grid-2col">
               <div className="input-box read-only"><FaUser className="field-icon"/><input value={currentData.last_name} disabled/></div>
               <div className="input-box">
@@ -470,6 +509,140 @@ const Settings = () => {
             <div className="button-container-right">
               <button className="honey-btn" onClick={handlePersonalUpdate}>Zapisz Dane Osobowe</button>
             </div>
+          </div>
+        </div>
+
+        {/* DANE PRZEDSZKOLA */}
+        <div className="settings-column">
+           <div className="settings-wide-card preschool-card">
+             <div className="card-title">Dane Przedszkola</div>
+             <div className="card-subtitle">Te dane są wyświetlane w informacjach dla rodzica.</div>
+             {contactMessage.text && <div className={`settings-alert ${contactMessage.type}`}>{contactMessage.text}</div>}
+             <div className="inputs-grid-2col">
+                 <div className="input-box">
+                  <label className="field-label">Email przedszkola</label>
+                  <FaEnvelope className="field-icon"/>
+                  <input
+                    className={contactErrors.email ? 'input-invalid' : ''}
+                    placeholder="Email Przedszkola"
+                    value={preschoolForm.email}
+                    onChange={(e) => handlePreschoolFormChange('email', e.target.value)}
+                  />
+                  {contactErrors.email && <div className="field-required-message">{contactErrors.email}</div>}
+                </div>
+                <div className="input-box">
+                  <label className="field-label">Telefon przedszkola</label>
+                  <FaPhoneAlt className="field-icon"/>
+                  <input
+                    className={contactErrors.phone_number ? 'input-invalid' : ''}
+                    placeholder="Telefon Przedszkola"
+                    value={preschoolForm.phone_number}
+                    onChange={(e) => handlePreschoolFormChange('phone_number', e.target.value)}
+                  />
+                  {contactErrors.phone_number && <div className="field-required-message">{contactErrors.phone_number}</div>}
+                </div>
+             </div>
+             <div className="section-gap"></div>
+             <div className="inputs-grid-2col">
+                 <div className="input-box">
+                  <label className="field-label">Ulica</label>
+                  <FaMapMarkerAlt className="field-icon"/>
+                  <input
+                    className={contactErrors.street ? 'input-invalid' : ''}
+                    placeholder="Ulica"
+                    value={preschoolForm.street}
+                    onChange={(e) => handlePreschoolFormChange('street', e.target.value)}
+                  />
+                  {contactErrors.street && <div className="field-required-message">{contactErrors.street}</div>}
+                </div>
+                 <div className="input-box">
+                  <label className="field-label">Kod pocztowy</label>
+                  <FaMapMarkerAlt className="field-icon"/>
+                  <input
+                    className={contactErrors.postal_code ? 'input-invalid' : ''}
+                    placeholder="Kod pocztowy"
+                    value={preschoolForm.postal_code}
+                    onChange={(e) => handlePreschoolFormChange('postal_code', e.target.value)}
+                  />
+                  {contactErrors.postal_code && <div className="field-required-message">{contactErrors.postal_code}</div>}
+                </div>
+             </div>
+             <div className="section-gap"></div>
+             <div className="inputs-grid-2col">
+                <div className="input-box">
+                  <label className="field-label">Miejscowość</label>
+                  <FaMapMarkerAlt className="field-icon"/>
+                  <input
+                    className={contactErrors.city ? 'input-invalid' : ''}
+                    placeholder="Miejscowość"
+                    value={preschoolForm.city}
+                    onChange={(e) => handlePreschoolFormChange('city', e.target.value)}
+                  />
+                  {contactErrors.city && <div className="field-required-message">{contactErrors.city}</div>}
+                </div>
+                <div className="input-box">
+                  <label className="field-label">Numer konta bankowego</label>
+                  <FaUniversity className="field-icon"/>
+                  <input
+                    className={contactErrors.bank_account_number ? 'input-invalid' : ''}
+                    placeholder="Numer konta bankowego"
+                    value={preschoolForm.bank_account_number}
+                    onChange={(e) => handlePreschoolFormChange('bank_account_number', e.target.value)}
+                  />
+                  {contactErrors.bank_account_number && <div className="field-required-message">{contactErrors.bank_account_number}</div>}
+                </div>
+             </div>
+             <div className="section-gap"></div>
+             <div className="inputs-grid-2col">
+                <div className="input-box">
+                  <label className="field-label">Nazwa banku (opcjonalnie)</label>
+                  <FaUniversity className="field-icon"/>
+                  <input
+                    placeholder="Nazwa banku (opcjonalnie)"
+                    value={preschoolForm.bank_name}
+                    onChange={(e) => handlePreschoolFormChange('bank_name', e.target.value)}
+                  />
+                </div>
+                <div className="input-box">
+                  <label className="field-label">Godzina otwarcia</label>
+                  <FaClock className="field-icon"/>
+                  <input
+                    type="time"
+                    className={contactErrors.opening_time_from ? 'input-invalid' : ''}
+                    value={preschoolForm.opening_time_from}
+                    onChange={(e) => handlePreschoolFormChange('opening_time_from', e.target.value)}
+                  />
+                  {contactErrors.opening_time_from && <div className="field-required-message">{contactErrors.opening_time_from}</div>}
+                </div>
+             </div>
+             <div className="section-gap"></div>
+             <div className="inputs-grid-2col">
+                <div className="input-box">
+                  <label className="field-label">Godzina zamknięcia</label>
+                  <FaClock className="field-icon"/>
+                  <input
+                    type="time"
+                    className={contactErrors.opening_time_to ? 'input-invalid' : ''}
+                    value={preschoolForm.opening_time_to}
+                    onChange={(e) => handlePreschoolFormChange('opening_time_to', e.target.value)}
+                  />
+                  {contactErrors.opening_time_to && <div className="field-required-message">{contactErrors.opening_time_to}</div>}
+                </div>
+                <div className="input-box">
+                  <label className="field-label">Dyrekcja</label>
+                  <FaUser className="field-icon"/>
+                  <input
+                    className={contactErrors.directors ? 'input-invalid' : ''}
+                    placeholder="Dyrekcja (oddziel przecinkami)"
+                    value={preschoolForm.directors}
+                    onChange={(e) => handlePreschoolFormChange('directors', e.target.value)}
+                  />
+                  {contactErrors.directors && <div className="field-required-message">{contactErrors.directors}</div>}
+                </div>
+             </div>
+             <div className="button-container-right">
+                <button className="honey-btn" onClick={handleContactUpdate}>Zapisz Dane Przedszkola</button>
+             </div>
           </div>
         </div>
       </div>
