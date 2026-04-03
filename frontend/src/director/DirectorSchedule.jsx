@@ -120,6 +120,23 @@ const DirectorSchedule = () => {
     return `group-color-${group.color_key}`;
   };
 
+  const getGroupDisplayData = (groupId) => {
+    const group = groups.find((item) => item.id === groupId);
+    if (!group) return { emoji: '', name: 'Nieznana grupa' };
+
+    const fallbackName = group.name || '';
+    const legacyEmojiMatch = fallbackName.match(/^([^\p{L}\p{N}]+)/u);
+    const emoji = (group.emoji || (legacyEmojiMatch ? legacyEmojiMatch[1] : '') || '').trim();
+    const name = group.emoji
+      ? fallbackName
+      : fallbackName.replace(/^([^\p{L}\p{N}]+)/u, '').trim();
+
+    return {
+      emoji,
+      name: name || 'Nieznana grupa'
+    };
+  };
+
   const extractApiErrorMessage = (err) => {
     const errorData = err?.response?.data;
 
@@ -276,11 +293,15 @@ const DirectorSchedule = () => {
                 </td>
                 <td>
                   <div style={{display:'flex', gap: 5, flexWrap:'wrap'}}>
-                    {activity.groups.length > 0 ? activity.groups.map(groupId => (
-                      <span key={groupId} className={`role-badge ${getGroupBadgeClass(groupId)}`}>
-                        {groups.find(g => g.id === groupId)?.name || 'Nieznana grupa'}
-                      </span>
-                    )) : (
+                    {activity.groups.length > 0 ? activity.groups.map(groupId => {
+                      const groupData = getGroupDisplayData(groupId);
+                      return (
+                        <span key={groupId} className={`role-badge ${getGroupBadgeClass(groupId)}`}>
+                          {groupData.emoji ? `${groupData.emoji} ` : ''}
+                          {groupData.name}
+                        </span>
+                      );
+                    }) : (
                       <span className="role-badge group-all">Wszystkie</span>
                     )}
                   </div>
@@ -366,7 +387,7 @@ const DirectorSchedule = () => {
                   {groups.map(g => (
                     <div key={g.id} className="checkbox-item">
                       <input type="checkbox" id={`group-${g.id}`} checked={formData.groups.includes(g.id)} onChange={() => handleGroupToggle(g.id)} />
-                      <label htmlFor={`group-${g.id}`}>{g.name}</label>
+                      <label htmlFor={`group-${g.id}`}>{`${g.emoji ? `${g.emoji} ` : ''}${g.name}`}</label>
                     </div>
                   ))}
                 </div>

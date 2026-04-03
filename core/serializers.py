@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from datetime import time, timedelta
+import unicodedata
 from .models import Child, Payment, Attendance, Post, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, GalleryImage, Group, RecurringPayment
 from drf_writable_nested import WritableNestedModelSerializer
 
@@ -312,9 +313,26 @@ class GalleryItemSerializer(WritableNestedModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     color_key = serializers.CharField(read_only=True)
 
+    def validate_emoji(self, value):
+        emoji = (value or '').strip()
+        if not emoji:
+            return ''
+
+        if any(char.isalnum() for char in emoji):
+            raise serializers.ValidationError('Pole emoji może zawierać tylko emoji/symbole, bez liter i cyfr.')
+
+        if any(char.isspace() for char in emoji):
+            raise serializers.ValidationError('Pole emoji nie może zawierać spacji.')
+
+        has_symbol = any(unicodedata.category(char).startswith('S') for char in emoji)
+        if not has_symbol:
+            raise serializers.ValidationError('Podaj poprawne emoji lub symbol.')
+
+        return emoji
+
     class Meta:
         model = Group
-        fields = ['id', 'name', 'teachers_info', 'color_key']
+        fields = ['id', 'name', 'emoji', 'teachers_info', 'color_key']
         read_only_fields = ['color_key']
 
 

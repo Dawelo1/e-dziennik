@@ -105,10 +105,11 @@ const Info = () => {
             <div className="groups-grid">
               {groups.length > 0 ? (
                 groups.map((group) => {
-                  // Wyciągnij emoji jeśli jest na początku nazwy
-                  const emojiMatch = group.name.match(/^([\p{Emoji}\p{So}\p{Sk}\p{P}\p{S}]{1,2})/u);
-                  const emoji = emojiMatch ? emojiMatch[1] : '';
-                  const cleanName = group.name.replace(/^([\p{Emoji}\p{So}\p{Sk}\p{P}\p{S}]{1,2})/u, '').trim();
+                  const legacyEmojiMatch = (group.name || '').match(/^([^\p{L}\p{N}]+)/u);
+                  const emoji = (group.emoji || (legacyEmojiMatch ? legacyEmojiMatch[1] : '') || '').trim();
+                  const cleanName = group.emoji
+                    ? (group.name || '')
+                    : (group.name || '').replace(/^([^\p{L}\p{N}]+)/u, '').trim();
                   return (
                     <span
                       key={group.id}

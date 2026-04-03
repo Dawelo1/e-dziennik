@@ -273,11 +273,15 @@ const DirectorPosts = () => {
   const getGroupName = (id) => {
     if (!id) return 'Wszyscy';
     const g = groups.find(x => x.id === id);
-    return g ? stripLeadingGroupEmoji(g.name) : 'Nieznana';
-  };
+    if (!g) return 'Nieznana';
 
-  const stripLeadingGroupEmoji = (groupName = '') => {
-    return groupName.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+    const legacyEmojiMatch = (g.name || '').match(/^([^\p{L}\p{N}]+)/u);
+    const emoji = (g.emoji || (legacyEmojiMatch ? legacyEmojiMatch[1] : '') || '').trim();
+    const cleanName = g.emoji
+      ? (g.name || '').trim()
+      : (g.name || '').replace(/^([^\p{L}\p{N}]+)/u, '').trim();
+
+    return `${emoji ? `${emoji} ` : ''}${cleanName}`.trim() || 'Nieznana';
   };
 
   const getGroupBadgeClass = (groupId) => {
@@ -408,7 +412,7 @@ const DirectorPosts = () => {
                 </td>
                 <td>
                   <span className={`role-badge ${groupBadgeClass}`}>
-                    {post.target_group ? <FaLayerGroup /> : <FaBullhorn />}
+                    {!post.target_group && <FaBullhorn />}
                     {groupName}
                   </span>
                 </td>
@@ -471,7 +475,7 @@ const DirectorPosts = () => {
                 >
                   <option value="">-- Wszyscy (Ogólne) --</option>
                   {groups.map(g => (
-                    <option key={g.id} value={g.id}>{stripLeadingGroupEmoji(g.name)}</option>
+                    <option key={g.id} value={g.id}>{getGroupName(g.id)}</option>
                   ))}
                 </select>
               </div>

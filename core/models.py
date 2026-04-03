@@ -48,6 +48,7 @@ class Group(models.Model):
     ]
 
     name = models.CharField(max_length=100, verbose_name="Nazwa Grupy")
+    emoji = models.CharField(max_length=16, blank=True, default='', verbose_name="Emoji grupy")
     teachers_info = models.TextField(help_text="Imiona i nazwiska nauczycieli", verbose_name="Informacje o nauczycielach")
     color_key = models.CharField(
         max_length=20,

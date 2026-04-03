@@ -304,10 +304,27 @@ const DirectorGallery = () => {
       setLoading(false);
     }
   };
-  
+
   const getGroupName = (id) => {
     if (!id) return 'Wszyscy';
-    return groups.find(g => g.id === id)?.name || '-';
+    const g = groups.find(x => x.id === id);
+    if (!g) return '-';
+
+    const legacyEmojiMatch = (g.name || '').match(/^([^\p{L}\p{N}]+)/u);
+    const emoji = (g.emoji || (legacyEmojiMatch ? legacyEmojiMatch[1] : '') || '').trim();
+    const cleanName = g.emoji
+      ? (g.name || '').trim()
+      : (g.name || '').replace(/^([^\p{L}\p{N}]+)/u, '').trim();
+
+    return `${emoji ? `${emoji} ` : ''}${cleanName}`.trim() || '-';
+  };
+
+  // Zwraca klasę badge grupy jak w ogłoszeniach
+  const getGroupBadgeClass = (groupId) => {
+    if (!groupId) return 'group-all';
+    const group = groups.find((item) => item.id === groupId);
+    if (!group?.color_key) return 'group-default';
+    return `group-color-${group.color_key}`;
   };
 
   const getAlbumDate = (album) => {
@@ -431,8 +448,8 @@ const DirectorGallery = () => {
                       <span style={{fontSize: 13, color: '#666'}}>{getAlbumDate(album)}</span>
                     </td>
                     <td>
-                      <span className={`role-badge ${album.target_group ? 'director' : 'parent'}`}>
-                        {album.target_group ? <FaLayerGroup/> : <FaBullhorn/>}
+                      <span className={`role-badge ${getGroupBadgeClass(album.target_group)}`}>
+                        {!album.target_group && <FaBullhorn/>}
                         {getGroupName(album.target_group)}
                       </span>
                     </td>
@@ -481,7 +498,7 @@ const DirectorGallery = () => {
                 <select value={formData.target_group} onChange={e => setFormData({...formData, target_group: e.target.value})}>
                   <option value="">-- Wszyscy --</option>
                   {groups.map(g => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
+                    <option key={g.id} value={g.id}>{getGroupName(g.id)}</option>
                   ))}
                 </select>
               </div>

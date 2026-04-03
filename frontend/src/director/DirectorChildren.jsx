@@ -303,14 +303,28 @@ const DirectorChildren = () => {
     }
   };
 
-  // Helper do wyświetlania nazwy grupy
+  const extractLegacyEmoji = (name = '') => {
+    const match = name.match(/^([^\p{L}\p{N}]+)/u);
+    return match ? match[1].trim() : '';
+  };
+
   const stripLeadingGroupEmoji = (groupName = '') => {
-    return groupName.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+    return groupName.replace(/^([^\p{L}\p{N}]+)/u, '').trim();
   };
 
   const getGroupName = (id) => {
-    const g = groups.find(x => x.id === id);
-    return g ? stripLeadingGroupEmoji(g.name) : '-';
+    const group = groups.find((item) => item.id === id);
+    if (!group) return '-';
+
+    const emoji = (group.emoji || extractLegacyEmoji(group.name || '')).trim();
+    const cleanName = group.emoji ? (group.name || '').trim() : stripLeadingGroupEmoji(group.name || '');
+    return `${emoji ? `${emoji} ` : ''}${cleanName}`.trim() || '-';
+  };
+
+  const getGroupNameForSort = (id) => {
+    const group = groups.find((item) => item.id === id);
+    if (!group) return '-';
+    return group.emoji ? (group.name || '').trim() : stripLeadingGroupEmoji(group.name || '');
   };
 
   const getGroupBadgeClass = (groupId) => {
@@ -338,8 +352,8 @@ const DirectorChildren = () => {
 
   const sortedChildren = [...filteredChildren].sort((a, b) => {
     if (sortField === 'group') {
-      const groupA = getGroupName(a.group);
-      const groupB = getGroupName(b.group);
+      const groupA = getGroupNameForSort(a.group);
+      const groupB = getGroupNameForSort(b.group);
       const byGroup = groupA.localeCompare(groupB, 'pl', { sensitivity: 'base' });
 
       if (byGroup !== 0) {
@@ -587,7 +601,7 @@ const DirectorChildren = () => {
                 >
                   <option value="">-- Wybierz grupę --</option>
                   {groups.map(g => (
-                    <option key={g.id} value={g.id}>{stripLeadingGroupEmoji(g.name)}</option>
+                    <option key={g.id} value={g.id}>{getGroupName(g.id)}</option>
                   ))}
                 </select>
                 {requiredFieldErrors.group && (

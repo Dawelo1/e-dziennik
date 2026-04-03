@@ -11,10 +11,6 @@ import {
 } from 'react-icons/fa';
 
 const DirectorGroups = () => {
-  const stripLeadingGroupEmoji = (groupName = '') => {
-    return groupName.replace(/^[^\p{L}\p{N}]+/u, '').trim();
-  };
-
   const parseTeachersInfo = (value = '') => {
     const parts = value
       .split(/[\n,;]+/)
@@ -41,7 +37,7 @@ const DirectorGroups = () => {
   const [editingGroup, setEditingGroup] = useState(null); 
 
   // Formularz
-  const initialForm = { name: '', teacher_1: '', teacher_2: '', teacher_3: '' };
+  const initialForm = { name: '', emoji: '', teacher_1: '', teacher_2: '', teacher_3: '' };
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -122,7 +118,8 @@ const DirectorGroups = () => {
       const [teacher1, teacher2, teacher3] = parseTeachersInfo(group.teachers_info);
       setEditingGroup(group);
       setFormData({
-        name: stripLeadingGroupEmoji(group.name),
+        name: group.name,
+        emoji: group.emoji || '',
         teacher_1: teacher1,
         teacher_2: teacher2,
         teacher_3: teacher3
@@ -143,7 +140,8 @@ const DirectorGroups = () => {
       return;
     }
 
-    const trimmedName = stripLeadingGroupEmoji(formData.name.trim());
+    const trimmedName = formData.name.trim();
+    const trimmedEmoji = formData.emoji.trim();
     const trimmedTeacher1 = formData.teacher_1.trim();
     const missingName = !trimmedName;
     const missingTeacher1 = !trimmedTeacher1;
@@ -154,11 +152,17 @@ const DirectorGroups = () => {
     if (missingTeacher1) triggerInvalidField('teacher_1');
     if (missingName || missingTeacher1) return;
 
+    if (trimmedEmoji && /[\p{L}\p{N}\s]/u.test(trimmedEmoji)) {
+      setError('Emoji grupy może zawierać tylko emoji/symbole, bez liter, cyfr i spacji.');
+      return;
+    }
+
     setError('');
     setLoading(true); // Pszczółka podczas zapisu
 
     const payload = {
       name: trimmedName,
+      emoji: trimmedEmoji,
       teachers_info: [trimmedTeacher1, formData.teacher_2, formData.teacher_3]
         .map((item) => item.trim())
         .filter(Boolean)
@@ -196,6 +200,8 @@ const DirectorGroups = () => {
         setLimitErrorMessage(detailMessage);
       } else if (apiErrors?.name?.[0]) {
         setError(`Nazwa grupy: ${apiErrors.name[0]}`);
+      } else if (apiErrors?.emoji?.[0]) {
+        setError(`Emoji grupy: ${apiErrors.emoji[0]}`);
       } else if (apiErrors?.teachers_info?.[0]) {
         setError(`Nauczyciele / Wychowawcy: ${apiErrors.teachers_info[0]}`);
       } else if (detailMessage) {
@@ -278,7 +284,8 @@ const DirectorGroups = () => {
                 <tr key={group.id}>
                   <td>
                     <span style={{fontWeight: '700', color: '#333', fontSize: '15px'}}>
-                      {stripLeadingGroupEmoji(group.name)}
+                      {group.emoji ? `${group.emoji} ` : ''}
+                      {group.name}
                     </span>
                   </td>
                   <td>
@@ -330,6 +337,26 @@ const DirectorGroups = () => {
                 {requiredFieldErrors.name && (
                   <div className="field-required-message">To pole jest wymagane.</div>
                 )}
+              </div>
+
+              <div className="form-group full-width">
+                <label>Emoji grupy</label>
+                <input
+                  type="text"
+                  maxLength={16}
+                  placeholder="np. 🐝"
+                  value={formData.emoji}
+                  onChange={e => setFormData({...formData, emoji: e.target.value})}
+                />
+                <small style={{ color: '#777', display: 'block' }}>
+                  Dozwolone: emoji lub symbole, bez liter, cyfr i spacji.
+                </small>
+                <small style={{ color: '#777', display: 'block' }}>
+                  Emoji można znaleźć na stronach takich jak{' '}
+                  <a href="https://emojipedia.org/" target="_blank" rel="noopener noreferrer">
+                    Emojipedia
+                  </a>.
+                </small>
               </div>
 
               <div className="form-group full-width">
@@ -389,7 +416,7 @@ const DirectorGroups = () => {
             <h3>Usunąć grupę?</h3>
             <p>
               Czy na pewno chcesz trwale usunąć grupę
-              {` "${stripLeadingGroupEmoji(deleteTarget.name)}"`}
+              {` "${deleteTarget.name}"`}
               ? Tej operacji nie można cofnąć.
             </p>
             {actionError && <div className="form-error">{actionError}</div>}

@@ -170,7 +170,7 @@ const DirectorDashboard = () => {
               onChange={(e) => setAttendanceGroup(e.target.value)}
             >
               {attendanceGroups.map(group => (
-                <option key={group.id} value={group.id}>{group.name}</option>
+                <option key={group.id} value={group.id}>{`${group.emoji ? `${group.emoji} ` : ''}${group.name}`}</option>
               ))}
             </select>
           </div>
