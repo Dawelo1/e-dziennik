@@ -8,6 +8,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, FacilityClosure, SpecialActivity, PostComment, GalleryItem, Group, RecurringPayment, Preschool
 from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer, PreschoolSerializer
+from .group_deletion import delete_group_with_related_data
 from users.permissions import IsDirector, IsDirectorOrTeacher
 from users.models import User
 from rest_framework.views import APIView
@@ -614,6 +615,26 @@ class GroupViewSet(viewsets.ModelViewSet): # Zmieniamy na ModelViewSet (pełny d
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsDirector()]
         return super().get_permissions()
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance.children.exists():
+            director_password = (request.data.get('director_password') or '').strip()
+            if not director_password:
+                return Response(
+                    {'detail': 'Aby usunąć grupę z dziećmi, wpisz hasło dyrektora.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not request.user.check_password(director_password):
+                return Response(
+                    {'detail': 'Nieprawidłowe hasło dyrektora.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        delete_group_with_related_data(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 class DirectorStatsView(APIView):
     """

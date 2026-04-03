@@ -42,6 +42,7 @@ const DirectorGroups = () => {
   const [formData, setFormData] = useState(initialForm);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
+  const [directorPassword, setDirectorPassword] = useState('');
   const [limitErrorMessage, setLimitErrorMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [invalidFields, setInvalidFields] = useState({ name: false, teacher_1: false });
@@ -220,13 +221,30 @@ const DirectorGroups = () => {
     if (!deleteTarget) return;
     setActionError('');
 
+    if (hasChildrenInGroup && !directorPassword.trim()) {
+      setActionError('Wpisz hasło dyrektora, aby usunąć grupę.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await axios.delete(`http://127.0.0.1:8000/api/groups/${deleteTarget.id}/`, getAuthHeaders());
+      await axios.delete(
+        `http://127.0.0.1:8000/api/groups/${deleteTarget.id}/`,
+        {
+          ...getAuthHeaders(),
+          data: {
+            director_password: hasChildrenInGroup ? directorPassword : '',
+          },
+        }
+      );
+      setDirectorPassword('');
       setDeleteTarget(null);
       await fetchGroups();
     } catch (err) {
-      setActionError('Nie udało się usunąć grupy (może są do niej przypisane dzieci?).');
+      const detailMessage = typeof err?.response?.data?.detail === 'string'
+        ? err.response.data.detail
+        : '';
+      setActionError(detailMessage || 'Nie udało się usunąć grupy.');
       setLoading(false);
     }
   };
@@ -237,12 +255,15 @@ const DirectorGroups = () => {
 
   const closeDeleteModal = () => {
     setActionError('');
+    setDirectorPassword('');
     setDeleteTarget(null);
   };
 
   const closeLimitModal = () => {
     setLimitErrorMessage('');
   };
+
+  const hasChildrenInGroup = (deleteTarget?.children_count || 0) > 0;
 
   useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
   useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
@@ -316,7 +337,15 @@ const DirectorGroups = () => {
                     <button className="action-icon-btn edit" onClick={() => openModal(group)} title="Edytuj">
                       <FaEdit />
                     </button>
-                    <button className="action-icon-btn delete" onClick={() => { setActionError(''); setDeleteTarget(group); }} title="Usuń">
+                    <button
+                      className="action-icon-btn delete"
+                      onClick={() => {
+                        setActionError('');
+                        setDirectorPassword('');
+                        setDeleteTarget(group);
+                      }}
+                      title="Usuń"
+                    >
                       <FaTrash />
                     </button>
                   </td>
@@ -431,14 +460,37 @@ const DirectorGroups = () => {
         <div className="modal-overlay">
           <div className="delete-modal-content">
             <div className="warning-icon"><FaExclamationTriangle /></div>
-            <h3>Usunąć grupę?</h3>
-            <p>
-              Czy na pewno chcesz trwale usunąć grupę
-              {` "${deleteTarget.name}"`}
-              ? Tej operacji nie można cofnąć.
-            </p>
+            <h3>{hasChildrenInGroup ? 'Usunąć grupę wraz z dziećmi?' : 'Usunąć grupę?'}</h3>
+            {hasChildrenInGroup ? (
+              <p>
+                Grupa
+                {` "${deleteTarget.name}"`}
+                {' '}zawiera {deleteTarget.children_count} {deleteTarget.children_count === 1 ? 'dziecko' : 'dzieci'}.
+                Jej usunięcie spowoduje trwałe usunięcie dzieci z tej grupy oraz wszystkich powiązanych danych
+                (m.in. płatności, postów, galerii i kont rodziców bez dzieci w innych grupach).
+                Tej operacji nie można cofnąć. Najlepiej wykonać ją po zakończeniu roku szkolnego, gdy dane archiwalne nie są już potrzebne.
+              </p>
+            ) : (
+              <p>
+                Czy na pewno chcesz trwale usunąć grupę
+                {` "${deleteTarget.name}"`}
+                ? Tej operacji nie można cofnąć.
+              </p>
+            )}
+            {hasChildrenInGroup && (
+              <div className="form-group full-width" style={{ marginTop: '8px', marginBottom: '14px' }}>
+                <label>Hasło dyrektora <span className="required-asterisk">*</span></label>
+                <input
+                  type="password"
+                  placeholder="Wpisz swoje hasło..."
+                  value={directorPassword}
+                  onChange={(e) => setDirectorPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+            )}
             {actionError && <div className="form-error">{actionError}</div>}
-            <div className="modal-actions">
+            <div className="modal-actions" style={{ marginTop: '12px' }}>
               <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>

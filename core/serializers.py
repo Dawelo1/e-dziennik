@@ -312,6 +312,10 @@ class GalleryItemSerializer(WritableNestedModelSerializer):
     
 class GroupSerializer(serializers.ModelSerializer):
     color_key = serializers.CharField(read_only=True)
+    children_count = serializers.SerializerMethodField(read_only=True)
+
+    def get_children_count(self, obj):
+        return obj.children.count()
 
     def validate_emoji(self, value):
         emoji = (value or '').strip()
@@ -332,7 +336,7 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ['id', 'name', 'emoji', 'teachers_info', 'color_key']
+        fields = ['id', 'name', 'emoji', 'teachers_info', 'color_key', 'children_count']
         read_only_fields = ['color_key']
 
 

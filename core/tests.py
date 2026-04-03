@@ -8,8 +8,10 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework.test import APITestCase, APIClient
 
-from core.models import Attendance, Child, FacilityClosure, Group, Payment, RecurringPayment
+from core.group_deletion import delete_group_with_related_data
+from core.models import Attendance, Child, FacilityClosure, GalleryItem, Group, Payment, Post, RecurringPayment, SpecialActivity
 
 
 def business_days_between(first_day, last_day):
@@ -336,3 +338,215 @@ class RecurringPaymentGenerationTests(TestCase):
 
 		template.refresh_from_db()
 		self.assertEqual(template.next_payment_date, date(2026, 4, 1))
+
+
+class GroupDeepDeletionTests(TestCase):
+	def setUp(self):
+		self.group_to_delete = Group.objects.create(
+			name='Do usuniecia',
+			teachers_info='Opiekun A'
+		)
+		self.group_to_keep = Group.objects.create(
+			name='Do pozostawienia',
+			teachers_info='Opiekun B'
+		)
+
+		User = get_user_model()
+		self.parent_only_deleted_group = User.objects.create_user(
+			username='parent_delete',
+			password='secret123',
+			is_parent=True,
+		)
+		self.parent_with_other_group_child = User.objects.create_user(
+			username='parent_keep',
+			password='secret123',
+			is_parent=True,
+		)
+
+		self.child_deleted_1 = Child.objects.create(
+			group=self.group_to_delete,
+			first_name='Ala',
+			last_name='Usun',
+			date_of_birth=date(2020, 1, 1),
+		)
+		self.child_deleted_1.parents.add(self.parent_only_deleted_group)
+
+		self.child_deleted_2 = Child.objects.create(
+			group=self.group_to_delete,
+			first_name='Ola',
+			last_name='Mix',
+			date_of_birth=date(2020, 2, 2),
+		)
+		self.child_deleted_2.parents.add(self.parent_with_other_group_child)
+
+		self.child_kept = Child.objects.create(
+			group=self.group_to_keep,
+			first_name='Mia',
+			last_name='Mix',
+			date_of_birth=date(2020, 3, 3),
+		)
+		self.child_kept.parents.add(self.parent_with_other_group_child)
+
+		Payment.objects.create(
+			child=self.child_deleted_1,
+			amount=Decimal('150.00'),
+			description='Platnosc do usuniecia',
+		)
+		Payment.objects.create(
+			child=self.child_kept,
+			amount=Decimal('200.00'),
+			description='Platnosc do zachowania',
+		)
+
+		self.recurring_delete_only = RecurringPayment.objects.create(
+			amount=Decimal('80.00'),
+			description='Szablon usuwany',
+			frequency='monthly',
+			next_payment_date=date(2026, 4, 1),
+		)
+		self.recurring_delete_only.children.add(self.child_deleted_1)
+
+		self.recurring_mixed = RecurringPayment.objects.create(
+			amount=Decimal('90.00'),
+			description='Szablon mieszany',
+			frequency='monthly',
+			next_payment_date=date(2026, 4, 1),
+		)
+		self.recurring_mixed.children.add(self.child_deleted_2, self.child_kept)
+
+		self.post_for_deleted_group = Post.objects.create(
+			title='Post grupowy',
+			content='Do usuniecia',
+			target_group=self.group_to_delete,
+		)
+		self.post_for_kept_group = Post.objects.create(
+			title='Post innej grupy',
+			content='Do zachowania',
+			target_group=self.group_to_keep,
+		)
+
+		self.gallery_for_deleted_group = GalleryItem.objects.create(
+			title='Album grupowy',
+			target_group=self.group_to_delete,
+		)
+		self.gallery_for_kept_group = GalleryItem.objects.create(
+			title='Album innej grupy',
+			target_group=self.group_to_keep,
+		)
+
+		self.activity_only_deleted_group = SpecialActivity.objects.create(
+			title='Wycieczka A',
+			description='Tylko grupa usuwana',
+			date=date(2026, 4, 15),
+			start_time=datetime.strptime('10:00', '%H:%M').time(),
+		)
+		self.activity_only_deleted_group.groups.add(self.group_to_delete)
+
+		self.activity_mixed_groups = SpecialActivity.objects.create(
+			title='Wycieczka B',
+			description='Dwie grupy',
+			date=date(2026, 4, 20),
+			start_time=datetime.strptime('11:00', '%H:%M').time(),
+		)
+		self.activity_mixed_groups.groups.add(self.group_to_delete, self.group_to_keep)
+
+	def test_delete_group_removes_deep_related_data(self):
+		delete_group_with_related_data(self.group_to_delete)
+
+		self.assertFalse(Group.objects.filter(id=self.group_to_delete.id).exists())
+
+		self.assertFalse(Child.objects.filter(id=self.child_deleted_1.id).exists())
+		self.assertFalse(Child.objects.filter(id=self.child_deleted_2.id).exists())
+		self.assertTrue(Child.objects.filter(id=self.child_kept.id).exists())
+
+		self.assertFalse(Payment.objects.filter(child_id=self.child_deleted_1.id).exists())
+		self.assertTrue(Payment.objects.filter(child_id=self.child_kept.id).exists())
+
+		self.assertFalse(Post.objects.filter(id=self.post_for_deleted_group.id).exists())
+		self.assertTrue(Post.objects.filter(id=self.post_for_kept_group.id).exists())
+
+		self.assertFalse(GalleryItem.objects.filter(id=self.gallery_for_deleted_group.id).exists())
+		self.assertTrue(GalleryItem.objects.filter(id=self.gallery_for_kept_group.id).exists())
+
+		self.assertFalse(SpecialActivity.objects.filter(id=self.activity_only_deleted_group.id).exists())
+		self.assertTrue(SpecialActivity.objects.filter(id=self.activity_mixed_groups.id).exists())
+		self.activity_mixed_groups.refresh_from_db()
+		self.assertNotIn(self.group_to_delete.id, self.activity_mixed_groups.groups.values_list('id', flat=True))
+		self.assertIn(self.group_to_keep.id, self.activity_mixed_groups.groups.values_list('id', flat=True))
+
+		self.assertFalse(RecurringPayment.objects.filter(id=self.recurring_delete_only.id).exists())
+		self.assertTrue(RecurringPayment.objects.filter(id=self.recurring_mixed.id).exists())
+		self.recurring_mixed.refresh_from_db()
+		self.assertEqual(self.recurring_mixed.children.count(), 1)
+		self.assertEqual(self.recurring_mixed.children.first().id, self.child_kept.id)
+
+		User = get_user_model()
+		self.assertFalse(User.objects.filter(id=self.parent_only_deleted_group.id).exists())
+		self.assertTrue(User.objects.filter(id=self.parent_with_other_group_child.id).exists())
+
+
+class GroupDeletePasswordRequirementTests(APITestCase):
+	def setUp(self):
+		self.director_password = 'sekret123!'
+		self.director = get_user_model().objects.create_user(
+			username='director_delete',
+			password=self.director_password,
+			is_director=True,
+			is_parent=False,
+		)
+		self.empty_group = Group.objects.create(
+			name='Pusta grupa',
+			teachers_info='Nauczyciel Test'
+		)
+		self.group_with_child = Group.objects.create(
+			name='Grupa z dzieckiem',
+			teachers_info='Nauczyciel Test'
+		)
+		self.parent = get_user_model().objects.create_user(
+			username='parent_delete_password',
+			password='rodzic123',
+			is_parent=True,
+		)
+		self.child = Child.objects.create(
+			group=self.group_with_child,
+			first_name='Jan',
+			last_name='Test',
+			date_of_birth=date(2020, 1, 1),
+		)
+		self.child.parents.add(self.parent)
+		self.client = APIClient()
+		self.client.force_authenticate(user=self.director)
+
+	def test_delete_empty_group_without_password_returns_204(self):
+		response = self.client.delete(f'/api/groups/{self.empty_group.id}/', data={}, format='json')
+
+		self.assertEqual(response.status_code, 204)
+		self.assertFalse(Group.objects.filter(id=self.empty_group.id).exists())
+
+	def test_delete_group_with_children_without_password_returns_400(self):
+		response = self.client.delete(f'/api/groups/{self.group_with_child.id}/', data={}, format='json')
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn('wpisz hasło dyrektora', (response.data.get('detail') or '').lower())
+		self.assertTrue(Group.objects.filter(id=self.group_with_child.id).exists())
+
+	def test_delete_group_with_invalid_password_returns_400(self):
+		response = self.client.delete(
+			f'/api/groups/{self.group_with_child.id}/',
+			data={'director_password': 'zle-haslo'},
+			format='json'
+		)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn('nieprawidłowe hasło dyrektora', (response.data.get('detail') or '').lower())
+		self.assertTrue(Group.objects.filter(id=self.group_with_child.id).exists())
+
+	def test_delete_group_with_children_and_valid_password_returns_204(self):
+		response = self.client.delete(
+			f'/api/groups/{self.group_with_child.id}/',
+			data={'director_password': self.director_password},
+			format='json'
+		)
+
+		self.assertEqual(response.status_code, 204)
+		self.assertFalse(Group.objects.filter(id=self.group_with_child.id).exists())
