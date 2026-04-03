@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { getAuthHeaders } from '../authUtils';
+import { getActiveChildId, getAuthHeaders, setActiveChildId } from '../authUtils';
 import './Info.css';
 import { 
   FaMapMarkerAlt, 
@@ -15,21 +15,45 @@ import {
 const Info = () => {
   const [preschool, setPreschool] = useState(null);
   const [groups, setGroups] = useState([]);
+  const [activeChildGroup, setActiveChildGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const teachersList = (activeChildGroup?.teachers_info || '')
+    .split(/\r?\n|,|;/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [preschoolRes, groupsRes] = await Promise.all([
+        const [preschoolRes, groupsRes, childrenRes] = await Promise.all([
           axios.get('http://127.0.0.1:8000/api/preschool/', getAuthHeaders()),
           axios.get('http://127.0.0.1:8000/api/groups/', getAuthHeaders()),
+          axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders()),
         ]);
+
+        const fetchedGroups = Array.isArray(groupsRes.data) ? groupsRes.data : [];
+        const fetchedChildren = Array.isArray(childrenRes.data) ? childrenRes.data : [];
+
         setPreschool(Array.isArray(preschoolRes.data) ? preschoolRes.data[0] : preschoolRes.data);
-        setGroups(Array.isArray(groupsRes.data) ? groupsRes.data : []);
+        setGroups(fetchedGroups);
+
+        if (fetchedChildren.length > 0) {
+          const persistedChildId = getActiveChildId();
+          const selectedChild = fetchedChildren.find((child) => child.id === persistedChildId) || fetchedChildren[0];
+
+          if (!persistedChildId || selectedChild.id !== persistedChildId) {
+            setActiveChildId(selectedChild.id);
+          }
+
+          setActiveChildGroup(fetchedGroups.find((group) => group.id === selectedChild.group) || null);
+        } else {
+          setActiveChildGroup(null);
+        }
       } catch (err) {
-        setError('Błąd pobierania danych przedszkola lub grup');
+        setError('Błąd pobierania danych przedszkola, grup lub dzieci');
       } finally {
         setLoading(false);
       }
@@ -99,32 +123,48 @@ const Info = () => {
               )}
             </ul>
           </div>
-          {/* SEKCJA 3: Grupy */}
+          {/* SEKCJA 3: Wychowawcy */}
           <div className="info-column">
-            <h3><FaUsers /> Nasze Grupy</h3>
-            <div className="groups-grid">
-              {groups.length > 0 ? (
-                groups.map((group) => {
-                  const legacyEmojiMatch = (group.name || '').match(/^([^\p{L}\p{N}]+)/u);
-                  const emoji = (group.emoji || (legacyEmojiMatch ? legacyEmojiMatch[1] : '') || '').trim();
-                  const cleanName = group.emoji
-                    ? (group.name || '')
-                    : (group.name || '').replace(/^([^\p{L}\p{N}]+)/u, '').trim();
-                  return (
-                    <span
-                      key={group.id}
-                      className={`group-badge group-color-${group.color_key || 'default'}`}
-                      title={group.name}
-                    >
-                      <span style={{fontSize: '1.3em'}}>{emoji}</span>
-                      {cleanName}
-                    </span>
-                  );
-                })
+            <h3>
+              <FaUserTie /> Wychowawcy grupy "{activeChildGroup?.name || 'Brak grupy'}"
+            </h3>
+            <ul className="staff-list">
+              {teachersList.length > 0 ? (
+                teachersList.map((teacher, idx) => (
+                  <li key={idx}><strong>{teacher}</strong></li>
+                ))
               ) : (
-                <span>Brak danych o grupach</span>
+                <li>Brak informacji o nauczycielach tej grupy</li>
               )}
-            </div>
+            </ul>
+          </div>
+        </div>
+
+        <div className="info-groups-section">
+          <h3><FaUsers /> Nasze Grupy</h3>
+          <div className="groups-grid">
+            {groups.length > 0 ? (
+              groups.map((group) => {
+                const isActiveChildGroup = Boolean(activeChildGroup && group.id === activeChildGroup.id);
+                const legacyEmojiMatch = (group.name || '').match(/^([^\p{L}\p{N}]+)/u);
+                const emoji = (group.emoji || (legacyEmojiMatch ? legacyEmojiMatch[1] : '') || '').trim();
+                const cleanName = group.emoji
+                  ? (group.name || '')
+                  : (group.name || '').replace(/^([^\p{L}\p{N}]+)/u, '').trim();
+                return (
+                  <span
+                    key={group.id}
+                    className={`group-badge group-color-${group.color_key || 'default'} ${isActiveChildGroup ? 'group-badge-active-child' : ''}`}
+                    title={group.name}
+                  >
+                    <span style={{fontSize: '1.3em'}}>{emoji}</span>
+                    {cleanName}
+                  </span>
+                );
+              })
+            ) : (
+              <span>Brak danych o grupach</span>
+            )}
           </div>
         </div>
       </div>

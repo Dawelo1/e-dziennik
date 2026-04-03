@@ -140,7 +140,6 @@
   border: none;
   min-width: 36px;
   min-height: 24px;
-  transition: transform 0.13s;
   cursor: default;
   user-select: none;
   background: #f7f7f7;
@@ -156,9 +155,23 @@
 .group-color-purple { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; }
 .group-color-default { background: #ececec; color: #333; border: 1px solid #e0e0e0; }
 
-.group-badge:hover {
-  transform: scale(1.04);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+.group-badge-active-child {
+  box-shadow: 0 0 0 2px #f2c94c, 0 4px 14px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.info-groups-section {
+  margin-top: 32px;
+}
+
+.info-groups-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #444;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin: 0 0 20px;
 }
 
 /* Responsywność dla strony Info */
