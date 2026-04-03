@@ -121,6 +121,33 @@ class PaymentViewSet(viewsets.ModelViewSet):
         target_ids = set(parent_ids) | set(director_ids)
         broadcast_notification_summary_changed(target_ids)
 
+    @action(detail=False, methods=['get'], url_path='generate-title')
+    def generate_title(self, request):
+        child_id = request.query_params.get('child_id')
+        if not child_id:
+            return Response({'detail': 'Parametr child_id jest wymagany.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            child_id_int = int(child_id)
+        except (TypeError, ValueError):
+            return Response({'detail': 'Parametr child_id musi być liczbą całkowitą.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        child_queryset = Child.objects.filter(id=child_id_int)
+        if not request.user.is_director:
+            child_queryset = child_queryset.filter(parents=request.user)
+
+        child = child_queryset.first()
+        if not child:
+            return Response({'detail': 'Nie znaleziono dziecka dla podanego identyfikatora.'}, status=status.HTTP_404_NOT_FOUND)
+
+        generated_title = Payment(
+            child=child,
+            amount=Decimal('0.00'),
+            description='Podgląd tytułu',
+        ).generate_unique_title()
+
+        return Response({'payment_title': generated_title}, status=status.HTTP_200_OK)
+
 
 class RecurringPaymentViewSet(viewsets.ModelViewSet):
     serializer_class = RecurringPaymentSerializer

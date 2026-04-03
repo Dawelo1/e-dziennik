@@ -5,6 +5,7 @@ import { getCroppedImg } from '../cropUtils';
 import './DirectorSettings.css';
 import LoadingScreen from '../users/LoadingScreen';
 import { getAuthHeaders } from '../authUtils';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 import { 
   FaLock, FaEnvelope, FaPhoneAlt, FaCheck, FaUser, FaUserCog, 
   FaNotesMedical, FaChild, FaCamera, FaTrashAlt, FaExclamationTriangle, FaSave 
@@ -133,6 +134,18 @@ const Settings = () => {
       setLoading(false);
     }
   };
+
+  const closeCropModal = () => {
+    setIsCropModalOpen(false);
+    setImageSrc(null);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isCropModalOpen, onEscape: closeCropModal, onEnter: saveCroppedImage });
+  useModalKeyboardShortcuts({ isOpen: isDeleteModalOpen, onEscape: closeDeleteModal, onEnter: confirmDeleteAvatar });
 
   const getMaskedPhone = (phone) => {
     if (!phone) return 'Brak numeru';
@@ -495,7 +508,7 @@ const Settings = () => {
             </div>
 
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => {setIsCropModalOpen(false); setImageSrc(null);}}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeCropModal}>Anuluj</button>
               <button className="modal-btn confirm success" onClick={saveCroppedImage}><FaSave /> Zapisz</button>
             </div>
           </div>
@@ -510,7 +523,7 @@ const Settings = () => {
             <h3>Usunąć zdjęcie?</h3>
             <p>Czy na pewno chcesz usunąć swoje zdjęcie profilowe? Zostanie przywrócony domyślny awatar.</p>
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setIsDeleteModalOpen(false)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={confirmDeleteAvatar}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

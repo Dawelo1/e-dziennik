@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css';
 import LoadingScreen from '../users/LoadingScreen';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 import {
 	FaMoneyBillWave,
 	FaSyncAlt,
@@ -260,6 +261,7 @@ const DirectorPayments = () => {
 	const [recurringForm, setRecurringForm] = useState(initialRecurringForm);
 	const [formError, setFormError] = useState('');
 	const [actionError, setActionError] = useState('');
+	const [titleGenerating, setTitleGenerating] = useState(false);
 
 	const isRecurringView = viewMode === 'recurring';
 
@@ -501,6 +503,7 @@ const DirectorPayments = () => {
 	const openCreateModal = () => {
 		setFormError('');
 		setActionError('');
+		setTitleGenerating(false);
 		if (isRecurringView) {
 			setEditingRecurring(null);
 			setRecurringForm(initialRecurringForm);
@@ -514,6 +517,7 @@ const DirectorPayments = () => {
 	const openEditModal = (item) => {
 		setFormError('');
 		setActionError('');
+		setTitleGenerating(false);
 		if (isRecurringView) {
 			setEditingRecurring(item);
 			setRecurringForm({
@@ -535,6 +539,37 @@ const DirectorPayments = () => {
 			});
 		}
 		setIsModalOpen(true);
+	};
+
+	const generatePaymentTitleForChild = async (childId) => {
+		if (!childId) return '';
+
+		const res = await axios.get(
+			`http://127.0.0.1:8000/api/payments/generate-title/?child_id=${childId}`,
+			getAuthHeaders()
+		);
+
+		return res.data?.payment_title || '';
+	};
+
+	const handleOneTimeChildChange = async (rawChildId) => {
+		const childId = rawChildId ? Number(rawChildId) : '';
+		setOneTimeForm((prev) => ({ ...prev, child: childId }));
+
+		if (!childId || editingOneTime) return;
+
+		setTitleGenerating(true);
+		try {
+			const generatedTitle = await generatePaymentTitleForChild(childId);
+			setOneTimeForm((prev) => {
+				if (prev.child !== childId) return prev;
+				return { ...prev, payment_title: generatedTitle };
+			});
+		} catch (err) {
+			setFormError(parseApiError(err, 'Nie udało się wygenerować tytułu płatności. Możesz wpisać go ręcznie.'));
+		} finally {
+			setTitleGenerating(false);
+		}
 	};
 
 	const handleSave = async (event) => {
@@ -618,6 +653,18 @@ const DirectorPayments = () => {
 			setSubmitting(false);
 		}
 	};
+
+	const closeModal = () => {
+		setIsModalOpen(false);
+	};
+
+	const closeDeleteModal = () => {
+		setActionError('');
+		setDeleteTarget(null);
+	};
+
+	useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+	useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
 
 	if (loading && payments.length === 0 && recurringTemplates.length === 0) {
 		return <LoadingScreen message="Wczytywanie płatności..." />;
@@ -739,8 +786,7 @@ const DirectorPayments = () => {
 											const selectedChildren = selectedValues.map((value) => Number(value));
 											setRecurringForm((prev) => ({ ...prev, children: selectedChildren }));
 										} else {
-											const value = event.target.value ? Number(event.target.value) : '';
-											setOneTimeForm((prev) => ({ ...prev, child: value }));
+											handleOneTimeChildChange(event.target.value);
 										}
 									}}
 								>
@@ -799,11 +845,16 @@ const DirectorPayments = () => {
 									<input
 										type="text"
 										value={oneTimeForm.payment_title}
-										onChange={(event) => setOneTimeForm((prev) => ({ ...prev, payment_title: event.target.value }))}
+										onChange={(event) => {
+											setOneTimeForm((prev) => ({ ...prev, payment_title: event.target.value }));
+											if (formError) setFormError('');
+										}}
 										placeholder="Np. JAN/KOWALSKI/032026/001"
 									/>
 									<div className="sub-text" style={{ marginTop: '6px' }}>
-										Jeśli pole pozostanie puste, tytuł zostanie wygenerowany automatycznie.
+										{titleGenerating
+											? 'Generowanie tytułu dla wybranego dziecka...'
+											: 'Po wyborze dziecka tytuł zostanie wygenerowany automatycznie. Możesz go edytować ręcznie.'}
 									</div>
 								</div>
 							)}
@@ -860,7 +911,7 @@ const DirectorPayments = () => {
 							)}
 
 							<div className="modal-actions full-width">
-								<button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
+								<button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
 								<button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
 							</div>
 						</form>
@@ -880,7 +931,7 @@ const DirectorPayments = () => {
 						</p>
 						{actionError && <div className="form-error">{actionError}</div>}
 						<div className="modal-actions">
-							<button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>
+							<button className="modal-btn cancel" onClick={closeDeleteModal}>
 								Anuluj
 							</button>
 							<button className="modal-btn confirm danger" onClick={handleDelete}>

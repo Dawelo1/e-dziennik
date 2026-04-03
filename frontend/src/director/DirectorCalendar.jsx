@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 import { 
   FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt
@@ -83,6 +84,19 @@ const DirectorCalendar = () => {
     setIsModalOpen(true);
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  const closeClosureImpactModal = () => {
+    setClosureImpactTarget(null);
+  };
+
   const saveClosure = async () => {
     setLoading(true);
     try {
@@ -151,6 +165,10 @@ const DirectorCalendar = () => {
       setLoading(false);
     }
   };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+  useModalKeyboardShortcuts({ isOpen: Boolean(closureImpactTarget), onEscape: closeClosureImpactModal, onEnter: handleConfirmClosureImpact });
 
   if (loading && closures.length === 0) return <LoadingScreen message="Wczytywanie kalendarza..." />;
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
@@ -235,7 +253,7 @@ const DirectorCalendar = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
 
@@ -256,7 +274,7 @@ const DirectorCalendar = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>
@@ -274,7 +292,7 @@ const DirectorCalendar = () => {
               Dodanie dnia wolnego usunie te zgłoszenia.
             </p>
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setClosureImpactTarget(null)}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeClosureImpactModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleConfirmClosureImpact}><FaSave /> Dodaj mimo to</button>
             </div>
           </div>

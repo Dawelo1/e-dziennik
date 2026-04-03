@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 import { 
   FaChalkboardTeacher, FaPlus, FaEdit, FaTrash, FaLayerGroup, FaSave, FaExclamationTriangle, FaTrashAlt
@@ -251,6 +252,18 @@ const DirectorSchedule = () => {
     }
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+
   if (loading && activities.length === 0) return <LoadingScreen message="Wczytywanie planu zajęć..." />;
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
 
@@ -399,7 +412,7 @@ const DirectorSchedule = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
             </form>
@@ -419,7 +432,7 @@ const DirectorSchedule = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

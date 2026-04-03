@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 // --- NOWY IMPORT ---
 import LoadingScreen from '../users/LoadingScreen'; 
@@ -137,7 +138,38 @@ const DirectorUsers = () => {
   }, []);
 
   // 2. Otwieranie Modala
-  const openModal = (user = null) => {
+  const applyGeneratedCredentials = (credentials, showSummary = true) => {
+    const generatedUsername = credentials?.username || '';
+    const generatedPassword = credentials?.password || '';
+
+    setFormData((prev) => ({
+      ...prev,
+      username: generatedUsername,
+      password: generatedPassword,
+    }));
+    setPasswordWasGenerated(true);
+    clearInvalidField('username');
+    clearInvalidField('password');
+    setRequiredFieldErrors((prev) => ({ ...prev, username: false, password: false }));
+
+    if (showSummary) {
+      setGeneratedCredentials({
+        username: generatedUsername,
+        password: generatedPassword,
+      });
+    }
+  };
+
+  const fetchGeneratedCredentials = async (showSummary = true) => {
+    const res = await axios.get(
+      'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
+      getAuthHeaders()
+    );
+
+    applyGeneratedCredentials(res.data, showSummary);
+  };
+
+  const openModal = async (user = null) => {
     setError('');
     setActionError('');
     setGeneratedCredentials(null);
@@ -172,40 +204,17 @@ const DirectorUsers = () => {
     } else {
       setEditingUser(null);
       setFormData(initialForm);
+
+      setGeneratingCredentials(true);
+      try {
+        await fetchGeneratedCredentials(true);
+      } catch (err) {
+        setError('Nie udało się wygenerować danych. Uzupełnij pola ręcznie lub spróbuj ponownie.');
+      } finally {
+        setGeneratingCredentials(false);
+      }
     }
     setIsModalOpen(true);
-  };
-
-  const handleGenerateCredentials = async () => {
-    if (editingUser) return;
-    setError('');
-    setGeneratingCredentials(true);
-
-    try {
-      const res = await axios.get(
-        'http://127.0.0.1:8000/api/users/manage/generate-credentials/',
-        getAuthHeaders()
-      );
-
-      setFormData(prev => ({
-        ...prev,
-        username: res.data?.username || '',
-        password: res.data?.password || '',
-      }));
-      setPasswordWasGenerated(true);
-      clearInvalidField('username');
-      clearInvalidField('password');
-      setRequiredFieldErrors((prev) => ({ ...prev, username: false, password: false }));
-
-      setGeneratedCredentials({
-        username: res.data?.username || '',
-        password: res.data?.password || '',
-      });
-    } catch (err) {
-      setError('Nie udało się wygenerować danych. Spróbuj ponownie.');
-    } finally {
-      setGeneratingCredentials(false);
-    }
   };
 
   const handleGeneratePassword = async () => {
@@ -416,6 +425,29 @@ const DirectorUsers = () => {
     }
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const closePreviewModal = () => {
+    setPreviewData(null);
+  };
+
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  const closeLockModal = () => {
+    setActionError('');
+    setLockTarget(null);
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(previewData), onEscape: closePreviewModal, onEnter: closePreviewModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+  useModalKeyboardShortcuts({ isOpen: Boolean(lockTarget), onEscape: closeLockModal, onEnter: handleConfirmToggleParentLock });
+
   // --- ZMIANA: EKRAN ŁADOWANIA ---
   // Wyświetlamy go, gdy trwa pobieranie danych LUB zapisywanie
   if (loading && users.length === 0) {
@@ -546,19 +578,6 @@ const DirectorUsers = () => {
             {error && <div className="form-error">{error}</div>}
 
             <form onSubmit={handleSave} className="modal-form-grid" noValidate>
-              {!editingUser && (
-                <div className="full-width generated-credentials-actions">
-                  <button
-                    type="button"
-                    className="modal-btn confirm success"
-                    onClick={handleGenerateCredentials}
-                    disabled={generatingCredentials}
-                  >
-                    <FaKey /> {generatingCredentials ? 'Generowanie...' : 'Wygeneruj login i hasło'}
-                  </button>
-                </div>
-              )}
-
               {!editingUser && generatedCredentials && (
                 <div className="full-width generated-credentials-info">
                   Wygenerowano: login <strong>{generatedCredentials.username}</strong>, hasło <strong>{generatedCredentials.password}</strong>
@@ -723,7 +742,7 @@ const DirectorUsers = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
 
@@ -744,7 +763,7 @@ const DirectorUsers = () => {
               <strong>{previewData.password}</strong>
             </div>
             <div className="modal-actions">
-              <button className="modal-btn confirm success" onClick={() => setPreviewData(null)}>
+              <button className="modal-btn confirm success" onClick={closePreviewModal}>
                 Zamknij
               </button>
             </div>
@@ -764,7 +783,7 @@ const DirectorUsers = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>
@@ -787,7 +806,7 @@ const DirectorUsers = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setLockTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeLockModal}>Anuluj</button>
               <button
                 className={`modal-btn confirm ${lockTarget.is_active ? 'danger' : 'success'}`}
                 onClick={handleConfirmToggleParentLock}

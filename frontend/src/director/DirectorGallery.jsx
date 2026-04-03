@@ -5,6 +5,7 @@ import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Wspólne style
 import './DirectorGallery.css'; // Dedykowane style
 import LoadingScreen from '../users/LoadingScreen';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 import { 
   FaImages, FaPlus, FaEdit, FaTrash, FaSearch, 
@@ -305,6 +306,18 @@ const DirectorGallery = () => {
     }
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+
   const getGroupName = (id) => {
     if (!id) return 'Wszyscy';
     const g = groups.find(x => x.id === id);
@@ -581,7 +594,7 @@ const DirectorGallery = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
 
@@ -602,7 +615,7 @@ const DirectorGallery = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

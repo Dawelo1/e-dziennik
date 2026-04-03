@@ -3,6 +3,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css';
 import LoadingScreen from '../users/LoadingScreen';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 import {
   FaUtensils,
   FaSearch,
@@ -308,6 +309,14 @@ const DirectorMenu = () => {
     }
   };
 
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+
   if (loading && menus.length === 0) return <LoadingScreen message="Wczytywanie jadłospisów..." />;
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
 
@@ -479,10 +488,7 @@ const DirectorMenu = () => {
             <div className="modal-actions">
               <button
                 className="modal-btn cancel"
-                onClick={() => {
-                  setActionError('');
-                  setDeleteTarget(null);
-                }}
+                  onClick={closeDeleteModal}
               >
                 Anuluj
               </button>

@@ -5,6 +5,7 @@ import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Styl ten sam co reszta panelu
 import LoadingScreen from '../users/LoadingScreen';
 import { formatDateWithDots } from '../dateUtils';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 import { 
   FaBullhorn, FaPlus, FaEdit, FaTrash, FaSearch, 
@@ -231,6 +232,18 @@ const DirectorPosts = () => {
       setLoading(false);
     }
   };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
 
   const downloadFromUrl = (url, fileName) => {
     const link = document.createElement('a');
@@ -539,7 +552,7 @@ const DirectorPosts = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
 
@@ -560,7 +573,7 @@ const DirectorPosts = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

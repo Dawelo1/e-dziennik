@@ -5,6 +5,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Wspólne style
 import LoadingScreen from '../users/LoadingScreen';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 import { 
   FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt, FaEdit
@@ -285,6 +286,14 @@ const DirectorAttendance = () => {
     }
   };
 
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+
   if (loading && absences.length === 0) return <LoadingScreen message="Wczytywanie nieobecności..." />;
   if (loading) return <LoadingScreen message="Przetwarzanie..." />;
 
@@ -420,7 +429,7 @@ const DirectorAttendance = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>

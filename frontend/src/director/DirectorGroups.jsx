@@ -4,6 +4,7 @@ import axios from 'axios';
 import { getAuthHeaders } from '../authUtils';
 import './Director.css'; // Używamy tych samych stylów (tabela, buttony) dla spójności
 import LoadingScreen from '../users/LoadingScreen';
+import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 // Ikony
 import { 
@@ -230,6 +231,23 @@ const DirectorGroups = () => {
     }
   };
 
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const closeDeleteModal = () => {
+    setActionError('');
+    setDeleteTarget(null);
+  };
+
+  const closeLimitModal = () => {
+    setLimitErrorMessage('');
+  };
+
+  useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
+  useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+  useModalKeyboardShortcuts({ isOpen: Boolean(limitErrorMessage), onEscape: closeLimitModal, onEnter: closeLimitModal });
+
   // --- WIDOK ---
 
   if (loading && groups.length === 0) {
@@ -400,7 +418,7 @@ const DirectorGroups = () => {
               </div>
 
               <div className="modal-actions full-width">
-                <button type="button" className="modal-btn cancel" onClick={() => setIsModalOpen(false)}>Anuluj</button>
+                <button type="button" className="modal-btn cancel" onClick={closeModal}>Anuluj</button>
                 <button type="submit" className="modal-btn confirm success"><FaSave /> Zapisz</button>
               </div>
 
@@ -421,7 +439,7 @@ const DirectorGroups = () => {
             </p>
             {actionError && <div className="form-error">{actionError}</div>}
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => { setActionError(''); setDeleteTarget(null); }}>Anuluj</button>
+              <button className="modal-btn cancel" onClick={closeDeleteModal}>Anuluj</button>
               <button className="modal-btn confirm danger" onClick={handleDelete}><FaTrashAlt /> Usuń</button>
             </div>
           </div>
@@ -435,7 +453,7 @@ const DirectorGroups = () => {
             <h3>Nie można dodać grupy</h3>
             <p>{limitErrorMessage}</p>
             <div className="modal-actions">
-              <button className="modal-btn cancel" onClick={() => setLimitErrorMessage('')}>Zamknij</button>
+              <button className="modal-btn cancel" onClick={closeLimitModal}>Zamknij</button>
             </div>
           </div>
         </div>
