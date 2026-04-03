@@ -77,7 +77,7 @@ const ResetPassword = () => {
     }
   };
 
-  if (loading) return <LoadingScreen message="Resetowanie hasła..." />;
+  if (status === 'loading') return <LoadingScreen message="Resetowanie hasła..." />;
 
   return (
     <div className="login-container" style={{ backgroundImage: `url(${bgImage})` }}>

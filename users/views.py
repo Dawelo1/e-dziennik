@@ -16,6 +16,12 @@ from .utils import generate_unique_username, generate_secure_password
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from .serializers import ChangePasswordSerializer, UserSerializer
+from .serializers import CustomPasswordResetSerializer
+from django_rest_passwordreset.views import ResetPasswordRequestTokenViewSet
+
+
+class CustomResetPasswordRequestTokenViewSet(ResetPasswordRequestTokenViewSet):
+    serializer_class = CustomPasswordResetSerializer
 
 class ChangePasswordView(generics.UpdateAPIView):
     """

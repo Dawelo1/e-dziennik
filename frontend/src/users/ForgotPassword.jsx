@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import './Login.css';
 import bgImage from '../assets/bg.png';
 import { FaEnvelope } from 'react-icons/fa';
+import LoadingScreen from './LoadingScreen';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
