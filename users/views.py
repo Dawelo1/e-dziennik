@@ -17,6 +17,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from .serializers import ChangePasswordSerializer, UserSerializer
 from .serializers import CustomPasswordResetSerializer
+from .serializers import ParentEmailNotificationSettingsSerializer
+from .models import ParentEmailNotificationSettings
 from django_rest_passwordreset.views import ResetPasswordRequestTokenViewSet
 
 
@@ -82,6 +84,33 @@ class CurrentUserView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+
+class ParentEmailNotificationSettingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_settings(self, user):
+        settings_obj, _ = ParentEmailNotificationSettings.objects.get_or_create(user=user)
+        return settings_obj
+
+    def get(self, request):
+        user = request.user
+        if not user.is_parent:
+            return Response({'detail': 'Ustawienia e-mail są dostępne tylko dla rodzica.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ParentEmailNotificationSettingsSerializer(self._get_settings(user))
+        return Response(serializer.data)
+
+    def patch(self, request):
+        user = request.user
+        if not user.is_parent:
+            return Response({'detail': 'Ustawienia e-mail są dostępne tylko dla rodzica.'}, status=status.HTTP_403_FORBIDDEN)
+
+        settings_obj = self._get_settings(user)
+        serializer = ParentEmailNotificationSettingsSerializer(settings_obj, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 class CustomAuthToken(ObtainAuthToken):
     """

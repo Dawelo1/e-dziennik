@@ -10,7 +10,8 @@ from .models import Child, GalleryImage, Payment, Post, Attendance, DailyMenu, F
 from .serializers import ChildSerializer, PaymentSerializer, RecurringPaymentSerializer, PostSerializer, AttendanceSerializer, FacilityClosureSerializer, SpecialActivitySerializer, DailyMenuSerializer, PostCommentSerializer, GalleryItemSerializer, GroupSerializer, PreschoolSerializer
 from .group_deletion import delete_group_with_related_data
 from users.permissions import IsDirector, IsDirectorOrTeacher
-from users.models import User
+from users.models import User, EmailNotificationEventType
+from users.email_notifications import queue_parent_email_notification
 from rest_framework.views import APIView
 from communication.models import Message
 from datetime import date, timedelta
@@ -122,6 +123,9 @@ class PaymentViewSet(viewsets.ModelViewSet):
         target_ids = set(parent_ids) | set(director_ids)
         broadcast_notification_summary_changed(target_ids)
 
+        for parent in payment.child.parents.all():
+            queue_parent_email_notification(parent, EmailNotificationEventType.PAYMENTS)
+
     @action(detail=False, methods=['get'], url_path='generate-title')
     def generate_title(self, request):
         child_id = request.query_params.get('child_id')
@@ -227,6 +231,16 @@ class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast
 
     # --- TWOJE ORYGINALNE AKCJE (BEZ ZMIAN) ---
 
+    def _get_post_parent_targets(self, post):
+        if post.target_group_id:
+            return User.objects.filter(is_parent=True, child__group_id=post.target_group_id).distinct()
+        return User.objects.filter(is_parent=True).distinct()
+
+    def perform_create(self, serializer):
+        post = serializer.save()
+        for parent in self._get_post_parent_targets(post):
+            queue_parent_email_notification(parent, EmailNotificationEventType.POSTS)
+
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
         post = self.get_object()
@@ -289,8 +303,14 @@ class PostViewSet(viewsets.ModelViewSet): # <--- ZMIANA 1: ModelViewSet (zamiast
 
         instance.save()
 
+        for parent in self._get_post_parent_targets(instance):
+            queue_parent_email_notification(parent, EmailNotificationEventType.POSTS)
+
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        instance.delete()
       
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
@@ -328,6 +348,20 @@ class FacilityClosureViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+        broadcast_notification_summary_changed()
+
+        for parent in User.objects.filter(is_parent=True).exclude(email='').exclude(email__isnull=True):
+            queue_parent_email_notification(parent, EmailNotificationEventType.CALENDAR)
+
+    def perform_update(self, serializer):
+        serializer.save()
+        broadcast_notification_summary_changed()
+
+        for parent in User.objects.filter(is_parent=True).exclude(email='').exclude(email__isnull=True):
+            queue_parent_email_notification(parent, EmailNotificationEventType.CALENDAR)
+
+    def perform_destroy(self, instance):
+        instance.delete()
         broadcast_notification_summary_changed()
 
 class SpecialActivityViewSet(viewsets.ModelViewSet):
@@ -393,6 +427,10 @@ class SpecialActivityViewSet(viewsets.ModelViewSet):
         target_ids = self._get_activity_notification_target_ids(group_ids)
         broadcast_notification_summary_changed(target_ids)
 
+        parent_targets = User.objects.filter(id__in=target_ids, is_parent=True)
+        for parent in parent_targets:
+            queue_parent_email_notification(parent, EmailNotificationEventType.SCHEDULE)
+
     def perform_update(self, serializer):
         previous_group_ids = serializer.instance.groups.values_list('id', flat=True)
         activity = serializer.save()
@@ -403,12 +441,13 @@ class SpecialActivityViewSet(viewsets.ModelViewSet):
         increment_schedule_change_notification(target_ids)
         broadcast_notification_summary_changed(target_ids)
 
+        parent_targets = User.objects.filter(id__in=target_ids, is_parent=True)
+        for parent in parent_targets:
+            queue_parent_email_notification(parent, EmailNotificationEventType.SCHEDULE)
+
     def perform_destroy(self, instance):
-        group_ids = instance.groups.values_list('id', flat=True)
-        target_ids = self._get_activity_notification_target_ids(group_ids)
         instance.delete()
-        increment_schedule_change_notification(target_ids)
-        broadcast_notification_summary_changed(target_ids)
+        broadcast_notification_summary_changed()
     
 class DailyMenuViewSet(viewsets.ModelViewSet):
     """
@@ -495,6 +534,11 @@ class GalleryViewSet(viewsets.ModelViewSet):
             Q(target_group__isnull=True) | Q(target_group__in=parent_groups)
         ).distinct()
 
+    def _get_gallery_parent_targets(self, album):
+        if album.target_group_id:
+            return User.objects.filter(is_parent=True, child__group_id=album.target_group_id).distinct()
+        return User.objects.filter(is_parent=True).distinct()
+
     # --- AKCJA LAJKOWANIA ALBUMU ---
     @action(detail=True, methods=['post'])
     def like(self, request, pk=None):
@@ -542,6 +586,9 @@ class GalleryViewSet(viewsets.ModelViewSet):
             broadcast_notification_summary_changed(target_ids)
         else:
             broadcast_notification_summary_changed()
+
+        for parent in self._get_gallery_parent_targets(album):
+            queue_parent_email_notification(parent, EmailNotificationEventType.GALLERY)
             
         serializer = self.get_serializer(album)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -571,9 +618,35 @@ class GalleryViewSet(viewsets.ModelViewSet):
         deleted_images_ids = request.data.getlist('deleted_images', [])
         if deleted_images_ids:
             GalleryImage.objects.filter(id__in=deleted_images_ids, gallery_item=instance).delete()
+
+        if instance.target_group_id:
+            parent_ids = User.objects.filter(child__group_id=instance.target_group_id).values_list('id', flat=True).distinct()
+            director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
+            target_ids = set(parent_ids) | set(director_ids)
+            broadcast_notification_summary_changed(target_ids)
+        else:
+            broadcast_notification_summary_changed()
+
+        for parent in self._get_gallery_parent_targets(instance):
+            queue_parent_email_notification(parent, EmailNotificationEventType.GALLERY)
             
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+    def perform_destroy(self, instance):
+        if instance.target_group_id:
+            parent_ids = User.objects.filter(child__group_id=instance.target_group_id).values_list('id', flat=True).distinct()
+            director_ids = User.objects.filter(is_director=True).values_list('id', flat=True)
+            target_ids = set(parent_ids) | set(director_ids)
+        else:
+            target_ids = None
+
+        instance.delete()
+
+        if target_ids is None:
+            broadcast_notification_summary_changed()
+        else:
+            broadcast_notification_summary_changed(target_ids)
     
 class CommentViewSet(viewsets.GenericViewSet):
     queryset = PostComment.objects.all()

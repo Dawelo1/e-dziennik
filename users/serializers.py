@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from .models import ParentEmailNotificationSettings
 
 User = get_user_model()
 
@@ -194,3 +195,16 @@ class UserManagementSerializer(serializers.ModelSerializer):
             
         instance.save()
         return instance
+
+
+class ParentEmailNotificationSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParentEmailNotificationSettings
+        fields = [
+            'posts_enabled',
+            'messages_enabled',
+            'gallery_enabled',
+            'payments_enabled',
+            'schedule_enabled',
+            'calendar_enabled',
+        ]

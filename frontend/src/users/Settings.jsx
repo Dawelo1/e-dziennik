@@ -23,6 +23,16 @@ const Settings = () => {
   const [passwordMessage, setPasswordMessage] = useState({ type: '', text: '' });
   const [contactErrors, setContactErrors] = useState({ email: '', phone: '' });
   const [contactMessage, setContactMessage] = useState({ type: '', text: '' });
+  const [emailNotificationSettings, setEmailNotificationSettings] = useState({
+    posts_enabled: true,
+    messages_enabled: true,
+    gallery_enabled: true,
+    payments_enabled: true,
+    schedule_enabled: true,
+    calendar_enabled: true,
+  });
+  const [emailNotificationMessage, setEmailNotificationMessage] = useState({ type: '', text: '' });
+  const [savingEmailNotifications, setSavingEmailNotifications] = useState(false);
   const [children, setChildren] = useState([]);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
@@ -61,6 +71,19 @@ const Settings = () => {
 
     axios.get('http://127.0.0.1:8000/api/children/', getAuthHeaders())
       .then(res => setChildren(res.data))
+      .catch(err => console.error(err));
+
+    axios.get('http://127.0.0.1:8000/api/users/me/email-notifications/', getAuthHeaders())
+      .then(res => {
+        setEmailNotificationSettings({
+          posts_enabled: !!res.data.posts_enabled,
+          messages_enabled: !!res.data.messages_enabled,
+          gallery_enabled: !!res.data.gallery_enabled,
+          payments_enabled: !!res.data.payments_enabled,
+          schedule_enabled: !!res.data.schedule_enabled,
+          calendar_enabled: !!res.data.calendar_enabled,
+        });
+      })
       .catch(err => console.error(err));
   };
 
@@ -251,6 +274,29 @@ const Settings = () => {
       setChildren(prev => prev.map(c => c.id === id ? {...c, medical_info: val} : c));
   };
 
+  const handleEmailNotificationToggle = async (field) => {
+    const previousSettings = { ...emailNotificationSettings };
+    const nextValue = !previousSettings[field];
+
+    setEmailNotificationMessage({ type: '', text: '' });
+    setEmailNotificationSettings((prev) => ({ ...prev, [field]: nextValue }));
+    setSavingEmailNotifications(true);
+
+    try {
+      await axios.patch(
+        'http://127.0.0.1:8000/api/users/me/email-notifications/',
+        { [field]: nextValue },
+        getAuthHeaders(),
+      );
+      setEmailNotificationMessage({ type: 'success', text: 'Zapisano.' });
+    } catch (err) {
+      setEmailNotificationSettings(previousSettings);
+      setEmailNotificationMessage({ type: 'error', text: 'Nie udało się zapisać zmiany.' });
+    } finally {
+      setSavingEmailNotifications(false);
+    }
+  };
+
 
   // Pobierz aktywne dziecko
   const activeChildId = getActiveChildId();
@@ -401,6 +447,7 @@ const Settings = () => {
                 <button className="honey-btn" onClick={() => handleContactUpdate('phone')}>Zapisz Telefon</button>
              </div>
           </div>
+
         </div>
 
         {/* DZIECI */}
@@ -426,6 +473,78 @@ const Settings = () => {
           ) : (
             <div className="settings-alert error">Nie znaleziono aktywnego dziecka.</div>
           )}
+
+          <div className="settings-wide-card">
+            <div className="card-title">Powiadomienia E-mail</div>
+            {emailNotificationMessage.text && (
+              <div className={`settings-alert ${emailNotificationMessage.type}`}>{emailNotificationMessage.text}</div>
+            )}
+            {savingEmailNotifications && (
+              <div className="email-notification-status">Zapisywanie zmian...</div>
+            )}
+
+            <div className="email-notification-grid">
+              <label className="email-notification-item">
+                <input
+                  type="checkbox"
+                  checked={emailNotificationSettings.posts_enabled}
+                  onChange={() => handleEmailNotificationToggle('posts_enabled')}
+                  disabled={savingEmailNotifications}
+                />
+                <span>Nowe posty</span>
+              </label>
+
+              <label className="email-notification-item">
+                <input
+                  type="checkbox"
+                  checked={emailNotificationSettings.messages_enabled}
+                  onChange={() => handleEmailNotificationToggle('messages_enabled')}
+                  disabled={savingEmailNotifications}
+                />
+                <span>Nowe wiadomości</span>
+              </label>
+
+              <label className="email-notification-item">
+                <input
+                  type="checkbox"
+                  checked={emailNotificationSettings.gallery_enabled}
+                  onChange={() => handleEmailNotificationToggle('gallery_enabled')}
+                  disabled={savingEmailNotifications}
+                />
+                <span>Nowa galeria</span>
+              </label>
+
+              <label className="email-notification-item">
+                <input
+                  type="checkbox"
+                  checked={emailNotificationSettings.payments_enabled}
+                  onChange={() => handleEmailNotificationToggle('payments_enabled')}
+                  disabled={savingEmailNotifications}
+                />
+                <span>Nowe płatności</span>
+              </label>
+
+              <label className="email-notification-item">
+                <input
+                  type="checkbox"
+                  checked={emailNotificationSettings.schedule_enabled}
+                  onChange={() => handleEmailNotificationToggle('schedule_enabled')}
+                  disabled={savingEmailNotifications}
+                />
+                <span>Plan zajęć</span>
+              </label>
+
+              <label className="email-notification-item">
+                <input
+                  type="checkbox"
+                  checked={emailNotificationSettings.calendar_enabled}
+                  onChange={() => handleEmailNotificationToggle('calendar_enabled')}
+                  disabled={savingEmailNotifications}
+                />
+                <span>Kalendarz</span>
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 

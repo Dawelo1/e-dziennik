@@ -291,7 +291,7 @@ const handleLikeComment = async (postId, commentId) => {
 
   return (
     <div className="dashboard-container">
-      <h2 className="page-title"><FaBullhorn /> Tablica Postów</h2>
+      <h2 className="page-title"><FaBullhorn /> Tablica Ogłoszeń</h2>
 
       <div className="dashboard-grid">
         <div className="feed-column">

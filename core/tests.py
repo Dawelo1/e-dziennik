@@ -12,6 +12,7 @@ from rest_framework.test import APITestCase, APIClient
 
 from core.group_deletion import delete_group_with_related_data
 from core.models import Attendance, Child, FacilityClosure, GalleryItem, Group, Payment, Post, RecurringPayment, SpecialActivity
+from users.models import EmailNotificationEventType
 
 
 def business_days_between(first_day, last_day):
@@ -550,3 +551,175 @@ class GroupDeletePasswordRequirementTests(APITestCase):
 
 		self.assertEqual(response.status_code, 204)
 		self.assertFalse(Group.objects.filter(id=self.group_with_child.id).exists())
+
+
+class EmailNotificationTriggerRulesTests(APITestCase):
+	def setUp(self):
+		self.director = get_user_model().objects.create_user(
+			username='director_notify_rules',
+			password='sekret123!',
+			is_director=True,
+			is_parent=False,
+		)
+		self.parent = get_user_model().objects.create_user(
+			username='parent_notify_rules',
+			email='parent.notify@example.com',
+			password='rodzic123',
+			is_parent=True,
+		)
+		self.group = Group.objects.create(
+			name='Grupa notify',
+			teachers_info='Nauczyciel Notify',
+		)
+		self.child = Child.objects.create(
+			group=self.group,
+			first_name='Mila',
+			last_name='Test',
+			date_of_birth=date(2020, 4, 1),
+		)
+		self.child.parents.add(self.parent)
+
+		self.client = APIClient()
+		self.client.force_authenticate(user=self.director)
+
+	@patch('core.views.queue_parent_email_notification')
+	def test_post_email_triggered_on_create_update_but_not_delete(self, mocked_queue):
+		create_response = self.client.post(
+			'/api/newsfeed/',
+			data={
+				'title': 'Nowy post',
+				'content': 'Treść posta',
+				'target_group': self.group.id,
+			},
+			format='json',
+		)
+
+		self.assertEqual(create_response.status_code, 201)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.POSTS)
+
+		post_id = int(create_response.data['id'])
+		mocked_queue.reset_mock()
+
+		update_response = self.client.patch(
+			f'/api/newsfeed/{post_id}/',
+			data={'content': 'Zmieniona treść'},
+			format='json',
+		)
+
+		self.assertEqual(update_response.status_code, 200)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.POSTS)
+
+		mocked_queue.reset_mock()
+		delete_response = self.client.delete(f'/api/newsfeed/{post_id}/')
+		self.assertEqual(delete_response.status_code, 204)
+		mocked_queue.assert_not_called()
+
+	@patch('core.views.queue_parent_email_notification')
+	def test_calendar_email_triggered_on_create_update_but_not_delete(self, mocked_queue):
+		create_response = self.client.post(
+			'/api/calendar/closures/',
+			data={
+				'date': '2026-06-10',
+				'reason': 'Przerwa techniczna',
+			},
+			format='json',
+		)
+
+		self.assertEqual(create_response.status_code, 201)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.CALENDAR)
+
+		closure_id = int(create_response.data['id'])
+		mocked_queue.reset_mock()
+
+		update_response = self.client.patch(
+			f'/api/calendar/closures/{closure_id}/',
+			data={'reason': 'Aktualizacja informacji'},
+			format='json',
+		)
+
+		self.assertEqual(update_response.status_code, 200)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.CALENDAR)
+
+		mocked_queue.reset_mock()
+		delete_response = self.client.delete(f'/api/calendar/closures/{closure_id}/')
+		self.assertEqual(delete_response.status_code, 204)
+		mocked_queue.assert_not_called()
+
+	@patch('core.views.queue_parent_email_notification')
+	def test_schedule_email_triggered_on_create_update_but_not_delete(self, mocked_queue):
+		create_response = self.client.post(
+			'/api/calendar/activities/',
+			data={
+				'title': 'Teatrzyk',
+				'description': 'Wizyta teatru',
+				'date': '2026-06-12',
+				'start_time': '10:00:00',
+				'end_time': '11:00:00',
+				'groups': [self.group.id],
+			},
+			format='json',
+		)
+
+		self.assertEqual(create_response.status_code, 201)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.SCHEDULE)
+
+		activity_id = int(create_response.data['id'])
+		mocked_queue.reset_mock()
+
+		update_response = self.client.patch(
+			f'/api/calendar/activities/{activity_id}/',
+			data={'description': 'Zmieniony opis'},
+			format='json',
+		)
+
+		self.assertEqual(update_response.status_code, 200)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.SCHEDULE)
+
+		mocked_queue.reset_mock()
+		delete_response = self.client.delete(f'/api/calendar/activities/{activity_id}/')
+		self.assertEqual(delete_response.status_code, 204)
+		mocked_queue.assert_not_called()
+
+	@patch('core.views.queue_parent_email_notification')
+	def test_gallery_email_triggered_on_create_update_but_not_delete(self, mocked_queue):
+		create_response = self.client.post(
+			'/api/gallery/',
+			data={
+				'title': 'Nowy album',
+				'description': 'Opis albumu',
+				'target_group': str(self.group.id),
+			},
+			format='multipart',
+		)
+
+		self.assertEqual(create_response.status_code, 201)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.GALLERY)
+
+		album_id = int(create_response.data['id'])
+		mocked_queue.reset_mock()
+
+		update_response = self.client.put(
+			f'/api/gallery/{album_id}/',
+			data={
+				'title': 'Nowy album po edycji',
+				'description': 'Opis po edycji',
+				'target_group': str(self.group.id),
+			},
+			format='multipart',
+		)
+
+		self.assertEqual(update_response.status_code, 200)
+		mocked_queue.assert_called_once()
+		self.assertEqual(mocked_queue.call_args.args[1], EmailNotificationEventType.GALLERY)
+
+		mocked_queue.reset_mock()
+		delete_response = self.client.delete(f'/api/gallery/{album_id}/')
+		self.assertEqual(delete_response.status_code, 204)
+		mocked_queue.assert_not_called()
