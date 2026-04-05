@@ -95,12 +95,12 @@ class ParentEmailNotificationSettings(models.Model):
         related_name='email_notification_settings',
         verbose_name='Rodzic',
     )
-    posts_enabled = models.BooleanField(default=True, verbose_name='E-mail: posty')
+    posts_enabled = models.BooleanField(default=False, verbose_name='E-mail: posty')
     messages_enabled = models.BooleanField(default=True, verbose_name='E-mail: wiadomości')
-    gallery_enabled = models.BooleanField(default=True, verbose_name='E-mail: galeria')
+    gallery_enabled = models.BooleanField(default=False, verbose_name='E-mail: galeria')
     payments_enabled = models.BooleanField(default=True, verbose_name='E-mail: płatności')
-    schedule_enabled = models.BooleanField(default=True, verbose_name='E-mail: plan zajęć')
-    calendar_enabled = models.BooleanField(default=True, verbose_name='E-mail: kalendarz')
+    schedule_enabled = models.BooleanField(default=False, verbose_name='E-mail: plan zajęć')
+    calendar_enabled = models.BooleanField(default=False, verbose_name='E-mail: kalendarz')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

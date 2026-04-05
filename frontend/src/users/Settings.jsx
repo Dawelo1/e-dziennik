@@ -24,12 +24,12 @@ const Settings = () => {
   const [contactErrors, setContactErrors] = useState({ email: '', phone: '' });
   const [contactMessage, setContactMessage] = useState({ type: '', text: '' });
   const [emailNotificationSettings, setEmailNotificationSettings] = useState({
-    posts_enabled: true,
+    posts_enabled: false,
     messages_enabled: true,
-    gallery_enabled: true,
+    gallery_enabled: false,
     payments_enabled: true,
-    schedule_enabled: true,
-    calendar_enabled: true,
+    schedule_enabled: false,
+    calendar_enabled: false,
   });
   const [emailNotificationMessage, setEmailNotificationMessage] = useState({ type: '', text: '' });
   const [savingEmailNotifications, setSavingEmailNotifications] = useState(false);
