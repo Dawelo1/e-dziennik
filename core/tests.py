@@ -221,6 +221,138 @@ class MealPaymentProrationTests(TestCase):
 		self.assertEqual(payment.amount, expected_amount)
 
 
+class MealPaymentGenerationEndpointTests(APITestCase):
+	def setUp(self):
+		self.group = Group.objects.create(
+			name='Biedronki API',
+			teachers_info='Test API'
+		)
+		self.director = get_user_model().objects.create_user(
+			username='director_meals_api',
+			password='sekret123!',
+			is_director=True,
+			is_parent=False,
+		)
+		self.parent = get_user_model().objects.create_user(
+			username='parent_meals_api',
+			password='rodzic123',
+			is_parent=True,
+		)
+
+		self.child_with_meals = Child.objects.create(
+			group=self.group,
+			first_name='Mila',
+			last_name='API',
+			date_of_birth=date(2020, 1, 5),
+			meal_rate=Decimal('20.00'),
+			uses_meals=True,
+		)
+		self.child_with_meals.parents.add(self.parent)
+
+		self.child_without_meals = Child.objects.create(
+			group=self.group,
+			first_name='Olek',
+			last_name='API',
+			date_of_birth=date(2020, 2, 5),
+			meal_rate=Decimal('20.00'),
+			uses_meals=False,
+		)
+		self.child_without_meals.parents.add(self.parent)
+
+		self.client = APIClient()
+
+	@patch('core.views.timezone.now')
+	def test_director_can_trigger_meal_payment_generation(self, mock_now):
+		mock_now.return_value = timezone.make_aware(datetime(2026, 4, 5, 10, 0, 0))
+		self.client.force_authenticate(user=self.director)
+		payments_before = Payment.objects.filter(child=self.child_with_meals).count()
+
+		response = self.client.post('/api/payments/generate-meal-payments/', data={}, format='json')
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data.get('meal_period'), '2026-04-01')
+		self.assertEqual(
+			int(response.data.get('created_count', 0)) + int(response.data.get('skipped_count', 0)),
+			1,
+		)
+		self.assertTrue(
+			Payment.objects.filter(
+				child=self.child_with_meals,
+				meal_period=date(2026, 4, 1),
+			).exists()
+		)
+		payments_after = Payment.objects.filter(child=self.child_with_meals).count()
+		self.assertGreaterEqual(payments_after, payments_before)
+		self.assertFalse(Payment.objects.filter(child=self.child_without_meals).exists())
+
+	def test_parent_cannot_trigger_meal_payment_generation(self):
+		self.client.force_authenticate(user=self.parent)
+
+		response = self.client.post('/api/payments/generate-meal-payments/', data={}, format='json')
+
+		self.assertEqual(response.status_code, 403)
+
+	@patch('core.views.timezone.now')
+	def test_director_can_apply_manual_adjustment_for_existing_meal_payment(self, mock_now):
+		mock_now.return_value = timezone.make_aware(datetime(2026, 4, 5, 10, 0, 0))
+		self.client.force_authenticate(user=self.director)
+
+		self.client.post('/api/payments/generate-meal-payments/', data={}, format='json')
+		payment = Payment.objects.get(child=self.child_with_meals, meal_period=date(2026, 4, 1))
+		amount_before = payment.amount
+
+		response = self.client.post(
+			'/api/payments/generate-meal-payments/',
+			data={
+				'adjustments': [
+					{
+						'child_id': self.child_with_meals.id,
+						'amount_delta': '-20.00',
+						'reason': 'Ręczna korekta dyrektora',
+					}
+				]
+			},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.data.get('adjusted_count'), 1)
+
+		payment.refresh_from_db()
+		self.assertEqual(payment.amount, amount_before - Decimal('20.00'))
+		self.assertIn('Korekta dyrektora', payment.description)
+		self.assertIn('Ręczna korekta dyrektora', payment.description)
+
+	@patch('core.views.timezone.now')
+	def test_adjustment_cannot_reduce_amount_below_zero(self, mock_now):
+		mock_now.return_value = timezone.make_aware(datetime(2026, 4, 5, 10, 0, 0))
+		self.client.force_authenticate(user=self.director)
+
+		self.client.post('/api/payments/generate-meal-payments/', data={}, format='json')
+		payment = Payment.objects.get(child=self.child_with_meals, meal_period=date(2026, 4, 1))
+		amount_before = payment.amount
+
+		response = self.client.post(
+			'/api/payments/generate-meal-payments/',
+			data={
+				'adjustments': [
+					{
+						'child_id': self.child_with_meals.id,
+						'amount_delta': '-100000.00',
+						'reason': 'Błędna korekta testowa',
+					}
+				]
+			},
+			format='json',
+		)
+
+		self.assertEqual(response.status_code, 400)
+		self.assertIn('poniżej 0.00', (response.data.get('detail') or '').lower())
+
+		payment.refresh_from_db()
+		self.assertEqual(payment.amount, amount_before)
+
+
 class MealActivationAutoPaymentTests(TestCase):
 	@patch('core.signals.timezone.now')
 	def test_enabling_meals_creates_first_payment_for_start_month(self, mock_now):

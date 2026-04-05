@@ -149,3 +149,27 @@ def ensure_meal_payment_for_period(child: Child, meal_period, include_previous_m
         meal_period=calculated['meal_period'],
     )
     return payment, True
+
+
+def generate_current_month_meal_payments(today, include_previous_month_absences=True):
+    first_day_of_current = today.replace(day=1)
+    created_count = 0
+    skipped_count = 0
+
+    for child in Child.objects.filter(uses_meals=True):
+        _, created = ensure_meal_payment_for_period(
+            child=child,
+            meal_period=first_day_of_current,
+            include_previous_month_absences=include_previous_month_absences,
+        )
+
+        if created:
+            created_count += 1
+        else:
+            skipped_count += 1
+
+    return {
+        'meal_period': first_day_of_current,
+        'created_count': created_count,
+        'skipped_count': skipped_count,
+    }

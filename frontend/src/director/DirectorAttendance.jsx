@@ -8,7 +8,7 @@ import LoadingScreen from '../users/LoadingScreen';
 import useModalKeyboardShortcuts from './useModalKeyboardShortcuts';
 
 import { 
-  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt, FaEdit
+  FaUserSlash, FaSearch, FaPlus, FaTrash, FaSave, FaExclamationTriangle, FaTrashAlt, FaEdit, FaFileExcel
 } from 'react-icons/fa';
 
 const DirectorAttendance = () => {
@@ -32,6 +32,8 @@ const DirectorAttendance = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [invalidFields, setInvalidFields] = useState({ child: false, date: false });
   const [requiredFieldErrors, setRequiredFieldErrors] = useState({ child: false, date: false });
+  const [isExportingReport, setIsExportingReport] = useState(false);
+  const [exportError, setExportError] = useState('');
   const invalidFieldTimers = useRef({ child: null, date: null });
 
   const weekRange = useMemo(() => {
@@ -291,6 +293,39 @@ const DirectorAttendance = () => {
     setDeleteTarget(null);
   };
 
+  const handleExportMealReport = async () => {
+    setExportError('');
+    setIsExportingReport(true);
+
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/api/attendance/meal-report/', {
+        ...getAuthHeaders(),
+        responseType: 'blob'
+      });
+
+      const disposition = response.headers?.['content-disposition'] || '';
+      const matchedFileName = disposition.match(/filename="?([^";]+)"?/i);
+      const fileName = matchedFileName?.[1] || 'raport_nieobecnosci.xlsx';
+
+      const blob = new Blob([
+        response.data
+      ], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError('Nie udało się wygenerować pliku Excel. Spróbuj ponownie.');
+    } finally {
+      setIsExportingReport(false);
+    }
+  };
+
   useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
   useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
 
@@ -317,10 +352,14 @@ const DirectorAttendance = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <button className="honey-btn" onClick={handleExportMealReport} disabled={isExportingReport}>
+          <FaFileExcel /> {isExportingReport ? 'Generowanie...' : 'Generuj Excel'}
+        </button>
         <button className="honey-btn" onClick={() => openModal()}>
           <FaPlus /> Dodaj Nieobecność
         </button>
       </div>
+      {exportError && <div className="form-error">{exportError}</div>}
 
       {/* TABELA */}
       <div className="table-card">

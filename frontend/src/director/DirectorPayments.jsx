@@ -26,6 +26,12 @@ const formatDate = (value) => {
 const formatAmount = (value) => `${Number(value || 0).toFixed(2)} zł`;
 const getTodayIsoDate = () => new Date().toISOString().split('T')[0];
 const ALL_CHILDREN_OPTION_VALUE = '__all__';
+const createMealAdjustmentRow = () => ({
+	rowId: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+	child_id: '',
+	amount_delta: '',
+	reason: '',
+});
 
 const getDateSearchValues = (value) => {
 	if (!value) return [];
@@ -257,11 +263,17 @@ const DirectorPayments = () => {
 	const [deleteTarget, setDeleteTarget] = useState(null);
 	const [editingOneTime, setEditingOneTime] = useState(null);
 	const [editingRecurring, setEditingRecurring] = useState(null);
+	const [isMealGenerationModalOpen, setIsMealGenerationModalOpen] = useState(false);
 	const [oneTimeForm, setOneTimeForm] = useState(initialOneTimeForm);
 	const [recurringForm, setRecurringForm] = useState(initialRecurringForm);
 	const [formError, setFormError] = useState('');
 	const [actionError, setActionError] = useState('');
+	const [mealGenerationError, setMealGenerationError] = useState('');
+	const [mealGenerationSuccess, setMealGenerationSuccess] = useState('');
 	const [titleGenerating, setTitleGenerating] = useState(false);
+	const [mealGenerationLoading, setMealGenerationLoading] = useState(false);
+	const [mealAdjustmentsEnabled, setMealAdjustmentsEnabled] = useState(false);
+	const [mealAdjustmentRows, setMealAdjustmentRows] = useState([createMealAdjustmentRow()]);
 
 	const isRecurringView = viewMode === 'recurring';
 
@@ -503,6 +515,8 @@ const DirectorPayments = () => {
 	const openCreateModal = () => {
 		setFormError('');
 		setActionError('');
+		setMealGenerationError('');
+		setMealGenerationSuccess('');
 		setTitleGenerating(false);
 		if (isRecurringView) {
 			setEditingRecurring(null);
@@ -517,6 +531,8 @@ const DirectorPayments = () => {
 	const openEditModal = (item) => {
 		setFormError('');
 		setActionError('');
+		setMealGenerationError('');
+		setMealGenerationSuccess('');
 		setTitleGenerating(false);
 		if (isRecurringView) {
 			setEditingRecurring(item);
@@ -654,6 +670,90 @@ const DirectorPayments = () => {
 		}
 	};
 
+	const handleGenerateMealPayments = async () => {
+		if (mealGenerationLoading) return;
+
+		setMealGenerationError('');
+		setMealGenerationSuccess('');
+
+		const payload = {};
+		if (mealAdjustmentsEnabled) {
+			const normalizedRows = mealAdjustmentRows
+				.map((row) => ({
+					child_id: Number(row.child_id),
+					amount_delta: String(row.amount_delta || '').trim(),
+					reason: String(row.reason || '').trim(),
+				}))
+				.filter((row) => row.child_id || row.amount_delta || row.reason);
+
+			if (!normalizedRows.length) {
+				setMealGenerationError('Dodaj przynajmniej jedną korektę albo odznacz opcję korekt ręcznych.');
+				return;
+			}
+
+			for (const row of normalizedRows) {
+				if (!row.child_id) {
+					setMealGenerationError('W każdej korekcie wybierz dziecko.');
+					return;
+				}
+
+				if (!row.amount_delta || Number(row.amount_delta) === 0) {
+					setMealGenerationError('Kwota korekty musi być różna od 0.00.');
+					return;
+				}
+
+				if (!row.reason) {
+					setMealGenerationError('Podaj powód dla każdej korekty.');
+					return;
+				}
+			}
+
+			const childIds = normalizedRows.map((row) => row.child_id);
+			if (new Set(childIds).size !== childIds.length) {
+				setMealGenerationError('Nie można dodać kilku korekt dla tego samego dziecka.');
+				return;
+			}
+
+			payload.adjustments = normalizedRows.map((row) => ({
+				child_id: row.child_id,
+				amount_delta: row.amount_delta,
+				reason: row.reason,
+			}));
+		}
+
+		setMealGenerationLoading(true);
+		try {
+			const response = await axios.post(
+				'http://127.0.0.1:8000/api/payments/generate-meal-payments/',
+				payload,
+				getAuthHeaders()
+			);
+			setMealGenerationSuccess(
+				response.data?.detail || 'Płatności za wyżywienie zostały wygenerowane.'
+			);
+			setIsMealGenerationModalOpen(false);
+			await fetchData();
+		} catch (err) {
+			setMealGenerationError(parseApiError(err, 'Nie udało się wygenerować płatności za wyżywienie.'));
+		} finally {
+			setMealGenerationLoading(false);
+		}
+	};
+
+	const openMealGenerationModal = () => {
+		setMealGenerationError('');
+		setMealGenerationSuccess('');
+		setMealAdjustmentsEnabled(false);
+		setMealAdjustmentRows([createMealAdjustmentRow()]);
+		setIsMealGenerationModalOpen(true);
+	};
+
+	const closeMealGenerationModal = () => {
+		if (mealGenerationLoading) return;
+		setMealGenerationError('');
+		setIsMealGenerationModalOpen(false);
+	};
+
 	const closeModal = () => {
 		setIsModalOpen(false);
 	};
@@ -665,6 +765,11 @@ const DirectorPayments = () => {
 
 	useModalKeyboardShortcuts({ isOpen: isModalOpen, onEscape: closeModal });
 	useModalKeyboardShortcuts({ isOpen: Boolean(deleteTarget), onEscape: closeDeleteModal, onEnter: handleDelete });
+	useModalKeyboardShortcuts({
+		isOpen: isMealGenerationModalOpen,
+		onEscape: closeMealGenerationModal,
+		onEnter: handleGenerateMealPayments,
+	});
 
 	if (loading && payments.length === 0 && recurringTemplates.length === 0) {
 		return <LoadingScreen message="Wczytywanie płatności..." />;
@@ -692,10 +797,146 @@ const DirectorPayments = () => {
 						onChange={(event) => setSearchQuery(event.target.value)}
 					/>
 				</div>
+				{!isRecurringView && (
+					<button
+						className="honey-btn"
+						onClick={openMealGenerationModal}
+						disabled={mealGenerationLoading}
+					>
+						<FaSyncAlt /> {mealGenerationLoading ? 'Generowanie...' : 'Nalicz wyżywienie'}
+					</button>
+				)}
 				<button className="honey-btn" onClick={openCreateModal}>
 					<FaPlus /> {addButtonLabel}
 				</button>
 			</div>
+
+			{mealGenerationError && (
+				<div className="form-error payments-inline-message">{mealGenerationError}</div>
+			)}
+			{mealGenerationSuccess && (
+				<div className="form-success payments-inline-message">{mealGenerationSuccess}</div>
+			)}
+
+			{isMealGenerationModalOpen && (
+				<div className="modal-overlay">
+					<div className="delete-modal-content">
+						<div className="warning-icon"><FaExclamationTriangle /></div>
+						<h3>Wygenerować płatności za wyżywienie?</h3>
+						<p>
+							System naliczy płatności za bieżący miesiąc dla dzieci korzystających z wyżywienia,
+							 uwzględniając korektę o nieobecności z poprzedniego miesiąca.
+							 Istniejące wpisy dla tego okresu zostaną pominięte.
+						</p>
+						<div className="form-group full-width" style={{ marginTop: '8px', marginBottom: '10px', textAlign: 'left' }}>
+							<label>
+								<input
+									type="checkbox"
+									checked={mealAdjustmentsEnabled}
+									onChange={(event) => {
+										const nextValue = event.target.checked;
+										setMealAdjustmentsEnabled(nextValue);
+										if (nextValue && !mealAdjustmentRows.length) {
+											setMealAdjustmentRows([createMealAdjustmentRow()]);
+										}
+									}}
+									style={{ width: 'auto', marginRight: '8px' }}
+								/>
+								Dodaj ręczną korektę kwoty dla wybranego dziecka / dzieci
+							</label>
+						</div>
+
+						{mealAdjustmentsEnabled && (
+							<div className="form-group full-width" style={{ marginTop: '2px', marginBottom: '12px', textAlign: 'left' }}>
+								<div className="sub-text" style={{ marginBottom: '8px' }}>
+									Użyj wartości dodatniej (np. 10.00), aby zwiększyć kwotę, lub ujemnej (np. -20.00), aby ją zmniejszyć.
+								</div>
+								{mealAdjustmentRows.map((row, index) => (
+									<div key={row.rowId} className="meal-adjustment-row">
+										<select
+											value={row.child_id}
+											onChange={(event) => {
+												const nextValue = event.target.value;
+												setMealAdjustmentRows((prev) => prev.map((entry) => (
+													entry.rowId === row.rowId ? { ...entry, child_id: nextValue } : entry
+												)));
+											}}
+										>
+											<option value="">-- Dziecko --</option>
+											{children.map((child) => (
+												<option key={child.id} value={child.id}>
+													{child.first_name} {child.last_name}
+												</option>
+											))}
+										</select>
+
+										<input
+											type="number"
+											step="0.01"
+											placeholder="Kwota korekty, np. -20.00"
+											value={row.amount_delta}
+											onChange={(event) => {
+												const nextValue = event.target.value;
+												setMealAdjustmentRows((prev) => prev.map((entry) => (
+													entry.rowId === row.rowId ? { ...entry, amount_delta: nextValue } : entry
+												)));
+											}}
+										/>
+
+										<input
+											type="text"
+											placeholder="Powód korekty"
+											value={row.reason}
+											onChange={(event) => {
+												const nextValue = event.target.value;
+												setMealAdjustmentRows((prev) => prev.map((entry) => (
+													entry.rowId === row.rowId ? { ...entry, reason: nextValue } : entry
+												)));
+											}}
+										/>
+
+										<button
+											type="button"
+											className="modal-btn cancel"
+											onClick={() => {
+												setMealAdjustmentRows((prev) => {
+													if (prev.length <= 1) {
+														return [createMealAdjustmentRow()];
+													}
+													return prev.filter((entry) => entry.rowId !== row.rowId);
+												});
+											}}
+											style={{ padding: '8px 12px' }}
+										>
+											Usuń
+										</button>
+									</div>
+								))}
+
+								<div style={{ marginTop: '8px' }}>
+									<button
+										type="button"
+										className="modal-btn cancel"
+										onClick={() => setMealAdjustmentRows((prev) => [...prev, createMealAdjustmentRow()])}
+										style={{ padding: '8px 12px' }}
+									>
+										<FaPlus /> Dodaj korektę
+									</button>
+								</div>
+							</div>
+						)}
+						{mealGenerationError && <div className="form-error">{mealGenerationError}</div>}
+						<div className="modal-actions" style={{ marginTop: '12px' }}>
+							<button className="modal-btn cancel" onClick={closeMealGenerationModal} disabled={mealGenerationLoading}>
+								Anuluj
+							</button>
+							<button className="modal-btn confirm success" onClick={handleGenerateMealPayments} disabled={mealGenerationLoading}>
+								<FaSyncAlt /> {mealGenerationLoading ? 'Generowanie...' : 'Wygeneruj'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 
 			<div className="table-card">
 				<div style={{ padding: '20px 20px 10px 20px' }}>

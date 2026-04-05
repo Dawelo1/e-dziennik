@@ -2,7 +2,10 @@ from django.utils import timezone
 from django.core.cache import cache
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from django.db.models import Q, Count, F, Case, When, IntegerField
+from django.db import transaction
+from django.http import HttpResponse
 from rest_framework.decorators import action
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -15,7 +18,12 @@ from users.email_notifications import queue_parent_email_notification
 from rest_framework.views import APIView
 from communication.models import Message
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
+from .meal_payments import generate_current_month_meal_payments
 
 
 def broadcast_notification_summary_changed(user_ids=None):
@@ -152,6 +160,146 @@ class PaymentViewSet(viewsets.ModelViewSet):
         ).generate_unique_title()
 
         return Response({'payment_title': generated_title}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='generate-meal-payments', permission_classes=[IsDirector])
+    def generate_meal_payments(self, request):
+        raw_adjustments = request.data.get('adjustments', [])
+
+        try:
+            adjustments_by_child = self._parse_manual_adjustments(raw_adjustments)
+        except DRFValidationError as exc:
+            detail = exc.detail
+            if isinstance(detail, dict):
+                detail = detail.get('detail', detail)
+            return Response({'detail': str(detail)}, status=status.HTTP_400_BAD_REQUEST)
+
+        today = timezone.now().date()
+        try:
+            with transaction.atomic():
+                result = generate_current_month_meal_payments(
+                    today=today,
+                    include_previous_month_absences=True,
+                )
+                adjusted_count = self._apply_manual_adjustments(
+                    meal_period=result['meal_period'],
+                    adjustments_by_child=adjustments_by_child,
+                )
+        except DRFValidationError as exc:
+            detail = exc.detail
+            if isinstance(detail, dict):
+                detail = detail.get('detail', detail)
+            return Response({'detail': str(detail)}, status=status.HTTP_400_BAD_REQUEST)
+
+        detail_message = (
+            f"Wygenerowano {result['created_count']} płatności za posiłki. "
+            f"Pominięto {result['skipped_count']} istniejących."
+        )
+        if adjusted_count:
+            detail_message += f" Zastosowano {adjusted_count} korekt ręcznych."
+
+        return Response(
+            {
+                'detail': detail_message,
+                'meal_period': result['meal_period'].isoformat(),
+                'created_count': result['created_count'],
+                'skipped_count': result['skipped_count'],
+                'adjusted_count': adjusted_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def _parse_manual_adjustments(self, raw_adjustments):
+        if raw_adjustments in (None, ''):
+            return {}
+
+        if not isinstance(raw_adjustments, list):
+            raise DRFValidationError({'detail': 'Pole adjustments musi być listą.'})
+
+        parsed = {}
+        for index, item in enumerate(raw_adjustments, start=1):
+            if not isinstance(item, dict):
+                raise DRFValidationError({'detail': f'Korekta #{index} ma nieprawidłowy format.'})
+
+            child_id = item.get('child_id')
+            try:
+                child_id = int(child_id)
+            except (TypeError, ValueError):
+                raise DRFValidationError({'detail': f'Korekta #{index}: child_id musi być liczbą całkowitą.'})
+
+            if child_id in parsed:
+                raise DRFValidationError({'detail': f'Korekta dla dziecka ID={child_id} została podana więcej niż raz.'})
+
+            raw_delta = item.get('amount_delta')
+            try:
+                amount_delta = Decimal(str(raw_delta)).quantize(Decimal('0.01'))
+            except (InvalidOperation, TypeError, ValueError):
+                raise DRFValidationError({'detail': f'Korekta #{index}: amount_delta ma nieprawidłowy format.'})
+
+            if amount_delta == Decimal('0.00'):
+                raise DRFValidationError({'detail': f'Korekta #{index}: amount_delta nie może być równe 0.'})
+
+            reason = (item.get('reason') or '').strip()
+            if not reason:
+                raise DRFValidationError({'detail': f'Korekta #{index}: podaj powód korekty.'})
+
+            parsed[child_id] = {
+                'amount_delta': amount_delta,
+                'reason': reason,
+            }
+
+        if not parsed:
+            return {}
+
+        allowed_children = Child.objects.filter(
+            id__in=list(parsed.keys()),
+            uses_meals=True,
+        )
+        allowed_by_id = {child.id: child for child in allowed_children}
+        missing_ids = [child_id for child_id in parsed.keys() if child_id not in allowed_by_id]
+        if missing_ids:
+            raise DRFValidationError(
+                {'detail': f'Nie można dodać korekty. Dzieci niedostępne dla wyżywienia: {", ".join(map(str, missing_ids))}.'}
+            )
+
+        for child_id in parsed.keys():
+            parsed[child_id]['child_name'] = f"{allowed_by_id[child_id].first_name} {allowed_by_id[child_id].last_name}".strip()
+
+        return parsed
+
+    def _apply_manual_adjustments(self, meal_period, adjustments_by_child):
+        if not adjustments_by_child:
+            return 0
+
+        adjusted_count = 0
+        for child_id, adjustment in adjustments_by_child.items():
+            payment = Payment.objects.select_for_update().filter(
+                child_id=child_id,
+                meal_period=meal_period,
+            ).first()
+
+            if not payment:
+                raise DRFValidationError(
+                    {'detail': f'Brak płatności wyżywieniowej do korekty dla dziecka: {adjustment["child_name"]}.'}
+                )
+
+            updated_amount = (payment.amount + adjustment['amount_delta']).quantize(Decimal('0.01'))
+            if updated_amount < Decimal('0.00'):
+                raise DRFValidationError(
+                    {'detail': f'Korekta dla dziecka {adjustment["child_name"]} obniża kwotę poniżej 0.00 zł.'}
+                )
+
+            payment.amount = updated_amount
+            correction_note = (
+                f" Korekta dyrektora: {adjustment['amount_delta']:+.2f} zł "
+                f"(powód: {adjustment['reason']})."
+            )
+            if correction_note not in payment.description:
+                payment.description = f"{payment.description}{correction_note}".strip()
+
+            payment.save(update_fields=['amount', 'description'])
+            adjusted_count += 1
+
+        return adjusted_count
 
 
 class RecurringPaymentViewSet(viewsets.ModelViewSet):
@@ -331,6 +479,192 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if child_id:
             queryset = queryset.filter(child_id=child_id)
         return queryset
+
+    @action(detail=False, methods=['get'], url_path='meal-report', permission_classes=[IsDirector])
+    def meal_report(self, request):
+        today = timezone.now().date()
+
+        report_month_last_day = today.replace(day=1) - timedelta(days=1)
+        report_month_first_day = report_month_last_day.replace(day=1)
+
+        billing_month_first_day = today.replace(day=1)
+        billing_month_last_day = (billing_month_first_day + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        billing_month_locative = {
+            1: 'styczniu',
+            2: 'lutym',
+            3: 'marcu',
+            4: 'kwietniu',
+            5: 'maju',
+            6: 'czerwcu',
+            7: 'lipcu',
+            8: 'sierpniu',
+            9: 'wrzesniu',
+            10: 'pazdzierniku',
+            11: 'listopadzie',
+            12: 'grudniu',
+        }
+
+        closures_in_report_month = set(
+            FacilityClosure.objects.filter(
+                date__range=[report_month_first_day, report_month_last_day]
+            ).values_list('date', flat=True)
+        )
+
+        closures_in_billing_month = set(
+            FacilityClosure.objects.filter(
+                date__range=[billing_month_first_day, billing_month_last_day]
+            ).values_list('date', flat=True)
+        )
+
+        billing_business_days = 0
+        day_cursor = billing_month_first_day
+        while day_cursor <= billing_month_last_day:
+            if day_cursor.isoweekday() <= 5 and day_cursor not in closures_in_billing_month:
+                billing_business_days += 1
+            day_cursor += timedelta(days=1)
+
+        groups = Group.objects.all().order_by('name')
+        children_by_group = {
+            group.id: list(
+                group.children.filter(uses_meals=True)
+                .order_by('last_name', 'first_name', 'id')
+            )
+            for group in groups
+        }
+
+        report_days = []
+        day_cursor = report_month_first_day
+        while day_cursor <= report_month_last_day:
+            report_days.append(day_cursor)
+            day_cursor += timedelta(days=1)
+
+        attendance_rows = Attendance.objects.filter(
+            date__range=[report_month_first_day, report_month_last_day],
+            status='absent',
+            child__uses_meals=True,
+        ).values('child_id', 'date')
+
+        absences_by_child = {}
+        for row in attendance_rows:
+            absences_by_child.setdefault(row['child_id'], set()).add(row['date'])
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = 'Raport wyzywienia'
+
+        title = (
+            f'Raport nieobecnosci: {report_month_first_day.strftime("%m/%Y")}; '
+            f'naliczenie: {billing_month_first_day.strftime("%m/%Y")}'
+        )
+        max_col = len(report_days) + 4
+        sheet.cell(row=1, column=1, value=title)
+        sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_col)
+        sheet.cell(row=1, column=1).font = Font(bold=True)
+
+        current_row = 3
+        preschool_total = Decimal('0.00')
+        abs_col = len(report_days) + 2
+        rate_col = len(report_days) + 3
+        due_col = len(report_days) + 4
+
+        for group in groups:
+            children = children_by_group[group.id]
+
+            sheet.cell(row=current_row, column=1, value=group.name)
+            sheet.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=max_col)
+            sheet.cell(row=current_row, column=1).font = Font(bold=True)
+            current_row += 1
+
+            sheet.cell(row=current_row, column=1, value='data').font = Font(bold=True)
+            for idx, month_day in enumerate(report_days, start=2):
+                sheet.cell(row=current_row, column=idx, value=month_day.day).alignment = Alignment(horizontal='center')
+
+            sheet.cell(row=current_row, column=abs_col, value='nieobecnosci').font = Font(bold=True)
+            sheet.cell(row=current_row, column=rate_col, value='stawka wyzywienia').font = Font(bold=True)
+            sheet.cell(row=current_row, column=due_col, value='do zaplaty').font = Font(bold=True)
+            current_row += 1
+
+            group_total = Decimal('0.00')
+
+            for child in children:
+                child_absence_dates = absences_by_child.get(child.id, set())
+                billable_absences = sum(
+                    1
+                    for absence_date in child_absence_dates
+                    if absence_date.isoweekday() <= 5 and absence_date not in closures_in_report_month
+                )
+
+                billable_days = max(billing_business_days - billable_absences, 0)
+                amount_due = (Decimal(billable_days) * child.meal_rate).quantize(Decimal('0.01'))
+                group_total += amount_due
+
+                sheet.cell(
+                    row=current_row,
+                    column=1,
+                    value=f'{child.first_name} {child.last_name}',
+                )
+
+                for idx, month_day in enumerate(report_days, start=2):
+                    mark = 'N' if month_day in child_absence_dates else ''
+                    sheet.cell(row=current_row, column=idx, value=mark).alignment = Alignment(horizontal='center')
+
+                sheet.cell(row=current_row, column=abs_col, value=billable_absences)
+                sheet.cell(row=current_row, column=rate_col, value=float(child.meal_rate))
+                sheet.cell(row=current_row, column=due_col, value=float(amount_due))
+                current_row += 1
+
+            sheet.cell(row=current_row, column=rate_col, value='calkowita suma w grupie').font = Font(bold=True)
+            sheet.cell(row=current_row, column=due_col, value=float(group_total)).font = Font(bold=True)
+            preschool_total += group_total
+            current_row += 2
+
+        sheet.cell(row=current_row, column=rate_col, value='calkowita suma w przedszkolu').font = Font(bold=True)
+        sheet.cell(row=current_row, column=due_col, value=float(preschool_total)).font = Font(bold=True)
+
+        current_row += 2
+        sheet.cell(row=current_row, column=1, value='ILOSC DNI').font = Font(bold=True)
+        sheet.cell(row=current_row, column=2, value=billing_business_days)
+        sheet.cell(
+            row=current_row,
+            column=3,
+            value=(
+                f'dni robocze w {billing_month_locative[billing_month_first_day.month]} '
+                f'(bez weekendow i dni wolnych)'
+            )
+        )
+
+        for col_idx in range(1, max_col + 1):
+            if col_idx == 1:
+                width = 28
+            elif col_idx <= len(report_days) + 1:
+                width = 4
+            else:
+                width = 20
+            sheet.column_dimensions[get_column_letter(col_idx)].width = width
+
+        money_format = '#,##0.00'
+        for row in range(4, current_row + 1):
+            due_value = sheet.cell(row=row, column=due_col).value
+            rate_value = sheet.cell(row=row, column=rate_col).value
+            if isinstance(due_value, (int, float)):
+                sheet.cell(row=row, column=due_col).number_format = money_format
+            if isinstance(rate_value, (int, float)):
+                sheet.cell(row=row, column=rate_col).number_format = money_format
+
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        filename = (
+            f'raport_nieobecnosci_{report_month_first_day.strftime("%Y_%m")}'
+            f'_naliczenie_{billing_month_first_day.strftime("%Y_%m")}.xlsx'
+        )
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
     
 class FacilityClosureViewSet(viewsets.ModelViewSet):
     """
