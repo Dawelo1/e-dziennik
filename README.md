@@ -166,6 +166,18 @@ Projekt jest gotowy do wdrożenia na serwerach produkcyjnych. Pamiętaj o:
 4. Użyciu produkcyjnej bazy danych (np. PostgreSQL)
 5. Setupie serwera statycznych plików
 
+### Szablony deploy w repo
+
+W repo znajdują się gotowe pliki do startu na VPS (OVH/Ubuntu):
+
+- `.env.example` - zmienne środowiskowe backendu (Django, DB, Redis, security)
+- `deploy/systemd/e-dziennik.service` - usługa systemd dla Daphne (ASGI)
+- `deploy/nginx/e-dziennik.conf` - reverse proxy Nginx z obsługą WebSocket
+- `deploy/README.md` - szybka instrukcja krok po kroku
+- `frontend/.env.production.example` - konfiguracja frontendu pod domenę produkcyjną
+
+Przy buildzie frontendu ustaw `VITE_API_URL` i `VITE_WS_CHAT_URL`.
+
 ### WebSocket (chat) – produkcja
 
 System wiadomości działa w czasie rzeczywistym przez WebSocket (`/ws/chat/`) i nie używa pollingu.

@@ -1,0 +1,15 @@
+[Unit]
+Description=e-dziennik Daphne (ASGI)
+After=network.target redis-server.service postgresql.service
+
+[Service]
+User=appuser
+Group=www-data
+WorkingDirectory=/srv/e-dziennik
+EnvironmentFile=/etc/e-dziennik.env
+ExecStart=/srv/e-dziennik/venv/bin/daphne -b 127.0.0.1 -p 8001 config.asgi:application
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
